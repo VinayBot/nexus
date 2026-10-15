@@ -25,7 +25,7 @@ function useRect(id: string | null): DOMRect | null {
   return rect;
 }
 
-/** Spotlight cut-out + caption card for guided tours, Presentation Mode and Hikari. */
+/** Spotlight cut-out + caption card for guided tours, Presentation Mode and Nova. */
 export function TourOverlay() {
   const { steps, index, active, autoplay, spotlight, next, prev, stop } = useTour();
   const mission = useActiveMission((s) => s.activeId);

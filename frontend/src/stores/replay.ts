@@ -10,7 +10,7 @@ const MAX_GAP_MS = 2500; // long real pauses (e.g. waiting for a human) are comp
 
 /**
  * Replay a finished mission from its persisted events, through the same reducer
- * Live mode uses — so the Dojo looks exactly as it did, at any speed.
+ * Live mode uses — so the Command Center looks exactly as it did, at any speed.
  */
 export function useReplay(missionId: string | null, enabled: boolean, speed: number) {
   const [view, setView] = useState<MissionView>(emptyView(missionId));

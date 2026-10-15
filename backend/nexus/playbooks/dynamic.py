@@ -1,6 +1,6 @@
 """Dynamic Missions and saved (YAML) playbooks.
 
-Dynamic: for tasks matching no playbook, Sensei plans freely, the Shogun assembles a
+Dynamic: for tasks matching no playbook, Sage plans freely, the Commander assembles a
 team from the registry, and the graph *pauses* so the human can approve or edit
 the team and plan before any work starts. A successful dynamic mission can be saved
 as a reusable YAML playbook (its plan becomes the template, no team approval).
@@ -22,9 +22,7 @@ from nexus.playbooks.council_qa import CouncilQA
 class Dynamic(Playbook):
     id = "dynamic"
     title = "Dynamic Mission"
-    description = (
-        "Anything else: the Shogun composes a team from the registry; you approve the team first."
-    )
+    description = "Anything else: the Commander composes a team from the registry; you approve the team first."
     tournament_mode = None
     approve_team = True
     planner_hint = (

@@ -42,19 +42,17 @@ const KIND_LABEL: Record<string, string> = {
   edit_plan: "Plan review",
 };
 
-/** The red hanko seal that slams onto the scroll on approval. */
-function Hanko() {
+/** The holographic APPROVED stamp that slams onto the card on approval. */
+function Stamp() {
   return (
     <motion.div
       initial={{ scale: 3.2, rotate: -28, opacity: 0 }}
       animate={{ scale: 1, rotate: -12, opacity: 1 }}
       transition={{ type: "spring", stiffness: 520, damping: 18 }}
-      className="pointer-events-none absolute top-6 right-8 z-10 grid size-24 place-items-center rounded-lg border-4 border-[#c8341f] bg-[#c8341f]/10 font-display text-3xl leading-none font-extrabold text-[#e2412c] shadow-[0_0_30px_rgba(200,52,31,0.5)]"
-      style={{ textShadow: "0 0 2px rgba(0,0,0,0.3)" }}
+      className="pointer-events-none absolute top-6 right-8 z-10 grid place-items-center rounded-lg border-[3px] border-[var(--jade)] bg-[var(--jade)]/10 px-4 py-2 font-display text-2xl leading-none font-bold tracking-[0.2em] text-[var(--jade)] shadow-[0_0_30px_rgba(63,209,139,0.5)]"
+      style={{ textShadow: "0 0 8px rgba(63,209,139,0.8)" }}
     >
-      <span className="text-center">
-        承<br />認
-      </span>
+      <span>APPROVED</span>
     </motion.div>
   );
 }
@@ -82,7 +80,7 @@ export function ApprovalCard({ approval }: { approval: Approval }) {
     onSuccess: async (_, body) => {
       if (body.decision === "approve" || body.decision === "edit") {
         setStamped(true);
-        if (useUi.getState().soundOn) sounds.taiko();
+        if (useUi.getState().soundOn) sounds.confirm();
         await controls.start({ x: [0, -6, 6, -3, 0], transition: { duration: 0.35, delay: 0.15 } });
       } else if (body.decision === "reject") {
         setTorn(true);
@@ -131,7 +129,7 @@ export function ApprovalCard({ approval }: { approval: Approval }) {
           ))}
       </AnimatePresence>
       <div className={cn("panel overflow-hidden p-4 transition-opacity", torn && "opacity-0")}>
-        {stamped && <Hanko />}
+        {stamped && <Stamp />}
         <header className="flex flex-wrap items-start gap-3">
           <div className="min-w-0 flex-1">
             <p className="text-[11px] tracking-wider text-faint uppercase">
@@ -139,7 +137,7 @@ export function ApprovalCard({ approval }: { approval: Approval }) {
             </p>
             <h3 className="font-display text-lg text-text">{String(p.summary ?? "")}</h3>
             <p className="mt-0.5 text-xs text-muted">
-              <Link href={`/dojo?m=${approval.mission_id}`} className="underline decoration-border hover:text-text">
+              <Link href={`/missions?m=${approval.mission_id}`} className="underline decoration-border hover:text-text">
                 mission {approval.mission_id}
               </Link>
               {" · "}

@@ -19,7 +19,7 @@ from nexus.safety.guardrails import scan
 
 async def intake(state: dict[str, Any]) -> dict[str, Any]:
     """Guardrails on the raw request: redact secrets/PII, flag injection attempts."""
-    status("shogun", "receiving_task")
+    status("commander", "receiving_task")
     result = scan(state.get("task", ""), source="mission task")
     settings = services().settings
     budget = TokenBudget(
@@ -39,8 +39,8 @@ async def intake(state: dict[str, Any]) -> dict[str, Any]:
 
 
 async def rewrite(state: dict[str, Any]) -> dict[str, Any]:
-    """Kanji (fast model) restates the task clearly; flags it if truly ambiguous."""
-    status("kanji", "thinking")
+    """Quill (fast model) restates the task clearly; flags it if truly ambiguous."""
+    status("quill", "thinking")
     task = state["task"]
     clar = state.get("clarifications") or []
     prompt = f"Request:\n{task}"
@@ -50,7 +50,7 @@ async def rewrite(state: dict[str, Any]) -> dict[str, Any]:
     out = await services().llm.structured(
         [
             ChatMessage.system(
-                services().registry.get("kanji").system_prompt
+                services().registry.get("quill").system_prompt
                 + "\nRestate the request as a clear task. Mark is_vague=true ONLY if it is "
                 "impossible to start without asking the user something; then put that "
                 "question in 'question'. Most requests are NOT vague."
@@ -59,15 +59,15 @@ async def rewrite(state: dict[str, Any]) -> dict[str, Any]:
         ],
         RewrittenTask,
         purpose="rewrite",
-        agent_id="kanji",
+        agent_id="quill",
         default=RewrittenTask(goal=task[:200], clarified_task=task),
     )
     if preset or clar:
         out = out.model_copy(update={"is_vague": False})
-    status("kanji", "idle")
+    status("quill", "idle")
     return {
         "rewritten": out.model_dump(),
-        "messages": [AIMessage(content=f"Clarified task: {out.clarified_task}", name="kanji")],
+        "messages": [AIMessage(content=f"Clarified task: {out.clarified_task}", name="quill")],
     }
 
 
@@ -91,7 +91,7 @@ async def route(state: dict[str, Any]) -> dict[str, Any]:
         ],
         RouteDecision,
         purpose="route",
-        agent_id="shogun",
+        agent_id="commander",
         default=RouteDecision(playbook="council_qa", reason="router fallback"),
     )
     available = {p.id for p in all_playbooks()}
@@ -102,7 +102,7 @@ async def route(state: dict[str, Any]) -> dict[str, Any]:
     return {
         "playbook": playbook,
         "route_reason": reason,
-        "messages": [AIMessage(content=f"Routing to {playbook}: {reason}", name="shogun")],
+        "messages": [AIMessage(content=f"Routing to {playbook}: {reason}", name="commander")],
     }
 
 

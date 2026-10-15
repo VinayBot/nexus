@@ -1,6 +1,6 @@
 """Self-Healing Pipeline (flagship).
 
-Kuro spots an incident → prepare (workspace, reproduction, suspects, memory) →
+Hawk spots an incident → prepare (workspace, reproduction, suspects, memory) →
 parallel investigation (logs · code · Fix Library) → solution tournament with
 every patch grounded in its own sandbox → evidence → risk gate (HIGH: dry-run +
 approval, emailed to the owner) → apply on a fix branch with hot reload →
@@ -163,7 +163,7 @@ class SelfHealing(CodeFixPlaybook):
             context=context,
             code_context={"files": files, "focus": inputs.get("focus")},
             # memory hit → one solver races the remembered fix instead of three
-            solvers=["ronin_b"] if seeds else ["ronin_a", "ronin_b", "ronin_c"],
+            solvers=["volt"] if seeds else ["blaze", "volt", "frost"],
             max_rounds=0 if seeds else 1,
             seed_proposals=seeds,
         )

@@ -1,59 +1,7 @@
 /**
- * Procedural silhouette geometry for the dojo skyline. Everything is generated
+ * Procedural silhouette geometry for the futuristic sunset skyline. Everything is generated
  * from a few numbers so the artwork is original and resolution independent.
  */
-
-/** One curved-eave roof tier: wide flared eaves, steep centre. */
-function roofTier(cx: number, y: number, w: number, h: number): string {
-  const ov = w * 0.16; // eave overhang past the walls
-  const l = cx - w / 2 - ov;
-  const r = cx + w / 2 + ov;
-  return [
-    `M${l},${y}`,
-    `Q${cx - w * 0.42},${y - h * 0.18} ${cx - w * 0.26},${y - h * 0.62}`,
-    `L${cx - w * 0.1},${y - h}`,
-    `L${cx + w * 0.1},${y - h}`,
-    `L${cx + w * 0.26},${y - h * 0.62}`,
-    `Q${cx + w * 0.42},${y - h * 0.18} ${r},${y}`,
-    `L${r - ov * 0.4},${y + h * 0.12}`,
-    `L${l + ov * 0.4},${y + h * 0.12}`,
-    "Z",
-  ].join(" ");
-}
-
-/** A multi-tier pagoda standing on `baseY`; returns one path string. */
-export function pagodaPath(cx: number, baseY: number, width: number, tiers: number): string {
-  const parts: string[] = [];
-  let y = baseY;
-  let w = width;
-  const tierH = width * 0.42;
-  for (let i = 0; i < tiers; i++) {
-    const wallH = tierH * 0.55;
-    // walls
-    parts.push(`M${cx - w * 0.36},${y} h${w * 0.72} v${-wallH} h${-w * 0.72} Z`);
-    y -= wallH;
-    parts.push(roofTier(cx, y, w, tierH * 0.6));
-    y -= tierH * 0.6;
-    w *= 0.8;
-  }
-  // spire (sōrin) with rings
-  const sw = width * 0.035;
-  parts.push(`M${cx - sw},${y} h${sw * 2} v${-width * 0.55} h${-sw * 2} Z`);
-  for (let k = 1; k <= 4; k++) {
-    const ry = y - (width * 0.55 * k) / 5;
-    parts.push(`M${cx - sw * 2.6},${ry} h${sw * 5.2} v${-sw * 0.9} h${-sw * 5.2} Z`);
-  }
-  return parts.join(" ");
-}
-
-/** A low temple hall: one wide roof over a long wall. */
-export function hallPath(cx: number, baseY: number, width: number): string {
-  const wallH = width * 0.22;
-  return [
-    `M${cx - width * 0.42},${baseY} h${width * 0.84} v${-wallH} h${-width * 0.84} Z`,
-    roofTier(cx, baseY - wallH, width, width * 0.3),
-  ].join(" ");
-}
 
 /** Deterministic pseudo-random generator so SSR and client render the same art. */
 export function seeded(seed: number): () => number {
@@ -65,30 +13,75 @@ export function seeded(seed: number): () => number {
   };
 }
 
-export interface Ellipse {
-  cx: number;
-  cy: number;
-  rx: number;
-  ry: number;
+export type TowerStyle = "block" | "spire" | "stepped" | "dish";
+
+/** One skyscraper standing on `baseY`; returns a path of closed sub-shapes. */
+export function towerPath(cx: number, baseY: number, w: number, h: number, style: TowerStyle): string {
+  const l = cx - w / 2;
+  const top = baseY - h;
+  const parts = [`M${l},${baseY} h${w} V${top} h${-w} Z`];
+  switch (style) {
+    case "spire":
+      parts.push(`M${l + w * 0.15},${top} L${cx},${top - h * 0.35} L${l + w * 0.85},${top} Z`);
+      break;
+    case "stepped":
+      parts.push(`M${l + w * 0.15},${top} h${w * 0.7} v${-h * 0.12} h${-w * 0.7} Z`);
+      parts.push(`M${l + w * 0.32},${top - h * 0.12} h${w * 0.36} v${-h * 0.1} h${-w * 0.36} Z`);
+      parts.push(`M${cx - 1.5},${top - h * 0.22} h3 v${-h * 0.18} h-3 Z`);
+      break;
+    case "dish":
+      parts.push(`M${cx - w * 0.45},${top} a${w * 0.45},${w * 0.3} 0 0,1 ${w * 0.9},0 Z`);
+      parts.push(`M${cx - 1.2},${top - w * 0.3} h2.4 v${-h * 0.15} h-2.4 Z`);
+      break;
+    default:
+      parts.push(`M${l + w * 0.7},${top} h3 v${-h * 0.2} h-3 Z`);
+  }
+  return parts.join(" ");
 }
 
-/** A Japanese-pine silhouette: a leaning trunk carrying flat foliage pads. */
-export function pine(x: number, baseY: number, height: number, seed: number) {
+/** A low dome (arcology / observatory). */
+export function domePath(cx: number, baseY: number, r: number): string {
+  return `M${cx - r},${baseY} a${r},${r * 0.7} 0 0,1 ${r * 2},0 Z M${cx - 1.5},${baseY - r * 0.7} h3 v${-r * 0.4} h-3 Z`;
+}
+
+export interface Tower {
+  cx: number;
+  w: number;
+  h: number;
+  style: TowerStyle;
+}
+
+const STYLES: TowerStyle[] = ["block", "spire", "stepped", "dish"];
+
+/** A row of towers across `width`, with a gap in the middle for the sun. */
+export function cityRow(seed: number, width: number, minH: number, maxH: number, gap = 0): Tower[] {
   const rnd = seeded(seed);
-  const lean = (rnd() - 0.5) * height * 0.35;
-  const topX = x + lean;
-  const topY = baseY - height;
-  const tw = height * 0.035;
-  const trunk = `M${x - tw},${baseY} Q${x + lean * 0.2},${baseY - height * 0.5} ${topX - tw * 0.4},${topY} L${topX + tw * 0.4},${topY} Q${x + lean * 0.2 + tw * 2},${baseY - height * 0.5} ${x + tw},${baseY} Z`;
-  const pads: Ellipse[] = [];
-  const n = 4 + Math.floor(rnd() * 3);
-  for (let i = 0; i < n; i++) {
-    const t = 0.35 + (i / n) * 0.7;
-    const side = i % 2 === 0 ? -1 : 1;
-    const px = x + lean * t + side * height * (0.12 + rnd() * 0.18);
-    const py = baseY - height * t;
-    pads.push({ cx: px, cy: py, rx: height * (0.16 + rnd() * 0.1), ry: height * (0.05 + rnd() * 0.025) });
+  const towers: Tower[] = [];
+  let x = 0;
+  while (x < width) {
+    const w = 34 + rnd() * 70;
+    const cx = x + w / 2;
+    const centre = Math.abs(cx - width / 2) < gap;
+    const h = (minH + rnd() * (maxH - minH)) * (centre ? 0.35 : 1);
+    towers.push({ cx, w, h, style: STYLES[Math.floor(rnd() * STYLES.length)]! });
+    x += w + rnd() * 14;
   }
-  pads.push({ cx: topX, cy: topY, rx: height * 0.2, ry: height * 0.07 });
-  return { trunk, pads };
+  return towers;
+}
+
+export const rowPath = (towers: Tower[], baseY: number) =>
+  towers.map((t) => towerPath(t.cx, baseY, t.w, t.h, t.style)).join(" ");
+
+/** Lit windows scattered over a tower row (deterministic). */
+export function windowsOf(towers: Tower[], baseY: number, seed: number, density = 0.12) {
+  const rnd = seeded(seed);
+  const out: { x: number; y: number; d: number }[] = [];
+  for (const t of towers) {
+    const cols = Math.max(1, Math.floor(t.w / 12));
+    const rows = Math.floor(t.h / 16);
+    for (let c = 0; c < cols; c++)
+      for (let r = 1; r < rows; r++)
+        if (rnd() < density) out.push({ x: t.cx - t.w / 2 + 6 + c * 12, y: baseY - r * 16, d: rnd() * 6 });
+  }
+  return out;
 }

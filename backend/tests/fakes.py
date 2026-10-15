@@ -77,7 +77,7 @@ def react_script(req: LLMRequest) -> str:
 
 
 def review_script(req: LLMRequest) -> str:
-    """Reviewers clearly prefer whichever masked proposal Ronin B wrote."""
+    """Reviewers clearly prefer whichever masked proposal Volt wrote."""
     text = req.messages[-1].content
     m = re.search(r"Review exactly these labels: ([A-Z, ]+)\.", text)
     labels = [x.strip() for x in m.group(1).split(",")] if m else ["A"]
@@ -86,7 +86,7 @@ def review_script(req: LLMRequest) -> str:
     )
     reviews = []
     for lab in labels:
-        good = "ronin_b" in blocks.get(lab, "")
+        good = "volt" in blocks.get(lab, "")
         s = 9 if good else 5
         reviews.append(
             {

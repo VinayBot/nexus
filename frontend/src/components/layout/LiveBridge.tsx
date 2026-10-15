@@ -24,7 +24,7 @@ export function LiveBridge() {
         const ui = useUi.getState();
         if (ui.soundOn) {
           if (e.type === "interrupt.raised" || e.type === "incident.detected") sounds.chime();
-          if (e.type === "chaos.toggled" && e.payload.enabled) sounds.bell();
+          if (e.type === "chaos.toggled" && e.payload.enabled) sounds.alarm();
           if (e.type === "mission.completed" && e.payload.outcome === "success") sounds.success();
         }
         switch (e.type) {
@@ -46,7 +46,7 @@ export function LiveBridge() {
         if (e.type.startsWith("mission.") || e.type === "interrupt.resolved") {
           void qc.invalidateQueries({ queryKey: ["missions"] });
         }
-        // resolved approvals are refreshed by the card itself after its seal/tear animation
+        // resolved approvals are refreshed by the card itself after its stamp/tear animation
         if (e.type === "interrupt.raised") void qc.invalidateQueries({ queryKey: ["approvals"] });
         if (e.type === "incident.detected" || e.type === "chaos.toggled") {
           void qc.invalidateQueries({ queryKey: ["chaos"] });

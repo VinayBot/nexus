@@ -30,8 +30,8 @@ class TournamentBrief(BaseModel):
     question: str
     context: str = ""
     code_context: dict[str, Any] | None = None
-    solvers: list[str] = ["ronin_a", "ronin_b", "ronin_c"]
-    critic: str | None = "kiri"
+    solvers: list[str] = ["blaze", "volt", "frost"]
+    critic: str | None = "vex"
     max_rounds: int = 1
     #: Proposals that enter the tournament without an LLM call (e.g. a Fix Library patch).
     seed_proposals: dict[str, dict[str, Any]] = {}

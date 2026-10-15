@@ -1,4 +1,4 @@
-"""Memory Palace: long-term memory search, stats, shelves and the embedding map."""
+"""Memory: long-term memory search, stats, shelves and the embedding map."""
 
 from __future__ import annotations
 

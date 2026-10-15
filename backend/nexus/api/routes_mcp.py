@@ -1,4 +1,4 @@
-"""Armory: MCP servers, tools, health, call log and a "try tool" endpoint."""
+"""Tools: MCP servers, tools, health, call log and a "try tool" endpoint."""
 
 from __future__ import annotations
 

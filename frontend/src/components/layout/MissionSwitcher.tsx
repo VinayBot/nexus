@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { StatusDot } from "@/components/dojo/MissionList";
+import { StatusDot } from "@/components/mission/MissionList";
 import { useMissions } from "@/lib/queries";
 import { useActiveMission } from "@/stores/missions";
 
@@ -18,7 +18,7 @@ export function MissionSwitcher() {
         value={activeId ?? ""}
         onChange={(e) => {
           setActive(e.target.value || null);
-          if (e.target.value) router.push(`/dojo?m=${e.target.value}`);
+          if (e.target.value) router.push(`/missions?m=${e.target.value}`);
         }}
         className="max-w-[340px] min-w-0 truncate rounded-lg border border-border bg-black/30 px-2 py-1.5 text-xs text-text"
       >

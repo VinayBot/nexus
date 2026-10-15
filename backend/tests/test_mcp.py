@@ -74,17 +74,17 @@ async def test_workspace_roundtrip_and_path_jail(events: list[Event]) -> None:
         w = await h.call(
             "workspace.write_file",
             {"path": "app/x.py", "content": "print(1)\n"},
-            agent_id="tetsu",
+            agent_id="forge",
             allowlist=None,
         )
         assert w.ok
         assert (svc.workspaces.path_for("m1") / "app" / "x.py").read_text() == "print(1)\n"
         r = await h.call(
-            "workspace.read_file", {"path": "app/x.py"}, agent_id="tetsu", allowlist=None
+            "workspace.read_file", {"path": "app/x.py"}, agent_id="forge", allowlist=None
         )
         assert "1| print(1)" in r.text
         bad = await h.call(
-            "workspace.read_file", {"path": "../../../etc/passwd"}, agent_id="tetsu", allowlist=None
+            "workspace.read_file", {"path": "../../../etc/passwd"}, agent_id="forge", allowlist=None
         )
         assert not bad.ok
         assert any(
@@ -102,7 +102,7 @@ async def test_allowlist_and_system_only_notify() -> None:
         blocked = await h.call(
             "workspace.write_file",
             {"path": "a", "content": "b"},
-            agent_id="kagemi",
+            agent_id="echo",
             allowlist=["knowledge.search"],
         )
         assert not blocked.ok
@@ -110,7 +110,7 @@ async def test_allowlist_and_system_only_notify() -> None:
         agent_mail = await h.call(
             "notify.send_email",
             {"to": "a@b.c", "subject": "s", "html": "h"},
-            agent_id="hikyaku",
+            agent_id="swift",
             allowlist=None,
         )
         assert not agent_mail.ok
@@ -133,14 +133,14 @@ async def test_sandbox_runs_pytest_on_a_copy() -> None:
             "def test_ok():\n    assert 1\n\ndef test_bad():\n    assert 0\n"
         )
         out = await hub(svc).call(
-            "sandbox.run_tests", {"target": "tests"}, agent_id="mamoru", allowlist=None
+            "sandbox.run_tests", {"target": "tests"}, agent_id="aegis", allowlist=None
         )
         assert out.data is not None
         assert (out.data["passed"], out.data["failed"]) == (1, 1)
         assert out.data["backend"] == "local (not isolated)"
         assert not (root / ".junit.xml").exists()  # the real workspace was not touched
         cmd = await hub(svc).call(
-            "sandbox.run_command", {"command": "rm -rf /"}, agent_id="mamoru", allowlist=None
+            "sandbox.run_command", {"command": "rm -rf /"}, agent_id="aegis", allowlist=None
         )
         assert cmd.data is not None
         assert "not allowed" in cmd.data["summary"]
@@ -154,7 +154,7 @@ async def test_knowledge_search() -> None:
         out = await hub(svc).call(
             "knowledge.search",
             {"query": "reducers merge concurrent updates"},
-            agent_id="kagemi",
+            agent_id="echo",
             allowlist=None,
         )
         assert "Reducers" in out.text
@@ -174,7 +174,7 @@ async def test_tickets_local() -> None:
                 )
             )
         h = hub(svc)
-        got = await h.call("tickets.get", {"ticket_id": "T-1"}, agent_id="kagemi", allowlist=None)
+        got = await h.call("tickets.get", {"ticket_id": "T-1"}, agent_id="echo", allowlist=None)
         assert got.data is not None
         assert got.data["title"] == "Total is wrong"
         await h.call_system("tickets.comment", {"ticket_id": "T-1", "body": "Fixed in sandbox."})
@@ -190,6 +190,6 @@ async def test_tickets_local() -> None:
 
 async def test_observability_reports_down_service() -> None:
     async with mcp_runtime() as svc:
-        out = await hub(svc).call("observability.health", {}, agent_id="kuro", allowlist=None)
+        out = await hub(svc).call("observability.health", {}, agent_id="hawk", allowlist=None)
         assert out.data is not None
         assert out.data["status"] == "down"

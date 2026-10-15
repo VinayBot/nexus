@@ -1,4 +1,4 @@
-"""Kuro the Watcher: monitors the demo-service and opens incidents.
+"""Hawk the Watcher: monitors the demo-service and opens incidents.
 
 Polls ``/health`` every couple of seconds (emitting live ``service.health``
 events), and when the service has been unhealthy for two consecutive polls with
@@ -113,7 +113,7 @@ class Watcher:
         )
         async with self.db.session() as s:
             s.add(row)
-        emit("agent.status", AgentStatus(agent_id="kuro", status="alarm"), agent_id="kuro")
+        emit("agent.status", AgentStatus(agent_id="hawk", status="alarm"), agent_id="hawk")
         emit(
             "incident.detected",
             IncidentDetected(

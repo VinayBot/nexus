@@ -107,7 +107,7 @@ class TicketSolver(CodeFixPlaybook):
         mission_id = state["mission_id"]
         ticket_id = inputs.get("ticket_id") or _ticket_from_text(state.get("task", ""))
         got = await svc.mcp.call(
-            "tickets.get", {"ticket_id": ticket_id}, agent_id="kagemi", allowlist=None
+            "tickets.get", {"ticket_id": ticket_id}, agent_id="echo", allowlist=None
         )
         ticket = got.data if isinstance(got.data, dict) else {}
         if not ticket or ticket.get("error"):
@@ -138,7 +138,7 @@ class TicketSolver(CodeFixPlaybook):
             purpose="plan:requirements",
             max_tokens=1500,
             role="main",
-            agent_id="sensei",
+            agent_id="sage",
             default=Requirements(
                 summary=ticket["title"],
                 acceptance_criteria=[ticket["body"][:300]],
@@ -158,7 +158,7 @@ class TicketSolver(CodeFixPlaybook):
             await svc.mcp.call(
                 "workspace.write_file",
                 {"path": acceptance, "content": req.acceptance_test + "\n"},
-                agent_id="mamoru",
+                agent_id="aegis",
                 allowlist=None,
             )
         suspects = candidate_files(

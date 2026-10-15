@@ -1,1 +1,1 @@
-"""Hikari, the in-app guide."""
+"""Nova, the in-app guide."""

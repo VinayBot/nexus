@@ -447,7 +447,7 @@ async def judge_node(state: TournamentState) -> dict[str, Any]:
         rounds=state.get("round", 0) + 1,
         divergence_threshold=state.get("threshold", 1.5),
     )
-    judge_id = state.get("judge_id", "hakari")
+    judge_id = state.get("judge_id", "arbiter")
     winner = state["proposals"][verdict.winner]
     token = agent_context.set(judge_id)
     try:

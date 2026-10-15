@@ -23,7 +23,7 @@ export function EmptyState({
       <div className="max-w-md">
         <div
           className={cn(
-            "mx-auto mb-4 size-3 rounded-full animate-lantern",
+            "mx-auto mb-4 size-3 rounded-full animate-glow",
             tone === "error" ? "bg-danger shadow-[0_0_14px_var(--error)]" : "bg-gold shadow-[var(--glow-gold)]",
           )}
         />

@@ -22,8 +22,8 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--error);
-  --font-display: var(--font-shippori), "Hiragino Mincho ProN", serif;
-  --font-sans: var(--font-zen-kaku), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display-face), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-body-face), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, monospace;
   --radius-panel: var(--radius-lg);
 }
@@ -59,7 +59,7 @@ body {
 }
 
 @layer components {
-  /* lacquer glass panel with a thin gold border and washi grain */
+  /* glass panel with a thin gold border and fine grain */
   .panel {
     position: relative;
     background: var(--surface);
@@ -75,9 +75,14 @@ body {
     inset: 0;
     border-radius: inherit;
     pointer-events: none;
-    background-image: url("/textures/washi.svg");
+    background-image: url("/textures/grain.svg");
     opacity: 0.05;
     mix-blend-mode: overlay;
+  }
+  .panel {
+    transition:
+      border-color 0.25s var(--ease-out),
+      box-shadow 0.25s var(--ease-out);
   }
   .panel-title {
     font-family: var(--font-display);

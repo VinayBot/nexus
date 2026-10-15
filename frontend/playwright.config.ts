@@ -32,7 +32,7 @@ export default defineConfig({
     },
     {
       command: "pnpm exec next dev -p 3011",
-      url: "http://localhost:3011/dojo",
+      url: "http://localhost:3011/missions",
       reuseExistingServer: false,
       timeout: 180_000,
       env: { NEXT_PUBLIC_API_URL: API, NEXT_DIST_DIR: ".next-e2e" },

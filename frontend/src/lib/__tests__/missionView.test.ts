@@ -41,18 +41,18 @@ describe("reduceMission", () => {
   });
 
   it("ignores duplicate sequence numbers (reconnect resume)", () => {
-    const e = ev("agent.thinking", { agent_id: "kagemi", text: "hmm", iteration: 1 });
+    const e = ev("agent.thinking", { agent_id: "echo", text: "hmm", iteration: 1 });
     const once = reduceMission(emptyView("m1"), e);
     expect(reduceMission(once, e)).toBe(once);
   });
 
   it("builds the council view and resets it for a new tournament", () => {
     let v = reduceAll([
-      ev("council.proposal", { solver_id: "ronin_a", strategy: "Minimal", summary: "fix A", label: null }),
+      ev("council.proposal", { solver_id: "blaze", strategy: "Minimal", summary: "fix A", label: null }),
       ev("council.masked", { mapping_hidden: true, labels: ["A", "B"] }),
-      ev("council.review", { reviewer: "kiri", target_label: "A", score: 7.5, scores: {}, reason: "ok" }),
+      ev("council.review", { reviewer: "vex", target_label: "A", score: 7.5, scores: {}, reason: "ok" }),
       ev("sandbox.test_result", {
-        target: "ronin_a",
+        target: "blaze",
         passed: 9,
         failed: 0,
         errors: 0,
@@ -62,22 +62,22 @@ describe("reduceMission", () => {
         summary: "",
       }),
       ev("council.verdict", {
-        winner: "ronin_a",
+        winner: "blaze",
         winner_label: "A",
         runner_up: null,
         confidence: 0.8,
         dissent: "-",
-        final_scores: { ronin_a: 8 },
+        final_scores: { blaze: 8 },
         escalate: false,
       }),
     ]);
-    expect(v.council.verdict?.winner).toBe("ronin_a");
-    expect(v.council.tests.ronin_a?.ok).toBe(true);
+    expect(v.council.verdict?.winner).toBe("blaze");
+    expect(v.council.tests.blaze?.ok).toBe(true);
     v = reduceMission(
       v,
-      ev("council.proposal", { solver_id: "ronin_b", strategy: "Root", summary: "fix B", label: null }),
+      ev("council.proposal", { solver_id: "volt", strategy: "Root", summary: "fix B", label: null }),
     );
-    expect(Object.keys(v.council.proposals)).toEqual(["ronin_b"]);
+    expect(Object.keys(v.council.proposals)).toEqual(["volt"]);
     expect(v.council.verdict).toBeNull();
   });
 
@@ -98,11 +98,11 @@ describe("reduceMission", () => {
 describe("robot state machine", () => {
   it("animates thinking → tool → retry → success from real events", () => {
     let r = initialRobot(0);
-    r = nextRobot(r, ev("agent.token", { agent_id: "tetsu", text: "Let me ", purpose: "react" }));
-    r = nextRobot(r, ev("agent.token", { agent_id: "tetsu", text: "read the file", purpose: "react" }));
+    r = nextRobot(r, ev("agent.token", { agent_id: "forge", text: "Let me ", purpose: "react" }));
+    r = nextRobot(r, ev("agent.token", { agent_id: "forge", text: "read the file", purpose: "react" }));
     expect(r.mode).toBe("thinking");
     expect(r.bubble).toBe("Let me read the file");
-    r = nextRobot(r, ev("agent.action", { agent_id: "tetsu", tool: "workspace.read_file", args: {}, iteration: 1 }));
+    r = nextRobot(r, ev("agent.action", { agent_id: "forge", tool: "workspace.read_file", args: {}, iteration: 1 }));
     expect(r).toMatchObject({ mode: "using_tool", tool: "workspace.read_file", expression: "focused" });
     r = nextRobot(
       r,
@@ -112,11 +112,11 @@ describe("robot state machine", () => {
         attempt: 2,
         max_attempts: 3,
         reason: "timeout",
-        agent_id: "tetsu",
+        agent_id: "forge",
       }),
     );
     expect(r).toMatchObject({ mode: "retrying", attempt: 2, expression: "confused" });
-    r = nextRobot(r, ev("agent.final", { agent_id: "tetsu", answer: "done" }));
+    r = nextRobot(r, ev("agent.final", { agent_id: "forge", answer: "done" }));
     expect(r.mode).toBe("success");
   });
 

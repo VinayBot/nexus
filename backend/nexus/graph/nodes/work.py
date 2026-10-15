@@ -20,7 +20,7 @@ from nexus.playbooks import get_playbook
 from nexus.playbooks.base import findings_text
 
 
-def _owner(team: Team | None, step_id: str, fallback: str = "kagemi") -> str:
+def _owner(team: Team | None, step_id: str, fallback: str = "echo") -> str:
     if team:
         for m in team.members:
             if step_id in m.step_ids:
@@ -29,7 +29,7 @@ def _owner(team: Team | None, step_id: str, fallback: str = "kagemi") -> str:
 
 
 async def dispatch(state: dict[str, Any]) -> Command[str]:
-    """The Shogun hands every ready step to its worker — in parallel via ``Send``."""
+    """The Commander hands every ready step to its worker — in parallel via ``Send``."""
     p = Plan.model_validate(state["plan"])
     done = set((state.get("step_results") or {}).keys())
     ready = p.ready_steps(done)
@@ -38,7 +38,7 @@ async def dispatch(state: dict[str, Any]) -> Command[str]:
         if ready:  # guard tripped with work left
             update["failure_notes"] = note(state, "dispatch round limit reached")
         return Command(goto="collect", update=update)
-    status("shogun", "pointing")
+    status("commander", "pointing")
     team = Team.model_validate(state["team"]) if state.get("team") else None
     playbook = get_playbook(state["playbook"])
     context = findings_text(state, 1500)
@@ -50,8 +50,8 @@ async def dispatch(state: dict[str, Any]) -> Command[str]:
         tools = [t for t in tools if t in spec.tools] or spec.tools
         emit(
             "handoff",
-            Handoff(source="shogun", target=agent_id, reason=step.title),
-            agent_id="shogun",
+            Handoff(source="commander", target=agent_id, reason=step.title),
+            agent_id="commander",
         )
         sends.append(
             Send(
@@ -158,7 +158,7 @@ async def collect(state: dict[str, Any]) -> dict[str, Any]:
     """Fan-in point after a round of parallel workers."""
     results = state.get("step_results") or {}
     emit("send.fanin", SendFanin(target="collect", count=len(results)))
-    status("shogun", "idle")
+    status("commander", "idle")
     return {"current_step": len(results)}
 
 
@@ -177,7 +177,7 @@ async def synthesize(state: dict[str, Any]) -> dict[str, Any]:
     custom = await get_playbook(state["playbook"]).synthesize(state)
     if custom is not None:
         return custom
-    status("kanji", "thinking")
+    status("quill", "thinking")
     out = await services().llm.complete(
         [
             ChatMessage.system(
@@ -187,10 +187,10 @@ async def synthesize(state: dict[str, Any]) -> dict[str, Any]:
             ChatMessage.user(f"Task: {state['task']}\n\nFindings:\n{findings_text(state)}"),
         ],
         purpose="summarise",
-        agent_id="kanji",
+        agent_id="quill",
     )
-    status("kanji", "idle")
+    status("quill", "idle")
     return {
         "answer": out.content,
-        "messages": [AIMessage(content=out.content[:1000], name="kanji")],
+        "messages": [AIMessage(content=out.content[:1000], name="quill")],
     }

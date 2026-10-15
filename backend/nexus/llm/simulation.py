@@ -49,7 +49,7 @@ def _review(req: LLMRequest) -> str:
     )
     out = []
     for lab in labels:
-        good = "ronin_b" in blocks.get(lab, "")
+        good = "volt" in blocks.get(lab, "")
         s = 9 if good else 6
         out.append(
             {
@@ -113,7 +113,7 @@ def simulation_llm() -> ScriptedLLM:
             "review": _review,
             "debate": json.dumps({"decision": "defend", "rationale": "kept"}),
             "judge": json.dumps(
-                {"reasoning": "Proposal by Ronin B was the most precise (simulation)."}
+                {"reasoning": "Proposal by Volt was the most precise (simulation)."}
             ),
             "grade": json.dumps({"addresses_question": True, "problems": ""}),
             "summarise": "The team found that ReAct interleaves reasoning with actions while Plan-and-Execute plans first (simulation).",

@@ -1,10 +1,7 @@
 import {
   Activity,
-  BookOpenCheck,
   Bot,
   Brain,
-  Cpu,
-  FlaskConical,
   GitFork,
   LayoutDashboard,
   Network,
@@ -12,7 +9,7 @@ import {
   Shield,
   Stamp,
   Swords,
-  Bell,
+  Zap,
   Workflow,
   type LucideIcon,
 } from "lucide-react";
@@ -20,8 +17,6 @@ import {
 export interface NavItem {
   href: string;
   label: string;
-  /** Short Japanese-flavoured subtitle shown under the label. */
-  kanji: string;
   icon: LucideIcon;
   /** Routes that need a mission id resolve it from the active mission. */
   needsMission?: boolean;
@@ -32,35 +27,28 @@ export interface NavGroup {
   items: NavItem[];
 }
 
+/** Main screens — always visible. */
 export const NAV: NavGroup[] = [
   {
-    title: "Missions",
+    title: "Command",
     items: [
-      { href: "/dojo", label: "Mission Control", kanji: "道場", icon: LayoutDashboard },
-      { href: "/graph", label: "Live Graph", kanji: "流れ", icon: Workflow, needsMission: true },
-      { href: "/arena", label: "Council Arena", kanji: "闘技", icon: Swords, needsMission: true },
-      { href: "/approvals", label: "Shogun's Seal", kanji: "印", icon: Stamp },
-      { href: "/timetravel", label: "Scroll of Time", kanji: "時", icon: GitFork, needsMission: true },
+      { href: "/missions", label: "Mission Control", icon: LayoutDashboard },
+      { href: "/graph", label: "Live Graph", icon: Workflow, needsMission: true },
+      { href: "/arena", label: "Arena", icon: Swords, needsMission: true },
+      { href: "/approvals", label: "Approvals", icon: Stamp },
+      { href: "/timetravel", label: "Time Travel", icon: GitFork, needsMission: true },
+      { href: "/chaos", label: "Chaos Lab", icon: Zap },
+      { href: "/agents", label: "Agents", icon: Bot },
+      { href: "/insights", label: "Insights", icon: Activity },
     ],
   },
   {
-    title: "Clan",
+    title: "More",
     items: [
-      { href: "/memory", label: "Memory Palace", kanji: "記憶", icon: Brain },
-      { href: "/barracks", label: "Barracks", kanji: "兵舎", icon: Bot },
-      { href: "/armory", label: "Armory", kanji: "武器", icon: Shield },
-      { href: "/shrine", label: "Chaos Shrine", kanji: "神社", icon: Bell },
-    ],
-  },
-  {
-    title: "Insight",
-    items: [
-      { href: "/observatory", label: "Observatory", kanji: "観測", icon: Activity },
-      { href: "/evals", label: "Proving Grounds", kanji: "試練", icon: FlaskConical },
-      { href: "/architecture", label: "Architecture", kanji: "設計", icon: Network },
-      { href: "/curriculum", label: "Curriculum Map", kanji: "学び", icon: BookOpenCheck },
-      { href: "/under-the-hood", label: "Under the Hood", kanji: "内部", icon: Cpu },
-      { href: "/settings", label: "Settings", kanji: "設定", icon: Settings },
+      { href: "/memory", label: "Memory", icon: Brain },
+      { href: "/tools", label: "Tools", icon: Shield },
+      { href: "/learn", label: "How it Works", icon: Network },
+      { href: "/settings", label: "Settings", icon: Settings },
     ],
   },
 ];

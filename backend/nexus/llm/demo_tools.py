@@ -45,21 +45,21 @@ def count_letters(word: str) -> str:
     return str(sum(ch.isalpha() for ch in str(word)))
 
 
-DOJO_FACTS = {
-    "shogun": "The Shogun is the supervisor robot that routes work to the clan.",
-    "dojo floor": "The Dojo Floor is the live animated view of a mission.",
-    "ronin": "Ronin A, B and C are tournament solvers with different fix strategies.",
-    "tetsu": "Tetsu the Smith writes code patches.",
-    "clan size": "The default clan has 14 robots.",
+NEXUS_FACTS = {
+    "commander": "The Commander is the supervisor robot that routes work to the squad.",
+    "command center floor": "The Mission Floor is the live animated view of a mission.",
+    "solvers": "Blaze, Volt and Frost are tournament solvers with different fix strategies.",
+    "forge": "Forge the engineer writes code patches.",
+    "squad size": "The default squad has 14 robots.",
 }
 
 
 def lookup_fact(topic: str) -> str:
     key = str(topic).lower().strip()
-    for k, v in DOJO_FACTS.items():
+    for k, v in NEXUS_FACTS.items():
         if k in key or key in k:
             return v
-    return f"No fact found for '{topic}'. Known topics: {', '.join(DOJO_FACTS)}"
+    return f"No fact found for '{topic}'. Known topics: {', '.join(NEXUS_FACTS)}"
 
 
 RAW_TOOLS = [
@@ -71,7 +71,10 @@ RAW_TOOLS = [
     ),
     RawTool("count_letters", "Count the letters in a word.", {"word": "the word"}, count_letters),
     RawTool(
-        "lookup_fact", "Look up a fact about the NEXUS dojo.", {"topic": "topic name"}, lookup_fact
+        "lookup_fact",
+        "Look up a fact about the NEXUS command center.",
+        {"topic": "topic name"},
+        lookup_fact,
     ),
 ]
 
@@ -96,7 +99,7 @@ TOOL_SPECS = [
     ),
     ToolSpec(
         name="lookup_fact",
-        description="Look up a fact about the NEXUS dojo.",
+        description="Look up a fact about the NEXUS command center.",
         parameters={
             "type": "object",
             "properties": {"topic": {"type": "string"}},
@@ -108,7 +111,7 @@ TOOL_SPECS = [
 TOOL_FNS = {"calculator": calculator, "count_letters": count_letters, "lookup_fact": lookup_fact}
 
 COMPARE_TASKS = [
-    "What is 17 * 23 plus the number of letters in the word 'samurai'?",
-    "How many robots are in the default clan, multiplied by 3?",
+    "What is 17 * 23 plus the number of letters in the word 'android'?",
+    "How many robots are in the default squad, multiplied by 3?",
     "What is (144 / 12) to the power of 2, minus 40?",
 ]

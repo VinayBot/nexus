@@ -1,6 +1,6 @@
 /**
  * Tiny WebAudio synth for UI sounds (muted unless the user turns sound on).
- * Nothing is downloaded: a soft taiko thump, a wind chime and a temple bell.
+ * Nothing is downloaded: a soft confirm thump, a chime and an alarm tone.
  */
 let ctx: AudioContext | null = null;
 
@@ -26,15 +26,15 @@ function tone(freq: number, dur: number, type: OscillatorType, gain: number, del
 }
 
 export const sounds = {
-  /** Hanko seal / approval. */
-  taiko: () => {
+  /** Approval stamp. */
+  confirm: () => {
     tone(80, 0.35, "sine", 0.5);
     tone(55, 0.5, "sine", 0.3, 0.02);
   },
   /** Something needs attention. */
   chime: () => [1568, 2093, 2637].forEach((f, i) => tone(f, 0.9, "sine", 0.06, i * 0.09)),
-  /** Chaos bell. */
-  bell: () => {
+  /** Chaos switch armed. */
+  alarm: () => {
     tone(392, 2.2, "triangle", 0.12);
     tone(784, 1.4, "sine", 0.05, 0.01);
   },

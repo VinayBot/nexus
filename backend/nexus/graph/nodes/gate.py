@@ -50,9 +50,9 @@ def after_gate(state: dict[str, Any]) -> str:
 
 
 async def dry_run(state: dict[str, Any]) -> dict[str, Any]:
-    status("mamoru", "testing")
+    status("aegis", "testing")
     result = await get_playbook(state["playbook"]).dry_run(state)
-    status("mamoru", "success" if result.ok else "failed")
+    status("aegis", "success" if result.ok else "failed")
     return {"execution": result.model_dump()}
 
 
@@ -60,7 +60,7 @@ async def approval(state: dict[str, Any]) -> dict[str, Any]:
     """Pause the graph until a human approves, rejects, edits or responds."""
     action = ProposedAction.model_validate(state["action"])
     risk = RiskAssessment.model_validate(state["risk"])
-    for agent in ("shogun", "hikyaku"):
+    for agent in ("commander", "swift"):
         status(agent, "waiting_approval")
     raw = interrupt(
         {
@@ -87,7 +87,7 @@ async def approval(state: dict[str, Any]) -> dict[str, Any]:
         update["outcome"] = "rejected"
     elif decision.decision == "respond":
         update["failure_notes"] = note(state, f"owner said: {decision.response or decision.reason}")
-    for agent in ("shogun", "hikyaku"):
+    for agent in ("commander", "swift"):
         status(agent, "idle")
     return update
 

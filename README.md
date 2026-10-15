@@ -1,13 +1,13 @@
-# NEXUS — a dynamic multi-agent dojo on local models
+# NEXUS — a dynamic multi-agent command center on local models
 
 NEXUS is a multi-agent orchestration system built with **LangGraph** on **local open
 models (Ollama)**. It has layered **automated retries**, **SQLite persistence** and
 **human approval gates**, and it runs entirely on a 16 GB MacBook. You give it a task;
-the Shogun (supervisor) routes it to a playbook, plans, delegates to a clan of agents,
+the Commander (supervisor) routes it to a playbook, plans, delegates to a squad of agents,
 runs evidence-grounded tournaments, asks a human before anything risky, and keeps every
 step rewindable.
 
-The UI is a "Sunset Samurai Dojo" with original robots, and every animation in Live
+The UI is a "Sunset Command" with original robots, and every animation in Live
 mode is driven by a real backend event.
 
 ![Mission Control](docs/images/mission-control.jpg)
@@ -40,11 +40,11 @@ Optional extras:
 
 | Playbook | What happens |
 |---|---|
-| **Self-Healing** (flagship) | Ring a chaos bell in the Chaos Shrine and a real bug goes into the live demo-service. Kuro the Watcher opens an incident. The clan investigates in parallel, reproduces the bug with a test, and three Ronin propose patches; each patch runs in its own sandbox. After anonymous review, a judge, a dry run and **your approval** (UI or signed e-mail link), the fix lands on a git branch with hot reload. It is **verified on live traffic**, rolled back automatically if errors return, and stored in the Fix Library. |
+| **Self-Healing** (flagship) | Arm a chaos switch in the Chaos Lab and a real bug goes into the live demo-service. Hawk the Watcher opens an incident. The squad investigates in parallel, reproduces the bug with a test, and three Challengers propose patches; each patch runs in its own sandbox. After anonymous review, a judge, a dry run and **your approval** (UI or signed e-mail link), the fix lands on a git branch with hot reload. It is **verified on live traffic**, rolled back automatically if errors return, and stored in the Fix Library. |
 | **Ticket Solver** | Reads a ticket (local tracker or GitHub Issues), writes an acceptance test that must fail first, runs a tournament, then attaches the test report, diff and logs to the ticket after approval. |
 | **Project Builder** | Small services only (≤ 8 files: a FastAPI CRUD API or a CLI). Builds from a spec and a template, writes files in dependency waves, repairs until the tests pass, and packages a zip. |
 | **Council Q&A** | Parallel answers, anonymous peer review, debate on disagreement, and a verdict with confidence and dissent. |
-| **Dynamic** | For anything else. The Shogun composes a team from the registry and you approve the team before it runs; a successful run can be saved as a YAML playbook. |
+| **Dynamic** | For anything else. The Commander composes a team from the registry and you approve the team before it runs; a successful run can be saved as a YAML playbook. |
 
 ## Verified on this machine (llama3.2:3b, lite profile)
 
@@ -55,7 +55,7 @@ Optional extras:
 - **Crash recovery:** a backend restart mid-mission resumed it from its SQLite checkpoint.
 - **Policy cap:** a mission was stopped at 124,576 tokens against the 120,000 cap, with a
   dead letter written and nothing changed.
-- **Raw SDK vs LangGraph agent** (Proving Grounds): both 2/3 correct, ~3.9 s and
+- **Raw SDK vs LangGraph agent** (Benchmarks): both 2/3 correct, ~3.9 s and
   ~1,600 tokens per task. Both missed `(144/12)**2 - 40`, which is a 3B reasoning limit,
   not a framework one.
 
@@ -75,20 +75,25 @@ do better, but I have not benchmarked it here.
 
 | | |
 |---|---|
-| ![Gate](docs/images/gate.jpg) Landing (R3F hero) | ![Arena](docs/images/arena.jpg) Council Arena |
-| ![Approvals](docs/images/approvals.jpg) Shogun's Seal | ![Time travel](docs/images/time-travel-hikari.jpg) Scroll of Time + Hikari |
-| ![Chaos Shrine](docs/images/chaos-shrine.jpg) Chaos Shrine | ![Memory](docs/images/memory-palace.jpg) Memory Palace |
-| ![Observatory](docs/images/observatory.jpg) Observatory | ![Replay](docs/images/replay.jpg) Replay mode |
+| ![Landing](docs/images/gate.jpg) Landing (R3F city hero) | ![Robots](docs/images/robots.jpg) Agents |
+| ![Arena](docs/images/arena.jpg) Arena | ![Approvals](docs/images/approvals.jpg) Approvals |
+| ![Time travel](docs/images/time-travel.jpg) Time Travel | ![Chaos Lab](docs/images/chaos-lab.jpg) Chaos Lab |
+| ![Memory](docs/images/memory.jpg) Memory | ![Insights](docs/images/insights.jpg) Insights |
 
-Also included: Live Graph with State Inspector, Barracks (agent registry), Armory (MCP),
-Proving Grounds, Architecture Explorer, Curriculum Map, Under the Hood, Settings,
-Hikari the guide, the ⌘K palette, and Presentation Mode.
+Also included: Live Graph with State Inspector, Tools (MCP), Insights tabs (Observatory,
+Benchmarks, Under the Hood), How it Works tabs (Architecture Explorer, Curriculum Map),
+Settings, Replay mode, Nova the guide, the ⌘K palette, and Presentation Mode.
+
+The robots are animated SVG mecha: hover thrusters, LED visors with expressions, a reactor
+core, and per-state effects (holo rings while thinking, sparks on tool calls, an RGB glitch
+while retrying, a hologram card while waiting for approval, a barrel-roll on success,
+power flicker on failure). Each effect is triggered by a real backend event.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  UI[Next.js dojo] <-- REST / WS / SSE --> API[FastAPI]
+  UI[Next.js command center] <-- REST / WS / SSE --> API[FastAPI]
   API --> R[Mission runner] --> G[LangGraph orchestrator]
   G --> GW[LLM gateway<br/>router · governor · retries · fallback] --> O[(Ollama)]
   G --> H[MCP hub] --> S1[workspace] & S2[sandbox] & S3[knowledge/Chroma] & S4[tickets] & S5[notify/Mailpit] & S6[observability] & S7[demo]
@@ -142,7 +147,7 @@ Playwright screenshots attached as ticket evidence for UI tickets · per-user au
 
 ```
 backend/   FastAPI + LangGraph (nexus/…), tests/
-frontend/  Next.js 15 dojo UI, e2e/
+frontend/  Next.js 15 command center UI, e2e/
 demo-service/  the orders service NEXUS watches and heals
 sandbox/   Dockerfile for the isolated test runner
 docs/      ARCHITECTURE, TOPIC_COVERAGE, DEMO_SCRIPT, PLAN, adr/

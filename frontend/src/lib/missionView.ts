@@ -4,6 +4,7 @@
  * Live mode (events arriving over the WebSocket) and Replay mode (persisted
  * events re-fed at any speed), so both look identical.
  */
+import { canonicalEvent } from "./agentIds";
 import type { EventOf, NexusEvent } from "./events";
 import { initialRobot, nextRobot, robotFor, type RobotState } from "./robotMachine";
 
@@ -144,7 +145,8 @@ function thought(
   };
 }
 
-export function reduceMission(view: MissionView, e: NexusEvent): MissionView {
+export function reduceMission(view: MissionView, raw: NexusEvent): MissionView {
+  const e = canonicalEvent(raw);
   if (e.seq <= view.lastSeq && view.missionId === e.mission_id) return view;
   let v: MissionView = { ...view, lastSeq: Math.max(view.lastSeq, e.seq), missionId: e.mission_id ?? view.missionId };
 

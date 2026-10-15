@@ -1,6 +1,6 @@
 """Approval-by-email: render and send the request, and serve the confirm pages.
 
-Flow: approval recorded → Hikyaku emails the owner (Mailpit in dev) with signed
+Flow: approval recorded → Swift emails the owner (Mailpit in dev) with signed
 Approve / Reject links → GET shows a confirmation page (safe for link scanners)
 → POST verifies the token, burns it, and resumes the graph via the approval
 service exactly as a UI decision would (channel = "email").
@@ -79,9 +79,9 @@ class EmailApprovals:
         )
         emit(
             "agent.status",
-            AgentStatus(agent_id="hikyaku", status="running"),
+            AgentStatus(agent_id="swift", status="running"),
             mission_id=row.mission_id,
-            agent_id="hikyaku",
+            agent_id="swift",
         )
         _, status = await self.mailer.send(
             self.settings.owner_email,
@@ -96,9 +96,9 @@ class EmailApprovals:
                 fresh.email_status = status
         emit(
             "agent.status",
-            AgentStatus(agent_id="hikyaku", status="idle"),
+            AgentStatus(agent_id="swift", status="idle"),
             mission_id=row.mission_id,
-            agent_id="hikyaku",
+            agent_id="swift",
         )
 
     # -- confirm pages ------------------------------------------------------------------
@@ -156,5 +156,5 @@ def page(title: str, body: str) -> str:
 <title>NEXUS · {html.escape(title)}</title></head>
 <body style="margin:0;min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at 50% 70%,#c8341f 0%,#3b0a0a 55%,#140909 100%);font-family:-apple-system,Segoe UI,Helvetica,sans-serif;color:#f6ebe0">
 <div style="max-width:480px;margin:24px;padding:28px;background:rgba(30,15,14,.88);border:1px solid #6b4a24;border-radius:16px">
-<div style="font-size:12px;letter-spacing:3px;color:#f7a440">NEXUS · SHOGUN'S SEAL</div>
+<div style="font-size:12px;letter-spacing:3px;color:#f7a440">NEXUS · APPROVAL REQUIRED</div>
 <h1 style="font-family:Georgia,serif;color:#ffd08a;font-size:24px">{html.escape(title)}</h1>{body}</div></body></html>"""

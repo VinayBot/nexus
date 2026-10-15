@@ -1,4 +1,4 @@
-"""Chaos Shrine: demo-service health, chaos switches (bells) and incidents."""
+"""Chaos Lab: demo-service health, chaos switches and incidents."""
 
 from __future__ import annotations
 

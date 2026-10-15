@@ -1,24 +1,19 @@
 import type { Metadata, Viewport } from "next";
-import { JetBrains_Mono, Shippori_Mincho_B1, Zen_Kaku_Gothic_New } from "next/font/google";
+import { Chakra_Petch, Inter, JetBrains_Mono } from "next/font/google";
 import { Providers } from "@/components/layout/Providers";
 import "./globals.css";
 
-const display = Shippori_Mincho_B1({
-  weight: ["500", "700", "800"],
+const display = Chakra_Petch({
+  weight: ["500", "600", "700"],
   subsets: ["latin"],
-  variable: "--font-shippori",
+  variable: "--font-display-face",
   display: "swap",
 });
-const sans = Zen_Kaku_Gothic_New({
-  weight: ["400", "500", "700"],
-  subsets: ["latin"],
-  variable: "--font-zen-kaku",
-  display: "swap",
-});
+const sans = Inter({ subsets: ["latin"], variable: "--font-body-face", display: "swap" });
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains", display: "swap" });
 
 export const metadata: Metadata = {
-  title: { default: "NEXUS — Multi-Agent Dojo", template: "%s · NEXUS" },
+  title: { default: "NEXUS — Multi-Agent Command Center", template: "%s · NEXUS" },
   description: "A dynamic multi-agent operating system running entirely on local models.",
 };
 

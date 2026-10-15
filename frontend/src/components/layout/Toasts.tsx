@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/cn";
 import { useLive, type TickerItem } from "@/stores/live";
 
-/** Global events as small unrolling scrolls; approval requests pulse with a red lantern. */
+/** Global events as sliding holo-cards; approval requests pulse with a red beacon. */
 export function Toasts() {
   const ticker = useLive((s) => s.ticker);
   const [shown, setShown] = useState<TickerItem[]>([]);
@@ -50,12 +50,12 @@ export function Toasts() {
                   href="/approvals"
                   className="mt-1 inline-block text-[11px] font-semibold text-[#8e1b17] underline"
                 >
-                  Open the seal →
+                  Review →
                 </Link>
               )}
               {t.missionId && t.type !== "interrupt.raised" && (
                 <Link
-                  href={`/dojo?m=${t.missionId}`}
+                  href={`/missions?m=${t.missionId}`}
                   className="mt-1 inline-block text-[11px] text-[#6b4a24] underline"
                 >
                   Open mission

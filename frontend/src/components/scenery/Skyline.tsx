@@ -1,40 +1,49 @@
 import { memo } from "react";
-import { hallPath, pagodaPath, pine } from "./geometry";
+import { cityRow, domePath, rowPath, windowsOf } from "./geometry";
 
 const W = 1600;
 const H = 900;
 
-/** Far → near silhouette layers. Pure SVG, no animation; parent may parallax it. */
+const FAR = cityRow(11, W, 120, 300, 180);
+const MID = cityRow(23, W, 90, 230, 240);
+const NEAR = cityRow(5, W, 50, 150, 300);
+const LIGHTS = windowsOf(MID, 800, 9, 0.1);
+
+/** Far → near city silhouette layers with a few twinkling windows. Parent may parallax it. */
 export const Skyline = memo(function Skyline({ className }: { className?: string }) {
-  const pines = [pine(120, 900, 330, 3), pine(260, 900, 220, 11), pine(1420, 900, 360, 7), pine(1530, 900, 240, 19)];
   return (
     <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMax slice" className={className} aria-hidden>
-      {/* distant mountain ridge */}
-      <path
-        d="M0,700 C180,640 300,610 430,650 C560,690 640,600 780,610 C930,620 1010,690 1160,660 C1300,630 1420,600 1600,650 L1600,900 L0,900 Z"
-        fill="var(--silhouette)"
-        opacity={0.35}
-      />
-      {/* mid layer: temple halls */}
-      <g fill="var(--silhouette)" opacity={0.62}>
-        <path d={hallPath(330, 760, 260)} />
-        <path d={hallPath(1240, 770, 300)} />
-        <path d="M0,760 L1600,770 L1600,900 L0,900 Z" />
+      {/* distant towers in the haze */}
+      <g fill="var(--silhouette)" opacity={0.32}>
+        <path d={rowPath(FAR, 740)} />
+        <path d="M0,740 L1600,740 L1600,900 L0,900 Z" />
       </g>
-      {/* near layer: pagodas, rooftops, pines */}
-      <g fill="var(--silhouette)">
-        <path d={pagodaPath(1050, 840, 150, 5)} />
-        <path d={pagodaPath(560, 860, 110, 3)} />
-        <path d={hallPath(800, 880, 420)} />
-        {pines.map((p, i) => (
-          <g key={i}>
-            <path d={p.trunk} />
-            {p.pads.map((e, j) => (
-              <ellipse key={j} cx={e.cx} cy={e.cy} rx={e.rx} ry={e.ry} />
-            ))}
-          </g>
+      {/* mid layer: towers, domes and lit windows */}
+      <g fill="var(--silhouette)" opacity={0.65}>
+        <path d={rowPath(MID, 800)} />
+        <path d={`${domePath(420, 800, 90)} ${domePath(1190, 800, 120)}`} />
+        <path d="M0,800 L1600,800 L1600,900 L0,900 Z" />
+      </g>
+      <g className="perf-hide">
+        {LIGHTS.map((l, i) => (
+          <rect
+            key={i}
+            x={l.x}
+            y={l.y}
+            width={4}
+            height={6}
+            fill={i % 5 === 0 ? "var(--cyan)" : "var(--sun-core)"}
+            opacity={0.55}
+            className="animate-glow"
+            style={{ animationDelay: `${l.d}s`, animationDuration: `${3 + (i % 4)}s` }}
+          />
         ))}
-        <path d="M0,850 Q400,830 800,860 T1600,845 L1600,900 L0,900 Z" />
+      </g>
+      {/* near layer: rooftops and a sky bridge */}
+      <g fill="var(--silhouette)">
+        <path d={rowPath(NEAR, 870)} />
+        <path d="M180,800 h260 v8 h-260 Z M1180,790 h240 v8 h-240 Z" />
+        <path d="M0,860 Q400,850 800,868 T1600,858 L1600,900 L0,900 Z" />
       </g>
     </svg>
   );

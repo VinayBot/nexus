@@ -2,14 +2,14 @@
 
 NEXUS is a multi-agent orchestration system built on **LangGraph** and **local open
 models (Ollama)**. It has automated retries, **SQLite persistence** and **human approval
-gates**. The UI is a "Sunset Samurai Dojo" that animates the system from real backend
+gates**. The UI is a "Sunset Command" that animates the system from real backend
 events only.
 
 ## 1. Request flow
 
 ```mermaid
 flowchart TD
-    U[User · Ticket · Live error<br/>Kuro the Watcher] --> I[Intake & guardrails<br/>injection flags · PII/secret redaction]
+    U[User · Ticket · Live error<br/>Hawk the Watcher] --> I[Intake & guardrails<br/>injection flags · PII/secret redaction]
     I --> RW[Query rewriter · fast model]
     RW --> RT{Mission router}
     RT -- vague --> CL[[Clarify: interrupt answer_question]] --> RW
@@ -63,7 +63,7 @@ checkpointed by `AsyncSqliteSaver`, which powers time travel and crash resume.
 | HITL | `nexus/hitl/*` | Approvals + audit, signed single-use email tokens, Mailpit mailer with outbox fallback, time travel |
 | Playbooks | `nexus/playbooks/*` | Self-Healing, Ticket Solver, Project Builder, Council Q&A, Dynamic, and saved YAML playbooks; the demo-service and the watcher |
 | Observability | `core/tracing.py`, `api/routes_insight.py` | OpenTelemetry spans (mission → node → llm/tool) exported to SQLite; summaries, logs, evals |
-| Guide | `nexus/guide/hikari.py` | RAG over the project docs plus a read-only live-state snapshot; rule-based UI actions |
+| Guide | `nexus/guide/nova.py` | RAG over the project docs plus a read-only live-state snapshot; rule-based UI actions |
 
 The frontend (`frontend/src`) mirrors this design. `lib/missionView.ts` is a pure reducer
 from events to a view model, and `lib/robotMachine.ts` maps events to robot animation
@@ -76,7 +76,7 @@ The ADRs in `docs/adr/` explain the choices in more detail.
 
 ### Evidence-grounded tournaments beat pure LLM debate
 
-The three Ronin share **one model**. They differ only in persona, strategy and
+The three Challengers share **one model**. They differ only in persona, strategy and
 temperature, so they also share that model's blind spots. A debate between three copies
 of the same misconception tends to converge on it confidently. NEXUS therefore makes
 **evidence** the largest term in the judge's score:
@@ -91,7 +91,7 @@ of the same misconception tends to converge on it confidently. NEXUS therefore m
   size 0.10, reputation 0.10. It reports confidence and the strongest dissent.
 - A failing winner, low confidence or high disagreement **escalates** to a human.
 
-Live example from the first real heal run (llama3.2:3b): Ronin C's first patch,
+Live example from the first real heal run (llama3.2:3b): Frost's first patch,
 `order.get("email") or ""`, was reviewed favourably but broke e-mail normalisation, and
 9/10 tests caught it. Round 2, informed by the failing-test feedback, produced
 `order.get('email') and order.get('email').strip().lower() or ''`. It passed all 10

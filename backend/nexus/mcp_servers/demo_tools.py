@@ -1,4 +1,4 @@
-"""MCP server ``demo`` — the calculator / letters / dojo-facts tools used by the
+"""MCP server ``demo`` — the calculator / letters / fact-lookup tools used by the
 "Under the Hood" comparison, so the LangGraph agent reaches them through real MCP
 while the raw-SDK agent calls the same Python functions directly."""
 
@@ -27,7 +27,7 @@ def build(deps: McpDeps) -> MCPServer:
     def count_letters(word: str) -> str:
         return demo_tools.count_letters(word)
 
-    @mcp.tool(description="Look up a fact about the NEXUS dojo.")
+    @mcp.tool(description="Look up a fact about the NEXUS command center.")
     def lookup_fact(topic: str) -> str:
         return demo_tools.lookup_fact(topic)
 

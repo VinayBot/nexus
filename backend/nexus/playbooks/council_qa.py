@@ -1,6 +1,6 @@
 """Council Q&A: hard questions answered by a council instead of one model call.
 
-Scouts research in parallel (knowledge base), three Ronin answer independently,
+Scouts research in parallel (knowledge base), three Challengers answer independently,
 answers are reviewed anonymously, solvers debate if reviewers disagree, and the
 Judge issues a verdict with confidence and dissent. A grader then checks the
 winning answer actually addresses the question (validation → fix loop).
@@ -85,7 +85,7 @@ class CouncilQA(Playbook):
             ],
             Grade,
             purpose="grade",
-            agent_id="mamoru",
+            agent_id="aegis",
             default=Grade(addresses_question=True, problems="(grader unavailable; accepted)"),
         )
         if grade.addresses_question:

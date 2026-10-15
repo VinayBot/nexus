@@ -9,7 +9,7 @@ import { Robot, RobotDefs } from "@/components/robots/Robot";
 import { SkyBackdrop } from "@/components/scenery/SkyBackdrop";
 import { FALLBACK_AVATARS } from "@/lib/agents";
 import { get } from "@/lib/api";
-import { initialRobot } from "@/lib/robotMachine";
+import { initialRobot, type Expression, type RobotMode } from "@/lib/robotMachine";
 import { useUi } from "@/stores/ui";
 
 const HeroScene = dynamic(() => import("@/components/landing/HeroScene"), { ssr: false });
@@ -21,19 +21,81 @@ const FEATURES = [
   },
   {
     t: "Evidence-grounded tournaments",
-    d: "Three Ronin propose fixes, each patch is proven in its own sandbox, an anonymous council judges.",
+    d: "Three Challengers propose fixes, each patch is proven in its own sandbox, an anonymous council judges.",
   },
-  { t: "Human seal", d: "Risky actions pause the graph. Approve in the app or from a signed, single-use email link." },
+  {
+    t: "Human approval",
+    d: "Risky actions pause the graph. Approve in the app or from a signed, single-use email link.",
+  },
   {
     t: "Rewind time",
     d: "Every super-step is a SQLite checkpoint: inspect, re-run, fork with a state patch, compare branches.",
   },
   {
     t: "Self-healing",
-    d: "Ring a chaos bell: Kuro spots the incident, the clan reproduces, fixes, verifies on live traffic, rolls back if needed.",
+    d: "Trigger an incident: Hawk spots it, the squad reproduces, fixes, verifies on live traffic, rolls back if needed.",
   },
   { t: "All on this laptop", d: "Local open models through Ollama; a Resource Governor keeps a 16 GB Mac responsive." },
 ];
+
+/** Decorative squad line-up on the landing page: each robot cycles through a few of its moves. */
+const SHOWCASE: { id: string; moves: [RobotMode, Expression][] }[] = [
+  {
+    id: "sage",
+    moves: [
+      ["thinking", "thinking"],
+      ["idle", "normal"],
+      ["handoff", "happy"],
+    ],
+  },
+  {
+    id: "blaze",
+    moves: [
+      ["debating", "focused"],
+      ["success", "happy"],
+      ["idle", "normal"],
+    ],
+  },
+  {
+    id: "aegis",
+    moves: [
+      ["testing", "focused"],
+      ["idle", "normal"],
+      ["waving", "happy"],
+    ],
+  },
+];
+
+function Showcase() {
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setTick((n) => n + 1), 2600);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <div className="pointer-events-none absolute bottom-[22%] left-[8%] z-10 hidden items-end gap-2 lg:flex">
+      {SHOWCASE.map((r, i) => {
+        const [mode, expression] = r.moves[(tick + i) % r.moves.length]!;
+        return (
+          <motion.div
+            key={r.id}
+            initial={{ y: 40, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.4 + i * 0.2, duration: 0.7 }}
+          >
+            <Robot
+              avatar={FALLBACK_AVATARS[r.id]!}
+              state={{ ...initialRobot(0), mode, expression }}
+              size={78}
+              showBubble={false}
+              label={r.id}
+            />
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function Gate() {
   const router = useRouter();
@@ -60,7 +122,7 @@ export default function Gate() {
   }, []);
   const enter = () => {
     setSlash(true);
-    setTimeout(() => router.push("/dojo"), 650);
+    setTimeout(() => router.push("/missions"), 650);
   };
   const missions = stats.data?.missions ?? [];
 
@@ -79,12 +141,13 @@ export default function Gate() {
             <HeroScene />
           </div>
         )}
+        {!perf && <Showcase />}
         <div className="pointer-events-none absolute right-[19%] bottom-[24%] z-10 hidden md:block">
           <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.8 }}>
             <Robot
-              avatar={FALLBACK_AVATARS.shogun!}
+              avatar={FALLBACK_AVATARS.commander!}
               state={{ ...initialRobot(0), mode, expression: mode === "waving" ? "happy" : "normal" }}
-              isShogun
+              isCommander
               size={110}
               showBubble={false}
             />
@@ -106,7 +169,7 @@ export default function Gate() {
               transition={{ delay: 0.6 }}
               className="mt-4 text-lg text-[#fff3e6] [text-shadow:0_1px_8px_rgba(20,9,9,0.9)]"
             >
-              A dynamic multi-agent dojo — local models, real tools, human seals, rewindable time.
+              A dynamic multi-agent command center — local models, real tools, human approvals, rewindable time.
             </motion.p>
             <motion.button
               type="button"
@@ -115,9 +178,9 @@ export default function Gate() {
               animate={{ opacity: 1 }}
               transition={{ delay: 1 }}
               whileHover={{ scale: 1.04 }}
-              className="mt-8 rounded-full border border-[var(--sun-gold)]/70 bg-black/40 px-9 py-3 font-display text-lg text-white shadow-[var(--glow-gold)] backdrop-blur"
+              className="btn-shine glow-pulse mt-8 rounded-full border border-[var(--sun-gold)]/70 bg-black/40 px-9 py-3 font-display text-lg tracking-wider text-white uppercase shadow-[var(--glow-gold)] backdrop-blur"
             >
-              Enter the Dojo
+              Enter Command Center
             </motion.button>
           </div>
         </div>
@@ -145,9 +208,9 @@ export default function Gate() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.08 }}
-              className="panel p-5"
+              className="panel card-lift p-5"
             >
-              <h3 className="font-display text-lg text-gold">{f.t}</h3>
+              <h3 className="font-display text-lg font-semibold text-gold">{f.t}</h3>
               <p className="mt-2 text-sm text-muted">{f.d}</p>
             </motion.div>
           ))}

@@ -1,4 +1,4 @@
-"""Observatory, Proving Grounds (evals), Under the Hood, Settings and Curriculum evidence."""
+"""Observatory, Benchmarks (evals), Under the Hood, Settings and Curriculum evidence."""
 
 from __future__ import annotations
 

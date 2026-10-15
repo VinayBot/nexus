@@ -35,7 +35,7 @@ async def _ask_planner(
     out: Plan = await services().llm.structured(
         [
             ChatMessage.system(
-                services().registry.get("sensei").system_prompt
+                services().registry.get("sage").system_prompt
                 + f"\nAllowed step roles: {', '.join(WORKER_ROLES)}.\n"
                 + playbook.planner_hint
                 + "\nUse short lowercase ids (e.g. 'logs', 'repro'). 1-4 steps."
@@ -44,7 +44,7 @@ async def _ask_planner(
         ],
         Plan,
         purpose="replan" if previous else "plan",
-        agent_id="sensei",
+        agent_id="sage",
         default=template,
     )
     return out
@@ -57,7 +57,7 @@ async def plan(state: dict[str, Any]) -> dict[str, Any]:
     if previous is None:
         prepared = await playbook.prepare(state)
         state = {**state, **prepared}
-    status("sensei", "thinking")
+    status("sage", "thinking")
     revision = (previous.revision + 1) if previous else 0
     rewritten = state.get("rewritten") or {}
     parts = [f"Task:\n{rewritten.get('clarified_task') or state['task']}"]
@@ -88,9 +88,9 @@ async def plan(state: dict[str, Any]) -> dict[str, Any]:
     emit(
         "plan.created",
         PlanCreated(steps=[s.model_dump() for s in out.steps], revision=revision, source=source),
-        agent_id="sensei",
+        agent_id="sage",
     )
-    status("sensei", "idle")
+    status("sage", "idle")
     update: dict[str, Any] = {
         **prepared,
         "plan": out.model_dump(mode="json"),
@@ -100,7 +100,7 @@ async def plan(state: dict[str, Any]) -> dict[str, Any]:
         "messages": [
             AIMessage(
                 content=f"Plan r{revision} ({source}): " + " → ".join(s.title for s in out.steps),
-                name="sensei",
+                name="sage",
             )
         ],
     }
@@ -118,7 +118,7 @@ def _reputation(agent: AgentSpec, stats: dict[str, dict[str, Any]], topic: str) 
 
 async def assemble(state: dict[str, Any]) -> dict[str, Any]:
     """Pick the best registry agent for each plan step (reputation-aware)."""
-    status("shogun", "assigning")
+    status("commander", "assigning")
     p = Plan.model_validate(state["plan"])
     registry = services().registry
     stats = await agent_stats()

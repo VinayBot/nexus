@@ -109,10 +109,10 @@ async def test_all_fallbacks_failing_raises_and_opens_circuit() -> None:
 
 async def test_streaming_emits_agent_token_events(events: list[Event]) -> None:
     llm = ScriptedLLM().on("solve", "thinking hard")
-    await gateway(llm).complete([ChatMessage.user("x")], purpose="solve", agent_id="tetsu")
+    await gateway(llm).complete([ChatMessage.user("x")], purpose="solve", agent_id="forge")
     tokens = [e for e in events if e.type == "agent.token"]
     assert tokens and tokens[0].payload == {
-        "agent_id": "tetsu",
+        "agent_id": "forge",
         "text": "thinking hard",
         "purpose": "solve",
     }

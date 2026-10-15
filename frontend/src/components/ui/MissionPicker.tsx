@@ -1,39 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { StatusDot } from "@/components/dojo/MissionList";
+import { StatusDot } from "@/components/mission/MissionList";
 import { useMissions } from "@/lib/queries";
 import { EmptyState } from "./EmptyState";
 import { PageHeader } from "./PageHeader";
 
 /** Landing for per-mission screens when no mission is in the URL. */
-export function MissionPicker({
-  title,
-  kanji,
-  target,
-  hint,
-}: {
-  title: string;
-  kanji: string;
-  target: string;
-  hint: string;
-}) {
+export function MissionPicker({ title, target, hint }: { title: string; target: string; hint: string }) {
   const { data, isLoading } = useMissions(30);
   return (
     <>
-      <PageHeader title={title} kanji={kanji} description={hint} />
+      <PageHeader title={title} description={hint} />
       {isLoading ? (
         <EmptyState title="Loading missions…" />
       ) : !data?.length ? (
         <EmptyState
           title="No missions yet"
           action={
-            <Link className="chip" href="/dojo">
+            <Link className="chip" href="/missions">
               Go to Mission Control
             </Link>
           }
         >
-          Begin a mission or ring a bell in the Chaos Shrine first.
+          Begin a mission or arm a switch in the Chaos Lab first.
         </EmptyState>
       ) : (
         <ul className="panel divide-y divide-border/40">

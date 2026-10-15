@@ -1,7 +1,7 @@
 # NEXUS — project memory
 
 Local-first multi-agent OS (Week-4 bootcamp project). LangGraph orchestration, Ollama models,
-SQLite persistence, MCP tools, human approval gates, a "Sunset Samurai Dojo" UI where every Live
+SQLite persistence, MCP tools, human approval gates, a "Sunset Command" UI where every Live
 animation is driven by a real backend event. Checklist: `docs/PLAN.md`; topic → code map:
 `docs/TOPIC_COVERAGE.md`; architecture: `docs/ARCHITECTURE.md`; decisions: `docs/adr/`.
 

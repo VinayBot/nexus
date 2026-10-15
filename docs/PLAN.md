@@ -31,7 +31,7 @@ Ticked = implemented, tested and committed. Phases follow spec §18.
 - [x] workspace-fs (path jail), sandbox-exec (Docker / labelled local fallback), knowledge, tickets, notify, observability
 - [x] MCP hub (in-process clients), per-agent allowlists, call log
 - [x] Sandbox runner image (Dockerfile; Docker path written, local labelled fallback verified — Colima was not running)
-- [x] Armory API
+- [x] Tools API
 
 ## Phase 4 — Tournament + HITL + safety
 - [x] Council/Tournament subgraph (parallel proposals, sandbox grounding, anonymised review, debate cycle, judge, escalation) — code-mode grounding exercised by the Self-Healing playbook in phase 5
@@ -50,15 +50,15 @@ Ticked = implemented, tested and committed. Phases follow spec §18.
 ## Phase 6 — Frontend core
 - [x] Event types generated from backend JSON Schema; WS client with resume
 - [x] Robot SVG system + event-driven animation state machine
-- [x] Mission Control (composer, Dojo Floor, Thought Stream, timeline)
+- [x] Mission Control (composer, Mission Floor, Thought Stream, timeline)
 - [x] Live Graph + State Inspector
-- [x] Approvals (hanko stamp), Scroll of Time
+- [x] Approvals (approval stamp stamp), Time Travel
 
 ## Phase 7 — Advanced screens
-- [x] Council Arena, Memory Palace, Barracks, Armory, Chaos Shrine, Observatory, Evals
+- [x] Arena, Memory, Agents, Tools, Chaos Lab, Insights (Observatory, Benchmarks)
 - [x] Architecture Explorer, Curriculum Map, Under the Hood, Settings, 3D landing hero
 
-## Phase 8 — Hikari guide + polish
+## Phase 8 — Nova guide + polish
 - [x] Guide chat (RAG + live-state tools + UI actions + tours)
 - [x] Command palette, Presentation Mode, sound, Replay speed control
 - [x] Reduced motion, performance mode, accessibility, empty/loading/error states

@@ -1,4 +1,4 @@
-"""Hikari guide chat: Server-Sent Events stream of actions, tokens and sources."""
+"""Nova guide chat: Server-Sent Events stream of actions, tokens and sources."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from sse_starlette.sse import EventSourceResponse
 
 from nexus.core.services import services
 from nexus.db.models import GuideMessageRow
-from nexus.guide.hikari import SUGGESTIONS, answer
+from nexus.guide.nova import SUGGESTIONS, answer
 
 router = APIRouter(prefix="/guide", tags=["guide"])
 

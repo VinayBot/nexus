@@ -1,6 +1,6 @@
 """Human-feedback memory: what the owner approved or rejected before.
 
-Fed to the Risk Scorer (and shown to the Shogun) so the system learns which
+Fed to the Risk Scorer (and shown to the Commander) so the system learns which
 kinds of action its owner trusts.
 """
 

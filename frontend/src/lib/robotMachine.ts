@@ -1,6 +1,6 @@
 /**
  * Robot animation state machine. Pure: (previous state, real backend event) → next
- * state. The Dojo Floor renders whatever this returns, so every animation is
+ * state. The Mission Floor renders whatever this returns, so every animation is
  * traceable to an event. Timed decay (e.g. success → idle) is applied by `settle`.
  */
 import type { NexusEvent } from "./events";
@@ -117,7 +117,7 @@ export function robotFor(e: NexusEvent): string | null {
     case "handoff":
       return e.payload.target;
     case "sandbox.test_result":
-      return e.payload.target === "fix_library" ? "mamoru" : e.payload.target;
+      return e.payload.target === "fix_library" ? "aegis" : e.payload.target;
     case "retry":
       return e.payload.agent_id ?? e.agent_id ?? null;
     case "tool.called":

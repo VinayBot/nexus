@@ -99,7 +99,7 @@ class DemoService:
     # -- git ----------------------------------------------------------------------------
     async def git(self, *args: str, check: bool = True) -> str:
         proc = await asyncio.create_subprocess_exec(
-            "git", "-c", "user.name=NEXUS", "-c", "user.email=nexus@dojo.local", *args,
+            "git", "-c", "user.name=NEXUS", "-c", "user.email=nexus@nexus.local", *args,
             cwd=self.live, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT,
         )  # fmt: skip
         out, _ = await proc.communicate()

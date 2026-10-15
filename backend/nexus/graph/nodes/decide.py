@@ -49,7 +49,7 @@ async def council(state: dict[str, Any]) -> dict[str, Any]:
                 strategy=seed.get("strategy", "memory"),
                 summary=seed.get("content", "")[:300],
             ),
-            agent_id="kagemi",
+            agent_id="echo",
         )
     out = await tournament.ainvoke(
         {
@@ -63,7 +63,7 @@ async def council(state: dict[str, Any]) -> dict[str, Any]:
             "feedback": feedback,
             "solvers": brief.solvers,
             "critic": brief.critic,
-            "judge_id": "hakari",
+            "judge_id": "arbiter",
             "proposals": dict(brief.seed_proposals),
             "scores": {},
             "labels": {},
@@ -112,7 +112,7 @@ async def council(state: dict[str, Any]) -> dict[str, Any]:
                     f"Verdict: {verdict.winner_label} wins (confidence {verdict.confidence:.2f}). "
                     f"{verdict.reasoning}"
                 ),
-                name="hakari",
+                name="arbiter",
             )
         ],
     }
@@ -126,9 +126,9 @@ def _diff_text(prop: dict[str, Any]) -> str:
 
 
 async def validate(state: dict[str, Any]) -> dict[str, Any]:
-    status("mamoru", "testing")
+    status("aegis", "testing")
     result = await get_playbook(state["playbook"]).validate(state)
-    status("mamoru", "success" if result.ok else "failed")
+    status("aegis", "success" if result.ok else "failed")
     update: dict[str, Any] = {"validation": result.model_dump()}
     if not result.ok:
         update["loops"] = {"fix": 1}

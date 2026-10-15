@@ -5,7 +5,7 @@ import { Bloom, EffectComposer } from "@react-three/postprocessing";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
-import { hallPath, pagodaPath, pine } from "@/components/scenery/geometry";
+import { cityRow, domePath, rowPath } from "@/components/scenery/geometry";
 
 /** SVG path data (1600×900 space, y down) → flat silhouette meshes. */
 function useSilhouette(d: string) {
@@ -90,26 +90,32 @@ function Embers({ count = 140 }: { count?: number }) {
   );
 }
 
-function Birds() {
-  const ref = useRef<THREE.Group>(null);
+/** Hover-cars streaking across the sky lanes, each with a glowing tail light. */
+function SkyTraffic() {
+  const lanes = useMemo(
+    () =>
+      Array.from({ length: 7 }, (_, i) => ({
+        y: 1.4 + (i % 4) * 0.9,
+        z: -8 - (i % 3) * 4,
+        speed: (1.6 + (i % 5) * 0.7) * (i % 2 ? 1 : -1),
+        offset: i * 7,
+        color: i % 3 === 0 ? new THREE.Color(0.4, 2.2, 2.4) : new THREE.Color(2.4, 0.9, 0.3),
+      })),
+    [],
+  );
+  const refs = useRef<(THREE.Mesh | null)[]>([]);
   useFrame(({ clock }) => {
-    if (!ref.current) return;
-    ref.current.position.x = ((clock.elapsedTime * 1.4) % 44) - 22;
-    ref.current.position.y = 3.6 + Math.sin(clock.elapsedTime * 0.7) * 0.3;
+    lanes.forEach((l, i) => {
+      const m = refs.current[i];
+      if (m) m.position.x = ((((clock.elapsedTime * l.speed + l.offset) % 48) + 48) % 48) - 24;
+    });
   });
-  const flock = [
-    [0, 0],
-    [-0.7, 0.3],
-    [-1.4, 0.55],
-    [0.7, 0.35],
-    [1.3, 0.6],
-  ];
   return (
-    <group ref={ref} position={[0, 3.6, -12]}>
-      {flock.map(([x, y], i) => (
-        <mesh key={i} position={[x!, y!, 0]}>
-          <planeGeometry args={[0.32, 0.05]} />
-          <meshBasicMaterial color="#140909" />
+    <group>
+      {lanes.map((l, i) => (
+        <mesh key={i} ref={(m) => void (refs.current[i] = m)} position={[0, l.y, l.z]}>
+          <planeGeometry args={[0.55, 0.05]} />
+          <meshBasicMaterial color={l.color} toneMapped={false} />
         </mesh>
       ))}
     </group>
@@ -128,17 +134,9 @@ function Parallax() {
 }
 
 export default function HeroScene() {
-  const pines = [pine(120, 900, 330, 3), pine(260, 900, 220, 11), pine(1420, 900, 360, 7), pine(1530, 900, 240, 19)];
-  const pinePath = pines
-    .map((p) =>
-      [
-        p.trunk,
-        ...p.pads.map(
-          (e) => `M${e.cx - e.rx},${e.cy} a${e.rx},${e.ry} 0 1,0 ${e.rx * 2},0 a${e.rx},${e.ry} 0 1,0 ${-e.rx * 2},0`,
-        ),
-      ].join(" "),
-    )
-    .join(" ");
+  const far = rowPath(cityRow(11, 1600, 120, 300, 180), 740);
+  const mid = `${rowPath(cityRow(23, 1600, 90, 230, 240), 800)} ${domePath(420, 800, 90)} ${domePath(1190, 800, 120)}`;
+  const near = rowPath(cityRow(5, 1600, 50, 150, 300), 870);
   return (
     <Canvas camera={{ position: [0, 0.2, 10], fov: 55 }} dpr={[1, 1.6]} gl={{ antialias: true, alpha: true }}>
       <Parallax />
@@ -149,18 +147,10 @@ export default function HeroScene() {
         color="#160504"
         opacity={0.9}
       />
-      <Layer
-        d={`${hallPath(330, 760, 260)} ${hallPath(1240, 770, 300)} M0,760 L1600,770 L1600,1100 L0,1100 Z`}
-        z={-14}
-        color="#0b0303"
-      />
-      <Layer
-        d={`${pagodaPath(1050, 840, 150, 5)} ${pagodaPath(560, 860, 110, 3)} ${hallPath(800, 880, 420)} M0,850 Q400,830 800,860 T1600,845 L1600,1100 L0,1100 Z`}
-        z={-6}
-        color="#050101"
-      />
-      <Layer d={pinePath} z={-3} color="#020000" />
-      <Birds />
+      <Layer d={`${far} M0,740 L1600,740 L1600,1100 L0,1100 Z`} z={-18} color="#100303" />
+      <Layer d={`${mid} M0,800 L1600,800 L1600,1100 L0,1100 Z`} z={-10} color="#080202" />
+      <Layer d={`${near} M0,860 Q400,850 800,868 T1600,858 L1600,1100 L0,1100 Z`} z={-4} color="#030000" />
+      <SkyTraffic />
       <Embers />
       <EffectComposer>
         <Bloom intensity={1.4} luminanceThreshold={0.6} mipmapBlur />

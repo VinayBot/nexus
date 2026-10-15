@@ -23,7 +23,7 @@ log = get_logger(__name__)
 
 class Mailer:
     def __init__(
-        self, db: Database, host: str, port: int, sender: str = "nexus@dojo.local"
+        self, db: Database, host: str, port: int, sender: str = "nexus@nexus.local"
     ) -> None:
         self.db = db
         self.host = host

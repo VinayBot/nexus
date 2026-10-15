@@ -1,7 +1,7 @@
 """Self-Healing preparation: everything that should be deterministic, not guessed.
 
 * copy the live (buggy) code into the mission workspace;
-* reproduce: run the existing tests in the sandbox, and ask Mamoru for a focused
+* reproduce: run the existing tests in the sandbox, and ask Aegis for a focused
   reproduction test — kept only if it really FAILS on the buggy code;
 * locate suspect files from traceback frames and from identifiers in the error
   text that are defined in the code;
@@ -79,7 +79,7 @@ async def reproduce(
     """Run existing tests, then try an LLM-written reproduction test."""
     hub = services().mcp
     existing = await hub.call(
-        "sandbox.run_tests", {"target": "tests"}, agent_id="mamoru", allowlist=None
+        "sandbox.run_tests", {"target": "tests"}, agent_id="aegis", allowlist=None
     )
     existing_data = existing.data or {}
     result: dict[str, Any] = {
@@ -93,7 +93,7 @@ async def reproduce(
     shown = "\n\n".join(f"File {p}:\n```python\n{c}\n```" for p, c in files.items())
     out = await services().llm.structured(
         [
-            ChatMessage.system(services().registry.get("mamoru").system_prompt),
+            ChatMessage.system(services().registry.get("aegis").system_prompt),
             ChatMessage.user(
                 "Write ONE small pytest module that reproduces this production failure. It must "
                 "FAIL on the current (buggy) code and PASS once the bug is fixed. Import from the "
@@ -103,7 +103,7 @@ async def reproduce(
         ],
         ReproTest,
         purpose="reproduce",
-        agent_id="mamoru",
+        agent_id="aegis",
         max_tokens=1500,
         default=ReproTest(reasoning="", test_code=""),
     )
@@ -119,7 +119,7 @@ async def reproduce(
         await hub.call(
             "workspace.write_file",
             {"path": name, "content": code + "\n"},
-            agent_id="mamoru",
+            agent_id="aegis",
             allowlist=None,
         )
         result.update(

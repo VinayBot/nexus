@@ -9,23 +9,23 @@ interface Particle {
   vy: number;
   r: number;
   life: number;
-  petal: boolean;
+  glint: boolean;
   spin: number;
 }
 
 interface EmbersProps {
   /** Hard cap; the canvas never holds more particles than this. */
   max?: number;
-  /** Fraction of particles drawn as cherry petals instead of embers. */
-  petals?: number;
+  /** Fraction of particles drawn as cyan data glints instead of embers. */
+  glints?: number;
   className?: string;
 }
 
 /**
- * Drifting embers and cherry petals on a single canvas. Pauses when the tab is
+ * Rising embers and cyan data glints on a single canvas. Pauses when the tab is
  * hidden or the element is offscreen, and renders nothing under reduced motion.
  */
-export function Embers({ max = 40, petals = 0.25, className }: EmbersProps) {
+export function Embers({ max = 40, glints = 0.25, className }: EmbersProps) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -56,7 +56,7 @@ export function Embers({ max = 40, petals = 0.25, className }: EmbersProps) {
       vy: -(0.15 + Math.random() * 0.45),
       r: 0.8 + Math.random() * 2.2,
       life: 1,
-      petal: Math.random() < petals,
+      glint: Math.random() < glints,
       spin: Math.random() * Math.PI,
     });
     const ps: Particle[] = Array.from({ length: max }, () => spawn(true));
@@ -73,19 +73,17 @@ export function Embers({ max = 40, petals = 0.25, className }: EmbersProps) {
       for (let i = 0; i < ps.length; i++) {
         const p = ps[i]!;
         p.x += p.vx + Math.sin(p.y * 0.01) * 0.15;
-        p.y += p.petal ? -p.vy * 0.6 : p.vy;
+        p.y += p.glint ? p.vy * 1.6 : p.vy;
         p.spin += 0.02;
         p.life -= 0.0012;
         if (p.y < -10 || p.y > h + 20 || p.life <= 0) ps[i] = spawn(false);
-        if (p.petal) {
-          ctx.save();
-          ctx.translate(p.x, p.y);
-          ctx.rotate(p.spin);
-          ctx.fillStyle = `rgba(255, 196, 206, ${0.55 * p.life})`;
-          ctx.beginPath();
-          ctx.ellipse(0, 0, p.r * 2.2, p.r * 1.1, 0, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
+        if (p.glint) {
+          // a small streak with a bright head, like data rising off the city
+          const a = 0.7 * p.life * (0.6 + 0.4 * Math.sin(p.spin * 6));
+          ctx.fillStyle = `rgba(79, 227, 240, ${a * 0.35})`;
+          ctx.fillRect(p.x - 0.5, p.y, 1, p.r * 7);
+          ctx.fillStyle = `rgba(190, 250, 255, ${a})`;
+          ctx.fillRect(p.x - 1, p.y - 1, 2, 2);
         } else {
           const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 3);
           g.addColorStop(0, `rgba(255, 208, 138, ${0.9 * p.life})`);
@@ -103,7 +101,7 @@ export function Embers({ max = 40, petals = 0.25, className }: EmbersProps) {
       ro.disconnect();
       io.disconnect();
     };
-  }, [max, petals]);
+  }, [max, glints]);
 
   return <canvas ref={ref} className={className} aria-hidden />;
 }

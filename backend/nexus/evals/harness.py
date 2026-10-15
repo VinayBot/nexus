@@ -1,4 +1,4 @@
-"""Proving Grounds: small benchmark suites run against the live local models.
+"""Benchmarks: small benchmark suites run against the live local models.
 
 * ``raw_vs_langgraph`` — arithmetic/lookup tasks with known answers through both agents.
 * ``council_vs_single`` — questions with reference keywords: one model call vs the council.
@@ -26,8 +26,8 @@ from nexus.memory.pruning import prune
 log = get_logger(__name__)
 
 AGENT_TASKS = [
-    ("What is 17 * 23 plus the number of letters in the word 'samurai'?", "398"),
-    ("How many robots are in the default clan, multiplied by 3?", "42"),
+    ("What is 17 * 23 plus the number of letters in the word 'android'?", "398"),
+    ("How many robots are in the default squad, multiplied by 3?", "42"),
     ("What is (144 / 12) to the power of 2, minus 40?", "104"),
 ]
 
@@ -121,9 +121,9 @@ async def _council_answer(question: str) -> str:
             "context": "",
             "code_context": None,
             "feedback": "",
-            "solvers": ["ronin_a", "ronin_b", "ronin_c"],
-            "critic": "kiri",
-            "judge_id": "hakari",
+            "solvers": ["blaze", "volt", "frost"],
+            "critic": "vex",
+            "judge_id": "arbiter",
             "proposals": {},
             "scores": {},
             "labels": {},

@@ -1,4 +1,4 @@
-"""Flagship integration test (offline): chaos → Kuro → incident → tournament with
+"""Flagship integration test (offline): chaos → Hawk → incident → tournament with
 sandbox-grounded patches → approval → fix branch + hot reload → live verification
 → Fix Library. Uses a real demo-service subprocess and real sandboxed pytest runs;
 only the LLM is scripted."""
@@ -37,7 +37,7 @@ def test_guest_order_without_email():
 
 
 def solve(req: LLMRequest) -> str:
-    line = 999 if req.agent_id == "ronin_c" else line_of(req, BUGGY)  # c: out-of-range edit
+    line = 999 if req.agent_id == "frost" else line_of(req, BUGGY)  # c: out-of-range edit
     return json.dumps(
         {
             "rationale": "Guest orders have email=None; .strip() on None raises AttributeError.",
@@ -167,9 +167,9 @@ async def test_self_healing_end_to_end(events: list[Event]) -> None:
         assert inputs["suspects"][0] == "app/orders.py"
         assert inputs["repro"]["repro_test"]  # LLM repro test kept: it failed on buggy code
         tests = {sid: p["tests"] for sid, p in state["proposals"].items()}
-        assert tests["ronin_a"]["ok"] and tests["ronin_b"]["ok"]
-        assert tests["ronin_c"]["applied"] is False  # grounding rejected the bad patch
-        assert state["verdict"]["winner"] in {"ronin_a", "ronin_b"}
+        assert tests["blaze"]["ok"] and tests["volt"]["ok"]
+        assert tests["frost"]["applied"] is False  # grounding rejected the bad patch
+        assert state["verdict"]["winner"] in {"blaze", "volt"}
         assert state["risk"]["route"] in {"dry_run", "approve"}
 
         [pending] = await svc.approvals.list(mission_id=mid)

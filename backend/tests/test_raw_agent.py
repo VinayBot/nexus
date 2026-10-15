@@ -46,7 +46,7 @@ async def test_raw_agent_thought_action_observation_final() -> None:
     events: list[tuple[str, dict[str, Any]]] = []
     transport = ollama_replies(
         '{"thought": "multiply first", "action": "calculator", "action_input": {"expression": "17*23"}}',
-        '{"thought": "count letters", "action": "count_letters", "action_input": {"word": "samurai"}}',
+        '{"thought": "count letters", "action": "count_letters", "action_input": {"word": "warrior"}}',
         'Here you go: {"thought": "add them", "final_answer": "398"}',
     )
     result = await agent(transport, on_event=lambda k, d: events.append((k, d))).run("task")
@@ -101,5 +101,5 @@ async def test_raw_agent_against_real_ollama() -> None:
     settings = get_settings()
     result = await RawReActAgent(
         base_url="http://127.0.0.1:11434", model=settings.models.main, tools=RAW_TOOLS
-    ).run("What is 17 * 23 plus the number of letters in the word 'samurai'?")
+    ).run("What is 17 * 23 plus the number of letters in the word 'android'?")
     assert result.answer is not None and "398" in result.answer

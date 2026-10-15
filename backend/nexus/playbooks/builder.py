@@ -7,7 +7,7 @@ because 3–8B local models cannot reliably build more. Steps:
    spec (kind, entity, fields, constraints, file list).
 2. *Resources*: the matching template from ``playbooks/templates`` is gathered.
 3. *Build*: one plan step per file; files without dependencies are written in
-   parallel by Tetsu (code) and Mamoru (tests), each adapting the template.
+   parallel by Forge (code) and Aegis (tests), each adapting the template.
 4. *Test*: the Guardian's tests run in the sandbox; failures are repaired file by
    file until green or the fix limit is reached.
 5. *Deliver* (after approval): a zip of the project, downloadable from the report.
@@ -115,7 +115,7 @@ class ProjectBuilder(Playbook):
             ProjectSpec,
             purpose="plan:spec",
             role="main",
-            agent_id="kanji",
+            agent_id="quill",
             default=ProjectSpec(
                 kind="fastapi_crud",
                 name="items-api",
@@ -136,7 +136,7 @@ class ProjectBuilder(Playbook):
                     {"id": p, "collection": "templates", "title": p, "score": 1.0} for p in template
                 ],
             ),
-            agent_id="kagemi",
+            agent_id="echo",
         )
         ws = svc.workspaces.ensure(state["mission_id"])
         for pkg in ("app", "tests"):
@@ -249,7 +249,7 @@ class ProjectBuilder(Playbook):
             shown = "\n\n".join(f"File {p}:\n```python\n{c}\n```" for p, c in files.items())
             fix = await svc.llm.structured(
                 [
-                    ChatMessage.system(svc.registry.get("tetsu").system_prompt),
+                    ChatMessage.system(svc.registry.get("forge").system_prompt),
                     ChatMessage.user(
                         f"The project's tests fail:\n{output}\n\n{shown}\n\nFind the file that "
                         "causes the failure (often not the test file) and return its corrected "
@@ -259,14 +259,14 @@ class ProjectBuilder(Playbook):
                 Repair,
                 purpose="code",
                 max_tokens=2000,
-                agent_id="tetsu",
+                agent_id="forge",
                 default=Repair(path=fallback, content=files.get(fallback, "")),
             )
             path = fix.path if fix.path in files else fallback
             await svc.mcp.call(
                 "workspace.write_file",
                 {"path": path, "content": fix.content},
-                agent_id="tetsu",
+                agent_id="forge",
                 allowlist=None,
             )
             return {"answer": f"Repaired {path} after failing tests."}

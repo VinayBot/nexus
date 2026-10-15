@@ -86,9 +86,7 @@ async def test_summarise_folds_old_turns_into_pinned_summary(events: list[Event]
         seen.append(len(old))
         return "did turns 0..n"
 
-    res = await prune(
-        convo(10), 300, agent_id="kagemi", strategy="summarise", summariser=summariser
-    )
+    res = await prune(convo(10), 300, agent_id="echo", strategy="summarise", summariser=summariser)
     assert res.summary == "did turns 0..n"
     assert any(m.content.startswith(SUMMARY_PREFIX) and m.pinned for m in res.messages)
     assert res.after < res.before and seen
@@ -198,13 +196,13 @@ def test_judge_prefers_tested_patch_and_escalates_failing_winner() -> None:
             "tests": {"passed": 2, "failed": 3, "ok": False},
         },
     }
-    scores = {"a": {"reviews": [review("kiri", 6)]}, "b": {"reviews": [review("kiri", 9)]}}
+    scores = {"a": {"reviews": [review("vex", 6)]}, "b": {"reviews": [review("vex", 9)]}}
     verdict, breakdown = judge(
         mode="code",
         proposals=proposals,
         scores=scores,
         labels={"A": "a", "B": "b"},
-        critic_id="kiri",
+        critic_id="vex",
         reputation={},
         rounds=1,
     )
@@ -220,7 +218,7 @@ def test_judge_prefers_tested_patch_and_escalates_failing_winner() -> None:
         proposals=failing,
         scores=scores,
         labels={"A": "a", "B": "b"},
-        critic_id="kiri",
+        critic_id="vex",
         reputation={},
         rounds=1,
     )
@@ -236,9 +234,9 @@ async def test_concurrent_stat_bumps_for_a_new_agent_do_not_collide(tmp_path) ->
 
     db = Database(tmp_path / "x.db")
     await db.init()
-    await asyncio.gather(*(repo.bump_agent_stats(db, "kagemi", steps=1) for _ in range(8)))
+    await asyncio.gather(*(repo.bump_agent_stats(db, "echo", steps=1) for _ in range(8)))
     async with db.session() as s:
-        row = await s.get(AgentStatRow, "kagemi")
+        row = await s.get(AgentStatRow, "echo")
     assert row is not None
     assert row.steps == 8
     await db.close()

@@ -232,7 +232,7 @@ class McpHub:
         except Exception as exc:  # logging must never fail a tool call
             log.warning("mcp.log_failed", error=str(exc))
 
-    # -- Armory -----------------------------------------------------------------------------
+    # -- Tools -----------------------------------------------------------------------------
     async def health(self) -> dict[str, dict[str, Any]]:
         out: dict[str, dict[str, Any]] = {}
         for name, client in self.clients.items():

@@ -3,7 +3,7 @@
 import { Command } from "cmdk";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useHikari } from "@/components/guide/Hikari";
+import { useNova } from "@/components/guide/Nova";
 import { post } from "@/lib/api";
 import { ALL_NAV_ITEMS } from "@/lib/nav";
 import { useMissions } from "@/lib/queries";
@@ -11,7 +11,7 @@ import { useActiveMission } from "@/stores/missions";
 import { useTour } from "@/stores/tour";
 import { useUi } from "@/stores/ui";
 
-const BELLS = [
+const CHAOS_SWITCHES = [
   ["null_handling", "Null-handling bug"],
   ["off_by_one", "Off-by-one bug"],
   ["bad_config", "Bad config value"],
@@ -19,7 +19,7 @@ const BELLS = [
   ["schema_mismatch", "Schema mismatch"],
 ] as const;
 
-/** ⌘K: navigate, start missions, ring chaos bells, jump to checkpoints, ask Hikari. */
+/** ⌘K: navigate, start missions, arm chaos switches, jump to checkpoints, ask Nova. */
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -29,7 +29,7 @@ export function CommandPalette() {
   const setActive = useActiveMission((s) => s.setActive);
   const tour = useTour();
   const ui = useUi();
-  const ask = useHikari((s) => s.ask);
+  const ask = useNova((s) => s.ask);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -65,13 +65,13 @@ export function CommandPalette() {
           autoFocus
           value={query}
           onValueChange={setQuery}
-          placeholder="Type a command or ask Hikari…"
+          placeholder="Type a command or ask Nova…"
           className="w-full border-b border-border/60 bg-transparent px-4 py-3 text-sm outline-none"
         />
         <Command.List className="max-h-[55vh] overflow-y-auto p-2 text-muted">
           <Command.Empty>
             <button type="button" className={item} onClick={go(() => ask(query))}>
-              Ask Hikari: “{query}”
+              Ask Nova: “{query}”
             </button>
           </Command.Empty>
           <Command.Group
@@ -100,7 +100,7 @@ export function CommandPalette() {
                   playbook: "council_qa",
                 });
                 setActive(m.id);
-                router.push(`/dojo?m=${m.id}`);
+                router.push(`/missions?m=${m.id}`);
               })}
             >
               ▶ Start a demo Council Q&A mission
@@ -112,7 +112,7 @@ export function CommandPalette() {
                 value={`open ${m.title}`}
                 onSelect={go(() => {
                   setActive(m.id);
-                  router.push(`/dojo?m=${m.id}`);
+                  router.push(`/missions?m=${m.id}`);
                 })}
               >
                 Open: {m.title.slice(0, 60)} <span className="ml-auto text-[10px] text-faint">{m.status}</span>
@@ -128,13 +128,13 @@ export function CommandPalette() {
             heading="Chaos"
             className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-faint [&_[cmdk-group-heading]]:uppercase"
           >
-            {BELLS.map(([id, label]) => (
+            {CHAOS_SWITCHES.map(([id, label]) => (
               <Command.Item
                 key={id}
                 className={item}
-                onSelect={go(() => void post(`/chaos/${id}`, { enabled: true }).then(() => router.push("/shrine")))}
+                onSelect={go(() => void post(`/chaos/${id}`, { enabled: true }).then(() => router.push("/chaos")))}
               >
-                🔔 Ring the {label} bell
+                ⚡ Inject: {label}
               </Command.Item>
             ))}
             <Command.Item className={item} onSelect={go(() => void post("/chaos/reset"))}>
@@ -142,7 +142,7 @@ export function CommandPalette() {
             </Command.Item>
           </Command.Group>
           <Command.Group
-            heading="Dojo"
+            heading="Command Center"
             className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-faint [&_[cmdk-group-heading]]:uppercase"
           >
             <Command.Item className={item} onSelect={go(() => tour.start())}>

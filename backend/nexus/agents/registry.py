@@ -16,8 +16,12 @@ SPECS_DIR = Path(__file__).parent / "specs"
 
 
 class Avatar(BaseModel):
-    color: str = "#4FE3F0"
-    headband: str = "#C8341F"
+    color: str = Field(
+        default="#E8ECF2", description="Shell tone (light ceramic or dark gunmetal)."
+    )
+    accent: str = Field(
+        default="#4FE3F0", description="Role colour for lights, stripes and visor glow."
+    )
     prop: str = "none"
     size: Literal["small", "normal", "large"] = "normal"
 

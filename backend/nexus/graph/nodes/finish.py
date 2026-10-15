@@ -21,9 +21,9 @@ log = get_logger(__name__)
 
 
 async def execute(state: dict[str, Any]) -> dict[str, Any]:
-    status("tetsu", "using_tool")
+    status("forge", "using_tool")
     result = await get_playbook(state["playbook"]).execute(state)
-    status("tetsu", "success" if result.ok else "failed")
+    status("forge", "success" if result.ok else "failed")
     return {"execution": result.model_dump()}
 
 
@@ -34,9 +34,9 @@ def after_execute(state: dict[str, Any]) -> str:
 
 
 async def verify(state: dict[str, Any]) -> dict[str, Any]:
-    status("kuro", "watching")
+    status("hawk", "watching")
     result = await get_playbook(state["playbook"]).verify(state)
-    status("kuro", "success" if result.ok else "failed")
+    status("hawk", "success" if result.ok else "failed")
     return {"verification": result.model_dump()}
 
 
@@ -47,7 +47,7 @@ def after_verify(state: dict[str, Any]) -> str:
 
 
 async def rollback(state: dict[str, Any]) -> dict[str, Any]:
-    status("tetsu", "retrying")
+    status("forge", "retrying")
     result = await get_playbook(state["playbook"]).rollback(state)
     reason = (state.get("verification") or {}).get("summary") or (state.get("execution") or {}).get(
         "summary", "execution failed"
@@ -116,7 +116,7 @@ async def memory_write(state: dict[str, Any]) -> dict[str, Any]:
 
 
 async def report(state: dict[str, Any]) -> dict[str, Any]:
-    status("kanji", "writing")
+    status("quill", "writing")
     outcome = _outcome(state)
     budget = state.get("token_budget") or {}
     verdict = state.get("verdict") or {}
@@ -159,10 +159,10 @@ async def report(state: dict[str, Any]) -> dict[str, Any]:
         ),
     )
     extras = get_playbook(state["playbook"]).report_extras(state)
-    status("kanji", "idle")
-    status("shogun", "success" if outcome == "success" else "idle")
+    status("quill", "idle")
+    status("commander", "success" if outcome == "success" else "idle")
     return {
         "outcome": outcome,
         "report": {**rep.model_dump(), **extras},
-        "messages": [AIMessage(content=f"Report: {summary}", name="kanji")],
+        "messages": [AIMessage(content=f"Report: {summary}", name="quill")],
     }

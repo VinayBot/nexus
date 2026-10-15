@@ -19,7 +19,7 @@ router = APIRouter(prefix="/missions", tags=["missions"])
 class MissionCreate(BaseModel):
     task: str = Field(min_length=3, max_length=8000)
     title: str | None = None
-    playbook: str | None = Field(default=None, description="Omit to let the Shogun decide.")
+    playbook: str | None = Field(default=None, description="Omit to let the Commander decide.")
     inputs: dict[str, Any] = Field(default_factory=dict)
     limits: dict[str, int] | None = None
 
