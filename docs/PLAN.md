@@ -11,12 +11,12 @@ Ticked = implemented, tested and committed. Phases follow spec §18.
 - [x] Design tokens, fonts, themed shell (nav, top bar, procedural sunset skyline, embers)
 
 ## Phase 1 — LLM layer & raw SDK agent
-- [ ] `LLMProvider` interface + Ollama provider (streaming, timeouts) + scripted fake
-- [ ] Model router (role → model, escalation after 2 validation failures, routing events)
-- [ ] Resource Governor (adaptive semaphore, psutil, loaded models, tokens/sec, metrics API)
-- [ ] Token counting + budgets
-- [ ] Reliability: tenacity retries, JSON repair, validation re-prompt, circuit breaker, fallback chain
-- [ ] Raw SDK ReAct agent (httpx only) + tests
+- [x] `LLMProvider` interface + Ollama provider (streaming, timeouts) + scripted fake
+- [x] Model router (role → model, escalation after 2 validation failures, routing events)
+- [x] Resource Governor (adaptive semaphore, psutil, loaded models, tokens/sec, metrics API)
+- [x] Token counting + budgets
+- [x] Reliability: tenacity retries, JSON repair, validation re-prompt, circuit breaker, fallback chain
+- [x] Raw SDK ReAct agent (httpx only) + tests
 
 ## Phase 2 — LangGraph core, persistence, events
 - [ ] `MissionState` + documented, tested reducers

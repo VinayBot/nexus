@@ -69,7 +69,27 @@ class Settings(BaseSettings):
     model_embed: str | None = None
     num_ctx: int = Field(default=8192, ge=1024)
 
+    model_fallback: str | None = Field(
+        default=None, description="Alternate model tried after the primary fails."
+    )
     llm_max_concurrency: int = Field(default=2, ge=1, le=8)
+    llm_timeout_s: float = 180.0
+    governor_elevated_below_gb: float = 2.0
+    governor_critical_below_gb: float = 1.0
+
+    public_url: str = "http://127.0.0.1:8000"
+    ui_url: str = "http://localhost:3000"
+    secret_key: str = "dev-only-change-me"
+    smtp_host: str = "127.0.0.1"
+    smtp_port: int = 1025
+    owner_email: str = "owner@nexus.local"
+    sandbox_backend: Literal["docker", "local"] = "docker"
+    sandbox_image: str = "nexus-sandbox:latest"
+    github_token: str | None = None
+    demo_service_port: int = 8100
+    mission_token_limit: int = 120_000
+    #: Seconds the verifier watches demo-service health after a fix.
+    verify_window_s: float = 12.0
 
     @property
     def models(self) -> ModelSet:
@@ -82,8 +102,26 @@ class Settings(BaseSettings):
         )
 
     @property
+    def fallback_model(self) -> str | None:
+        """Explicit alternate, else the fast model when it differs from main."""
+        m = self.models
+        return self.model_fallback or (m.fast if m.fast != m.main else None)
+
+    @property
     def sqlite_path(self) -> Path:
         return self.data_dir / "nexus.db"
+
+    @property
+    def checkpoints_path(self) -> Path:
+        return self.data_dir / "checkpoints.db"
+
+    @property
+    def chroma_path(self) -> Path:
+        return self.data_dir / "chroma"
+
+    @property
+    def workspaces_path(self) -> Path:
+        return self.data_dir / "workspaces"
 
 
 @lru_cache

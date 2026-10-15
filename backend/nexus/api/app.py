@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -9,9 +11,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from nexus import __version__
-from nexus.api import routes_system
+from nexus.api import routes_governor, routes_system
 from nexus.core.config import get_settings
 from nexus.core.logging import configure_logging, get_logger
+from nexus.core.services import build_services, set_services
 
 log = get_logger(__name__)
 
@@ -20,11 +23,19 @@ log = get_logger(__name__)
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     settings.data_dir.mkdir(parents=True, exist_ok=True)
+    svc = getattr(app.state, "services", None) or build_services(settings)
+    set_services(svc)
     log.info(
         "nexus.start", profile=settings.model_profile.value, models=settings.models.model_dump()
     )
-    yield
-    log.info("nexus.stop")
+    monitor = asyncio.create_task(svc.governor.run(), name="governor")
+    try:
+        yield
+    finally:
+        monitor.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await monitor
+        log.info("nexus.stop")
 
 
 def create_app() -> FastAPI:
@@ -42,7 +53,8 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    app.include_router(routes_system.router, prefix="/api/v1")
+    for module in (routes_system, routes_governor):
+        app.include_router(module.router, prefix="/api/v1")
     return app
 
 
