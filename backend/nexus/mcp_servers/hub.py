@@ -32,7 +32,15 @@ from nexus.core.logging import get_logger
 from nexus.core.workspace import WorkspaceManager
 from nexus.db.models import ToolCallRow
 from nexus.llm.types import ToolSpec
-from nexus.mcp_servers import knowledge, notify, observability, sandbox_exec, tickets, workspace_fs
+from nexus.mcp_servers import (
+    demo_tools,
+    knowledge,
+    notify,
+    observability,
+    sandbox_exec,
+    tickets,
+    workspace_fs,
+)
 from nexus.mcp_servers.deps import McpDeps
 from nexus.mcp_servers.sandbox_runner import SandboxRunner
 
@@ -45,6 +53,7 @@ BUILDERS = {
     "tickets": tickets.build,
     "notify": notify.build,
     "observability": observability.build,
+    "demo": demo_tools.build,
 }
 #: Servers agents may never call directly (policy: no email without approval).
 SYSTEM_ONLY = {"notify"}

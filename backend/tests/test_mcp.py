@@ -48,7 +48,7 @@ def hub(svc: Services) -> McpHub:
     return h
 
 
-async def test_six_servers_and_hidden_params() -> None:
+async def test_all_servers_and_hidden_params() -> None:
     async with mcp_runtime() as svc:
         h = hub(svc)
         assert set(h.clients) == {
@@ -58,6 +58,7 @@ async def test_six_servers_and_hidden_params() -> None:
             "tickets",
             "notify",
             "observability",
+            "demo",
         }
         specs = {s.name: s for s in h.specs(None)}
         assert "workspace.read_file" in specs

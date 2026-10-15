@@ -25,6 +25,7 @@ from nexus.core.events import agent_context, emit, mission_context
 from nexus.core.governor import ResourceGovernor
 from nexus.core.logging import get_logger
 from nexus.core.meter import meter
+from nexus.core.tracing import span
 from nexus.llm.provider import LLMProvider, ProviderError
 from nexus.llm.router import ModelRouter
 from nexus.llm.tokens import calibration, estimate_messages
@@ -115,12 +116,17 @@ class LLMGateway:
                     return await self.provider.chat(request, on_token=streamer)
 
         try:
-            result = await with_retries(
-                attempt,
-                key=f"model:{request.model}",
-                agent_id=request.agent_id,
-                initial_s=self.retry_initial_s,
-            )
+            with span(
+                f"llm:{request.purpose}", "llm", model=request.model, agent=request.agent_id
+            ) as s:
+                result = await with_retries(
+                    attempt,
+                    key=f"model:{request.model}",
+                    agent_id=request.agent_id,
+                    initial_s=self.retry_initial_s,
+                )
+                s.set_attribute("nexus.prompt_tokens", result.prompt_tokens)
+                s.set_attribute("nexus.completion_tokens", result.completion_tokens)
         except Exception:
             breaker.on_failure()
             raise

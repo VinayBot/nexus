@@ -19,7 +19,8 @@ export type RobotMode =
   | "success"
   | "failed"
   | "sleeping"
-  | "alarm";
+  | "alarm"
+  | "waving";
 
 export type Expression = "normal" | "happy" | "focused" | "thinking" | "confused" | "error" | "sleepy";
 
@@ -61,6 +62,7 @@ const EXPRESSION: Record<RobotMode, Expression> = {
   failed: "error",
   sleeping: "sleepy",
   alarm: "error",
+  waving: "happy",
 };
 
 /** Map backend `agent.status` strings onto modes. */

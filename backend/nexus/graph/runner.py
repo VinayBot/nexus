@@ -33,6 +33,7 @@ from nexus.core.event_types import (
 from nexus.core.events import MissionContext, bus, emit, mission_context
 from nexus.core.logging import get_logger
 from nexus.core.meter import meter
+from nexus.core.tracing import span
 from nexus.db import repo
 from nexus.db.engine import Database
 from nexus.db.models import MissionRow
@@ -151,6 +152,8 @@ class MissionRunner:
         await repo.update_mission(self.db, mission_id, status="running", error=None)
         emit("mission.started", MissionStarted(resumed=resumed))
         config = self.config(mission_id, checkpoint_id)
+        root = span("mission", "mission", resumed=resumed)
+        root.__enter__()
         try:
             async for chunk in self.graph.astream(payload, config, stream_mode="checkpoints"):
                 cfg = (chunk.get("config") or {}).get("configurable", {})
@@ -181,6 +184,7 @@ class MissionRunner:
             await repo.update_mission(self.db, mission_id, status="failed", error=err)
             emit("mission.failed", MissionFailed(error=err[:1000], node=node))
         finally:
+            root.__exit__(None, None, None)
             usage = meter.usage(mission_id)
             await repo.update_mission(self.db, mission_id, tokens=usage.total)
             await bus.flush()

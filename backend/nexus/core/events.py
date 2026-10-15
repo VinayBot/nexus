@@ -86,6 +86,10 @@ class EventBus:
         """Synchronous in-process listener (e.g. stats aggregators)."""
         self._listeners.append(fn)
 
+    def remove_listener(self, fn: Callable[[Event], None]) -> None:
+        if fn in self._listeners:
+            self._listeners.remove(fn)
+
     # -- emit ---------------------------------------------------------------------
     def emit(
         self,

@@ -3,8 +3,30 @@
 from __future__ import annotations
 
 import logging
+import time
+from collections import deque
+from typing import Any
 
 import structlog
+
+#: Recent log records for the Observatory's logs explorer.
+LOG_BUFFER: deque[dict[str, Any]] = deque(maxlen=1500)
+
+
+def _buffer(_: Any, method: str, event_dict: Any) -> Any:
+    record = {
+        "ts": time.time(),
+        "level": event_dict.get("level", method),
+        "logger": event_dict.get("logger", ""),
+        "event": str(event_dict.get("event", "")),
+    }
+    record["fields"] = {
+        k: str(v)[:300]
+        for k, v in event_dict.items()
+        if k not in {"event", "level", "logger", "timestamp", "_record", "_from_structlog"}
+    }
+    LOG_BUFFER.append(record)
+    return event_dict
 
 
 def configure_logging(level: str = "INFO", *, json: bool = False) -> None:
@@ -14,6 +36,7 @@ def configure_logging(level: str = "INFO", *, json: bool = False) -> None:
         structlog.stdlib.add_log_level,
         structlog.stdlib.add_logger_name,
         structlog.processors.TimeStamper(fmt="iso", utc=True),
+        _buffer,
     ]
     renderer: structlog.types.Processor = (
         structlog.processors.JSONRenderer() if json else structlog.dev.ConsoleRenderer()

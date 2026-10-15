@@ -19,6 +19,7 @@ from typing import Any, Protocol
 
 from nexus.core.event_types import GuardrailTriggered, ToolCalled, ToolResult
 from nexus.core.events import emit
+from nexus.core.tracing import span
 from nexus.llm.types import ToolSpec
 
 
@@ -76,10 +77,12 @@ async def run_with_events(
         ToolCalled(server=server, tool=tool or name, call_id=call_id, args=args, agent_id=agent_id),
     )
     started = time.perf_counter()
-    try:
-        outcome = await invoke()
-    except Exception as exc:  # tools report errors as observations
-        outcome = ToolOutcome(False, f"ERROR: {type(exc).__name__}: {exc}")
+    with span(f"tool:{name}", "tool", agent=agent_id) as s:
+        try:
+            outcome = await invoke()
+        except Exception as exc:  # tools report errors as observations
+            outcome = ToolOutcome(False, f"ERROR: {type(exc).__name__}: {exc}")
+        s.set_attribute("nexus.ok", outcome.ok)
     outcome.duration_ms = round((time.perf_counter() - started) * 1000, 1)
     emit(
         "tool.result",

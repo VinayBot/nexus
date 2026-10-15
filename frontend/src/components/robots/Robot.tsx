@@ -93,6 +93,8 @@ function pose(mode: RobotMode): Pose {
       return { body: { y: 3, rotate: 8 }, leftArm: 25, rightArm: 25, transition: { duration: 0.5 } };
     case "sleeping":
       return { body: { y: [0, -0.8, 0], rotate: -4 }, leftArm: 15, rightArm: -15, transition: loop(4) };
+    case "waving":
+      return { body: { y: [0, -2, 0] }, leftArm: 8, rightArm: -150, transition: loop(1.2) };
     case "alarm":
       return { body: { x: [-2, 2, -2, 2, 0] }, leftArm: -120, rightArm: -120, transition: loop(0.5) };
     default:
@@ -145,8 +147,8 @@ export const Robot = memo(function Robot({ avatar, state, isShogun, label, size 
             <circle cx={26.5} cy={90} r={4.6} fill="#e8e2d6" />
           </motion.g>
           <motion.g
-            animate={{ rotate: p.rightArm }}
-            transition={{ type: "spring", stiffness: 140, damping: 12 }}
+            animate={{ rotate: state.mode === "waving" ? [-150, -110, -150] : p.rightArm }}
+            transition={state.mode === "waving" ? loop(0.8) : { type: "spring", stiffness: 140, damping: 12 }}
             style={{ transformOrigin: "70px 68px" }}
           >
             <rect x={69} y={66} width={9} height={24} rx={4.5} fill="url(#nexus-shell)" />

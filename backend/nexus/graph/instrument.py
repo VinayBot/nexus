@@ -17,6 +17,7 @@ from langgraph.types import Command
 
 from nexus.core.event_types import NodeEntered, NodeExited, ReducerMerged, Retry
 from nexus.core.events import emit, mission_context, node_context
+from nexus.core.tracing import span
 from nexus.graph.reducers import REDUCED_CHANNELS
 
 #: mission_id -> (node, error) of the most recent node failure
@@ -56,7 +57,8 @@ def instrument(
         emit("node.entered", NodeEntered(node=name), node=name)
         started = time.perf_counter()
         try:
-            result = await fn(state)
+            with span(f"node:{name}", "node", node=name):
+                result = await fn(state)
         except GraphBubbleUp:  # interrupt() / parent command: not an error
             emit(
                 "node.exited",

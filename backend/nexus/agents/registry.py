@@ -58,6 +58,10 @@ class AgentRegistry:
                 agents[spec.id] = spec
         self._agents = agents
 
+    def register_ephemeral(self, spec: AgentSpec) -> None:
+        """An in-memory agent (e.g. the Under-the-Hood lab agent); not persisted."""
+        self._agents.setdefault(spec.id, spec)
+
     def get(self, agent_id: str) -> AgentSpec:
         if agent_id not in self._agents:
             raise KeyError(f"unknown agent '{agent_id}'")

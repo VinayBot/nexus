@@ -55,8 +55,8 @@ Ticked = implemented, tested and committed. Phases follow spec §18.
 - [x] Approvals (hanko stamp), Scroll of Time
 
 ## Phase 7 — Advanced screens
-- [ ] Council Arena, Memory Palace, Barracks, Armory, Chaos Shrine, Observatory, Evals
-- [ ] Architecture Explorer, Curriculum Map, Under the Hood, Settings, 3D landing hero
+- [x] Council Arena, Memory Palace, Barracks, Armory, Chaos Shrine, Observatory, Evals
+- [x] Architecture Explorer, Curriculum Map, Under the Hood, Settings, 3D landing hero
 
 ## Phase 8 — Hikari guide + polish
 - [ ] Guide chat (RAG + live-state tools + UI actions + tours)
