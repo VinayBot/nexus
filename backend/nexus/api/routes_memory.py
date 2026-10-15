@@ -41,6 +41,14 @@ async def shelf(name: str, limit: int = 50) -> list[dict[str, Any]]:
     return items
 
 
+@router.post("/reindex-docs")
+async def reindex_docs() -> dict[str, int]:
+    """Index new or changed project docs (idempotent by content hash)."""
+    from nexus.memory.long_term import index_docs, project_doc_paths
+
+    return {"chunks_added": await index_docs(_memory(), project_doc_paths())}
+
+
 @router.get("/map")
 async def embedding_map() -> list[dict[str, Any]]:
     points: list[dict[str, Any]] = await _memory().embedding_map()

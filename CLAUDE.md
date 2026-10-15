@@ -2,8 +2,8 @@
 
 Local-first multi-agent OS (Week-4 bootcamp project). LangGraph orchestration, Ollama models,
 SQLite persistence, MCP tools, human approval gates, a "Sunset Samurai Dojo" UI where every Live
-animation is driven by a real backend event. Full spec lives in the conversation that created
-this repo; the checklist is `docs/PLAN.md`, the topic → code map is `docs/TOPIC_COVERAGE.md`.
+animation is driven by a real backend event. Checklist: `docs/PLAN.md`; topic → code map:
+`docs/TOPIC_COVERAGE.md`; architecture: `docs/ARCHITECTURE.md`; decisions: `docs/adr/`.
 
 ## Stack
 - **backend/** Python 3.12 + uv · FastAPI · LangGraph 1.2 (+ `langgraph-checkpoint-sqlite`) ·
@@ -27,7 +27,14 @@ Compose CLI is `docker-compose` on this machine; the Makefile detects it.
 - Live UI = real events only. Scripted motion exists only in Replay (recorded events) and the
   labelled Simulation mode.
 - Tests use the deterministic `ScriptedLLM`; `@pytest.mark.live` tests need Ollama and are
-  deselected by default.
+  deselected by default. Open a runtime with MCP clients *inside* each test (not in an async
+  fixture): anyio task groups must enter and exit in the same task.
+- e2e (`make e2e`) starts its own backend in Simulation mode on :8011 and Next on :3011
+  (`NEXT_DIST_DIR=.next-e2e`), so it never disturbs the dev servers. Animated elements must not
+  be the click target (Playwright needs a stable element): animate an inner span.
+- Small-model rules that made the live self-heal work: schema-constrained turns, line-range code
+  edits with a traceback focus line, output-token caps on structured calls, test feedback into
+  the next tournament round. Don't regress these.
 - Files stay under ~400 lines; split instead. Pydantic models for every agent I/O.
 - Untrusted text (tickets, docs, logs, tool output) is always wrapped by `safety.guardrails.fence()`.
 - Approval email links: GET shows a confirm page, POST decides (link prefetchers must not approve).

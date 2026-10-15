@@ -64,5 +64,5 @@ Ticked = implemented, tested and committed. Phases follow spec §18.
 - [x] Reduced motion, performance mode, accessibility, empty/loading/error states
 
 ## Phase 9 — Quality & docs
-- [ ] Full test suite + Playwright e2e, GitHub Actions
-- [ ] README, ARCHITECTURE.md, ADRs, TOPIC_COVERAGE.md, DEMO_SCRIPT.md, limitations
+- [x] Full test suite + Playwright e2e, GitHub Actions
+- [x] README, ARCHITECTURE.md, ADRs, TOPIC_COVERAGE.md, DEMO_SCRIPT.md, limitations

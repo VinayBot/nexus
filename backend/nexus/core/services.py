@@ -44,6 +44,10 @@ def build_services(
     settings: Settings | None = None, provider: LLMProvider | None = None
 ) -> Services:
     settings = settings or get_settings()
+    if provider is None and settings.llm_provider == "simulation":
+        from nexus.llm.simulation import simulation_llm
+
+        provider = simulation_llm()
     provider = provider or OllamaProvider(
         settings.ollama_base_url, timeout_s=settings.llm_timeout_s
     )

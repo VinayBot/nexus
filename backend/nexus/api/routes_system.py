@@ -61,6 +61,9 @@ async def health() -> Liveness:
 async def ready() -> Readiness:
     """Dependencies the backend needs to run missions."""
     settings = get_settings()
+    if settings.llm_provider == "simulation":
+        sim = DependencyCheck(name="ollama", status="ok", detail="simulation mode: scripted model")
+        return worst([check_sqlite(settings), sim])
     return worst([check_sqlite(settings), await check_ollama(settings)])
 
 
@@ -74,4 +77,5 @@ async def system_info() -> SystemInfo:
         models=ModelRoles(**settings.models.model_dump()),
         num_ctx=settings.num_ctx,
         llm_max_concurrency=settings.llm_max_concurrency,
+        simulation=settings.llm_provider == "simulation",
     )

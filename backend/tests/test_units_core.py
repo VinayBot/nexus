@@ -225,3 +225,20 @@ def test_judge_prefers_tested_patch_and_escalates_failing_winner() -> None:
         rounds=1,
     )
     assert v2.escalate and v2.confidence < 0.6
+
+
+async def test_concurrent_stat_bumps_for_a_new_agent_do_not_collide(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    import asyncio
+
+    from nexus.db import repo
+    from nexus.db.engine import Database
+    from nexus.db.models import AgentStatRow
+
+    db = Database(tmp_path / "x.db")
+    await db.init()
+    await asyncio.gather(*(repo.bump_agent_stats(db, "kagemi", steps=1) for _ in range(8)))
+    async with db.session() as s:
+        row = await s.get(AgentStatRow, "kagemi")
+    assert row is not None
+    assert row.steps == 8
+    await db.close()

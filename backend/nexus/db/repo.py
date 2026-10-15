@@ -120,26 +120,24 @@ async def dead_letter(
 
 
 async def bump_agent_stats(db: Database, agent_id: str, **deltas: float) -> None:
-    """Add ``deltas`` to an agent's counters (creating the row on first use)."""
+    """Atomically add ``deltas`` to an agent's counters (row created on first use).
+
+    Parallel workers can be the same agent, so this must be race-free: an upsert
+    that ignores conflicts, then a single UPDATE with column increments.
+    """
+    defaults = {
+        "agent_id": agent_id, "missions": 0, "steps": 0, "wins": 0, "tournaments": 0,
+        "tests_passed": 0, "tests_run": 0, "retries": 0, "total_latency_ms": 0.0,
+        "llm_calls": 0, "topics": {},
+    }  # fmt: skip
     async with db.session() as s:
-        row = await s.get(AgentStatRow, agent_id)
-        if row is None:
-            row = AgentStatRow(
-                agent_id=agent_id,
-                missions=0,
-                steps=0,
-                wins=0,
-                tournaments=0,
-                tests_passed=0,
-                tests_run=0,
-                retries=0,
-                total_latency_ms=0.0,
-                llm_calls=0,
-                topics={},
+        await s.execute(insert(AgentStatRow).values(**defaults).on_conflict_do_nothing())
+        if deltas:
+            await s.execute(
+                update(AgentStatRow)
+                .where(AgentStatRow.agent_id == agent_id)
+                .values({k: getattr(AgentStatRow, k) + v for k, v in deltas.items()})
             )
-            s.add(row)
-        for key, delta in deltas.items():
-            setattr(row, key, (getattr(row, key) or 0) + delta)
 
 
 async def add_topic_reputation(db: Database, agent_id: str, topic: str, points: float) -> None:

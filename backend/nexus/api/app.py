@@ -26,15 +26,13 @@ from nexus.api import (
     routes_work,
     ws,
 )
-from nexus.core.config import PROJECT_ROOT, get_settings
+from nexus.core.config import get_settings
 from nexus.core.logging import configure_logging, get_logger
 from nexus.core.runtime import runtime
-from nexus.memory.long_term import index_docs
+from nexus.memory.long_term import index_docs, project_doc_paths
 from nexus.playbooks.watcher import Watcher
 
 log = get_logger(__name__)
-
-DOC_PATHS = [PROJECT_ROOT / "README.md", *sorted((PROJECT_ROOT / "docs").glob("*.md"))]
 
 
 async def _index_docs_later(svc: object) -> None:
@@ -43,8 +41,7 @@ async def _index_docs_later(svc: object) -> None:
     if memory is None:
         return
     try:
-        paths = [*DOC_PATHS, *sorted((PROJECT_ROOT / "docs" / "adr").glob("*.md"))]
-        added = await index_docs(memory, paths)
+        added = await index_docs(memory, project_doc_paths())
         log.info("docs.indexed", chunks_added=added)
     except Exception as exc:
         log.warning("docs.index_failed", error=str(exc))

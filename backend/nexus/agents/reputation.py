@@ -6,8 +6,11 @@ from typing import Any
 
 from sqlalchemy import select
 
+from nexus.core.logging import get_logger
 from nexus.core.services import services
 from nexus.db.models import AgentStatRow
+
+log = get_logger(__name__)
 
 
 async def agent_stats() -> dict[str, dict[str, Any]]:
@@ -48,7 +51,10 @@ async def bump(agent_id: str, **deltas: float) -> None:
         return
     from nexus.db.repo import bump_agent_stats
 
-    await bump_agent_stats(db, agent_id, **deltas)
+    try:
+        await bump_agent_stats(db, agent_id, **deltas)
+    except Exception as exc:  # bookkeeping must never fail a mission
+        log.warning("reputation.bump_failed", agent=agent_id, error=str(exc))
 
 
 async def reward(agent_id: str, topic: str, points: float) -> None:
@@ -57,4 +63,7 @@ async def reward(agent_id: str, topic: str, points: float) -> None:
         return
     from nexus.db.repo import add_topic_reputation
 
-    await add_topic_reputation(db, agent_id, topic, points)
+    try:
+        await add_topic_reputation(db, agent_id, topic, points)
+    except Exception as exc:
+        log.warning("reputation.reward_failed", agent=agent_id, error=str(exc))

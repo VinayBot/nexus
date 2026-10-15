@@ -40,3 +40,4 @@ class SystemInfo(BaseModel):
     models: ModelRoles
     num_ctx: int
     llm_max_concurrency: int
+    simulation: bool = False

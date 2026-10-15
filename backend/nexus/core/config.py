@@ -64,6 +64,7 @@ class Settings(BaseSettings):
 
     ollama_base_url: str = "http://127.0.0.1:11434"
     model_profile: ModelProfile = ModelProfile.LITE
+    llm_provider: Literal["ollama", "simulation"] = "ollama"
     model_main: str | None = None
     model_fast: str | None = None
     model_embed: str | None = None

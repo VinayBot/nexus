@@ -252,6 +252,18 @@ class LongTermMemory:
         return points
 
 
+def project_doc_paths() -> list[Path]:
+    """The project's own docs the guide and knowledge search are grounded in."""
+    from nexus.core.config import PROJECT_ROOT
+
+    docs = PROJECT_ROOT / "docs"
+    return [
+        PROJECT_ROOT / "README.md",
+        *sorted(docs.glob("*.md")),
+        *sorted((docs / "adr").glob("*.md")),
+    ]
+
+
 def chunk_markdown(text: str, max_chars: int = 900) -> list[tuple[str, str]]:
     """Split markdown by headings into (title, chunk) pairs of bounded size."""
     sections: list[tuple[str, str]] = []

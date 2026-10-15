@@ -85,8 +85,9 @@ function MissionControl() {
           {status === "paused" && (
             <Link
               href="/approvals"
-              className="animate-alarm rounded-lg border border-danger bg-danger/20 px-3 py-1.5 text-xs font-semibold text-text"
+              className="flex items-center gap-2 rounded-lg border border-danger bg-danger/20 px-3 py-1.5 text-xs font-semibold text-text"
             >
+              <span className="animate-alarm block size-2 rounded-full bg-danger" />
               Awaiting your seal →
             </Link>
           )}

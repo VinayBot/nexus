@@ -60,7 +60,7 @@ types: ## Regenerate frontend event types from the backend's JSON Schema
 	cd frontend && pnpm gen:types
 
 demo: ## Seed demo data (tickets, docs, fix library) for the walkthrough
-	cd backend && uv run python ../scripts/seed_demo.py
+	python3 scripts/seed_demo.py
 
 reset: ## Delete all runtime data (SQLite, Chroma, workspaces)
 	rm -rf backend/data
