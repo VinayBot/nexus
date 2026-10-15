@@ -141,10 +141,7 @@ export function MissionComposer({ onCreated }: { onCreated: (m: Mission) => void
       <button
         type="submit"
         disabled={create.isPending}
-        className={cn(
-          "flex w-full items-center justify-center gap-2 rounded-lg border border-border-strong bg-gradient-to-r from-[var(--sky-crimson)] to-[var(--ember)] py-2 text-sm font-semibold text-white shadow-[var(--glow-gold)] transition-opacity hover:opacity-90",
-          create.isPending && "opacity-60",
-        )}
+        className={cn("btn btn-primary w-full", create.isPending && "animate-pulse")}
       >
         <Send className="size-4" /> {create.isPending ? "Deploying the squad…" : "Begin mission"}
       </button>

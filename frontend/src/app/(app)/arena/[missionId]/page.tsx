@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { Database } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import dynamic from "next/dynamic";
 import { use, useMemo, useState } from "react";
@@ -31,18 +32,27 @@ interface Proposal {
 /** Arbiter's balance: tilts toward the winner once the verdict lands. */
 function Scale({ tilt }: { tilt: number }) {
   return (
-    <svg viewBox="0 0 120 70" className="w-40">
-      <rect x={58} y={14} width={4} height={50} fill="#d9c38a" />
-      <rect x={40} y={62} width={40} height={5} rx={2} fill="#8e6a3c" />
+    <svg
+      viewBox="0 0 120 70"
+      className="w-40 overflow-visible"
+      style={{ filter: "drop-shadow(0 0 6px rgb(255 181 71 / 0.6))" }}
+    >
+      <rect x={58.5} y={14} width={3} height={50} fill="#ffb547" opacity={0.8} />
+      <ellipse cx={60} cy={65} rx={22} ry={3.5} fill="none" stroke="#4fe3f0" strokeWidth={1.2} />
       <motion.g
         animate={{ rotate: tilt }}
         transition={{ type: "spring", stiffness: 50, damping: 8 }}
         style={{ transformOrigin: "60px 14px" }}
       >
-        <rect x={10} y={12} width={100} height={4} rx={2} fill="#d9c38a" />
-        <path d="M14,16 l-8,20 h16 Z M106,16 l-8,20 h16 Z" fill="#d9c38a" opacity={0.85} />
+        <rect x={10} y={12.5} width={100} height={3} rx={1.5} fill="#ffb547" />
+        <path
+          d="M14,16 l-8,20 h16 Z M106,16 l-8,20 h16 Z"
+          fill="rgb(79 227 240 / 0.18)"
+          stroke="#4fe3f0"
+          strokeWidth={1.2}
+        />
       </motion.g>
-      <circle cx={60} cy={14} r={4} fill="#c8341f" />
+      <circle cx={60} cy={14} r={4} fill="#ff4f6d" style={{ filter: "drop-shadow(0 0 6px #ff4f6d)" }} />
     </svg>
   );
 }
@@ -110,7 +120,7 @@ export default function Page({ params }: { params: Promise<{ missionId: string }
         title="Arena"
         description="Solvers propose independently (same model, different strategy and temperature), code patches are proven in their own sandboxes, proposals are masked as A/B/C for peer review, disagreement triggers debate, and the Judge weighs evidence first."
       />
-      <section className="panel relative overflow-hidden p-4" data-tour="arena">
+      <section className="panel relative overflow-hidden px-4 pt-14 pb-4" data-tour="arena">
         <div className="mx-auto flex max-w-5xl flex-col items-center">
           <div className="flex items-center gap-4">
             <Robot
@@ -128,7 +138,7 @@ export default function Page({ params }: { params: Promise<{ missionId: string }
             />
           </div>
           <div
-            className="relative mt-4 grid w-full gap-4 rounded-[50%] border-2 border-dashed border-gold/30 bg-[radial-gradient(ellipse_at_center,rgba(200,52,31,0.15),transparent_70%)] px-10 py-10"
+            className="relative mt-4 grid w-full gap-4 rounded-[50%] border border-dashed border-[rgb(79_227_240/0.35)] bg-[radial-gradient(ellipse_at_center,rgba(79,227,240,0.08),transparent_70%)] shadow-[inset_0_0_60px_-20px_rgb(79_227_240/0.4)] px-10 py-10"
             style={{ gridTemplateColumns: `repeat(${solvers.length}, minmax(0, 1fr))` }}
           >
             {council.rounds.some((r) => !r.converged) && !verdict && <Sparks />}
@@ -146,10 +156,10 @@ export default function Page({ params }: { params: Promise<{ missionId: string }
                   <div className="relative">
                     {sid === "fix_library" ? (
                       <div
-                        className="grid size-20 place-items-center rounded-full border border-[#b8a7ff]/60 bg-[#b8a7ff]/10 text-3xl"
+                        className="grid size-20 place-items-center rounded-full border border-[#b8a7ff]/60 bg-[#b8a7ff]/10 shadow-[0_0_24px_-6px_#8b7bff]"
                         title="Remembered fix from the Fix Library"
                       >
-                        📚
+                        <Database className="size-8 text-[#b8a7ff]" />
                       </div>
                     ) : (
                       <Robot
@@ -189,9 +199,9 @@ export default function Page({ params }: { params: Promise<{ missionId: string }
                     initial={{ scaleX: 0.2, opacity: 0 }}
                     animate={{ scaleX: 1, opacity: 1 }}
                     className={cn(
-                      "w-full rounded-md bg-[linear-gradient(180deg,#efe2c4,#e3d1aa)] p-2 text-left text-[11px] text-[#3b2410]",
-                      isWinner && "ring-2 ring-[var(--sun-gold)]",
-                      isRunnerUp && "ring-1 ring-[#2f8fbf]",
+                      "w-full rounded-lg border border-[rgb(79_227_240/0.3)] bg-[rgb(4_8_16/0.75)] p-2 text-left text-[11px] text-text transition-colors hover:border-[rgb(79_227_240/0.7)] hover:bg-[rgb(79_227_240/0.08)]",
+                      isWinner && "border-[var(--sun-gold)] shadow-[0_0_20px_-4px_var(--sun-gold)]",
+                      isRunnerUp && "border-[#8b7bff] shadow-[0_0_14px_-4px_#8b7bff]",
                     )}
                   >
                     <span className="line-clamp-4">
@@ -280,7 +290,7 @@ export default function Page({ params }: { params: Promise<{ missionId: string }
             <p className="mt-2 text-[11px] text-faint">
               Rounds:{" "}
               {council.rounds
-                .map((r) => `#${r.round} divergence ${r.divergence}${r.converged ? " ✓" : " ⚔"}`)
+                .map((r) => `#${r.round} divergence ${r.divergence}${r.converged ? " ✓" : " ✗"}`)
                 .join(" · ")}
             </p>
           )}

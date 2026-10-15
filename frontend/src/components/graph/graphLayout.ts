@@ -1,33 +1,37 @@
 /**
- * Hand-tuned "snake" layout for the orchestrator graph: the understanding/delegation
- * band runs left→right, the decision/action band returns right→left beneath it.
+ * Hand-tuned four-row "snake" layout for the orchestrator graph, compact enough to stay
+ * readable when fitted: understand → delegate → decide/act → remember, alternating direction.
  * Unknown nodes (future additions) are placed on a spill-over row.
  */
 export const POSITIONS: Record<string, { x: number; y: number }> = {
-  __start__: { x: 0, y: 70 },
-  intake: { x: 140, y: 60 },
-  rewrite: { x: 310, y: 60 },
-  route: { x: 480, y: 60 },
-  clarify: { x: 400, y: -90 },
-  plan: { x: 650, y: 60 },
-  assemble: { x: 820, y: 60 },
-  dispatch: { x: 990, y: 60 },
-  worker: { x: 1160, y: -60 },
-  collect: { x: 1330, y: 60 },
-  council: { x: 1330, y: 320 },
-  synthesize: { x: 1330, y: 470 },
-  validate: { x: 1150, y: 320 },
-  risk_gate: { x: 970, y: 320 },
-  dry_run: { x: 970, y: 470 },
-  approval: { x: 790, y: 320 },
-  execute: { x: 610, y: 320 },
-  verify: { x: 430, y: 320 },
-  rollback: { x: 430, y: 470 },
-  memory_write: { x: 250, y: 320 },
-  report: { x: 80, y: 320 },
-  __end__: { x: 0, y: 470 },
+  // row 1, left → right: understand the task
+  __start__: { x: -80, y: 8 },
+  intake: { x: 40, y: 0 },
+  rewrite: { x: 220, y: 0 },
+  route: { x: 400, y: 0 },
+  clarify: { x: 400, y: -110 },
+  plan: { x: 580, y: 0 },
+  assemble: { x: 760, y: 0 },
+  // row 2, right → left: delegate and deliberate
+  dispatch: { x: 760, y: 170 },
+  worker: { x: 580, y: 170 },
+  collect: { x: 400, y: 170 },
+  council: { x: 220, y: 170 },
+  synthesize: { x: 40, y: 170 },
+  // row 3, left → right: decide and act
+  validate: { x: 40, y: 340 },
+  risk_gate: { x: 220, y: 340 },
+  dry_run: { x: 220, y: 450 },
+  approval: { x: 400, y: 340 },
+  execute: { x: 580, y: 340 },
+  verify: { x: 760, y: 340 },
+  // row 4, right → left: recover, remember, report
+  rollback: { x: 760, y: 450 },
+  memory_write: { x: 580, y: 540 },
+  report: { x: 400, y: 540 },
+  __end__: { x: 260, y: 548 },
 };
 
 export function positionOf(id: string, i: number): { x: number; y: number } {
-  return POSITIONS[id] ?? { x: 100 + i * 170, y: 640 };
+  return POSITIONS[id] ?? { x: 40 + (i % 5) * 180, y: 660 };
 }

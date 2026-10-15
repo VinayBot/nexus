@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3000",
+    "dev": "next dev --turbopack -p 3000",
     "build": "next build",
     "start": "next start -p 3000",
     "lint": "eslint",
@@ -24,9 +24,6 @@
     "@radix-ui/react-switch": "^1.4.1",
     "@radix-ui/react-tabs": "^1.2.1",
     "@radix-ui/react-tooltip": "^1.4.1",
-    "@react-three/drei": "^10.7.9",
-    "@react-three/fiber": "^9.8.1",
-    "@react-three/postprocessing": "^3.2.0",
     "@tanstack/react-query": "^5.104.2",
     "@xyflow/react": "^12.12.0",
     "clsx": "^2.1.1",
@@ -40,7 +37,6 @@
     "recharts": "^3.10.1",
     "remark-gfm": "^4.0.1",
     "tailwind-merge": "^3.7.0",
-    "three": "^0.186.1",
     "zustand": "^5.0.15"
   },
   "devDependencies": {
@@ -53,7 +49,6 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/three": "^0.186.0",
     "@vitejs/plugin-react": "^6.1.2",
     "eslint": "^9",
     "eslint-config-next": "15.5.28",

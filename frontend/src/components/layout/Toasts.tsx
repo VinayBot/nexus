@@ -30,17 +30,23 @@ export function Toasts() {
           return (
             <motion.div
               key={t.id}
-              initial={{ scaleY: 0, opacity: 0 }}
-              animate={{ scaleY: 1, opacity: 1 }}
-              exit={{ scaleY: 0, opacity: 0 }}
-              style={{ transformOrigin: "top" }}
-              className="pointer-events-auto relative rounded-md border-x-4 border-[#6b3a1c] bg-[linear-gradient(180deg,#efe2c4,#e3d1aa)] px-3 py-2 text-[12px] text-[#3b2410] shadow-xl"
+              layout
+              initial={{ x: 60, opacity: 0, filter: "blur(6px)" }}
+              animate={{ x: 0, opacity: 1, filter: "blur(0px)" }}
+              exit={{ x: 60, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 28 }}
+              className={cn(
+                "glass pointer-events-auto relative overflow-hidden border-l-2 px-3 py-2.5 text-[12px] text-text",
+                alarm ? "border-l-[var(--danger)]" : "border-l-[var(--cyan)]",
+              )}
             >
               <div className="flex items-start gap-2">
                 <span
                   className={cn(
                     "mt-1 block size-2.5 shrink-0 rounded-full",
-                    alarm ? "animate-alarm bg-[#c8341f]" : "bg-[#b07a1c]",
+                    alarm
+                      ? "animate-alarm bg-danger shadow-[0_0_8px_var(--error)]"
+                      : "bg-accent shadow-[0_0_8px_var(--cyan)]",
                   )}
                 />
                 <p className="flex-1">{t.text}</p>
@@ -48,7 +54,7 @@ export function Toasts() {
               {t.type === "interrupt.raised" && (
                 <Link
                   href="/approvals"
-                  className="mt-1 inline-block text-[11px] font-semibold text-[#8e1b17] underline"
+                  className="mt-1 inline-block text-[11px] font-semibold text-[var(--sun-gold)] hover:underline"
                 >
                   Review →
                 </Link>
@@ -56,7 +62,7 @@ export function Toasts() {
               {t.missionId && t.type !== "interrupt.raised" && (
                 <Link
                   href={`/missions?m=${t.missionId}`}
-                  className="mt-1 inline-block text-[11px] text-[#6b4a24] underline"
+                  className="mt-1 inline-block text-[11px] text-accent hover:underline"
                 >
                   Open mission
                 </Link>

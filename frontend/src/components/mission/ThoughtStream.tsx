@@ -13,7 +13,7 @@ const STYLE: Record<ThoughtKind, { label: string; color: string }> = {
   final: { label: "Final", color: "var(--success)" },
   retry: { label: "Retry", color: "var(--warning)" },
   route: { label: "Route", color: "var(--text-muted)" },
-  plan: { label: "Plan", color: "#e9d8a6" },
+  plan: { label: "Plan", color: "#ffd89a" },
   handoff: { label: "Handoff", color: "var(--sun-gold)" },
   tool: { label: "Tool", color: "var(--cyan)" },
   memory: { label: "Memory", color: "#b8a7ff" },
@@ -92,7 +92,7 @@ export function ThoughtStream({
     >
       <header className="flex items-center gap-2 border-b border-border/60 px-3 py-2">
         <h2 className="panel-title text-sm text-gold">Thought Stream</h2>
-        <span className="text-[11px] text-faint">
+        <span className="ml-auto truncate font-mono text-[10px] text-faint">
           {view.llm.calls} LLM calls · {(view.llm.prompt + view.llm.completion).toLocaleString()} tokens
         </span>
       </header>

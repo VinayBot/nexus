@@ -45,17 +45,31 @@ function Heartbeat({ points }: { points: { status: string; errorRate: number }[]
   const W = 600;
   const H = 90;
   const pts = points.slice(-60);
-  const step = W / Math.max(1, 60);
-  let d = `M0,${H / 2}`;
+  const step = W / 60;
+  // newest samples sit at the right edge; before the first sample the trace is a flat line
+  const offset = (60 - pts.length) * step;
+  let d = `M0,${H / 2} L${offset},${H / 2}`;
   pts.forEach((p, i) => {
-    const x = i * step;
+    const x = offset + i * step;
     const amp = 10 + p.errorRate * 60;
     d += ` L${x + step * 0.3},${H / 2} L${x + step * 0.42},${H / 2 - amp} L${x + step * 0.55},${H / 2 + amp * 0.6} L${x + step * 0.68},${H / 2} L${x + step},${H / 2}`;
   });
   const last = pts[pts.length - 1];
   const color = STATUS_COLOR[last?.status ?? "healthy"] ?? "var(--success)";
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="h-24 w-full" preserveAspectRatio="none" aria-label="Service heartbeat">
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      className="holo-grid mt-2 h-24 w-full rounded-md"
+      preserveAspectRatio="none"
+      aria-label="Service heartbeat"
+    >
+      <rect className="ecg-sweep" x={0} y={0} width={40} height={H} fill="url(#ecg-fade)" />
+      <defs>
+        <linearGradient id="ecg-fade" x1="0" x2="1">
+          <stop offset="0" stopColor={color} stopOpacity={0} />
+          <stop offset="1" stopColor={color} stopOpacity={0.18} />
+        </linearGradient>
+      </defs>
       <path
         d={d}
         fill="none"
@@ -173,7 +187,7 @@ export default function Page() {
               />
               Auto-heal
             </label>
-            <button type="button" onClick={() => reset.mutate()} className="chip cursor-pointer hover:text-text">
+            <button type="button" onClick={() => reset.mutate()} className="btn btn-ghost btn-sm">
               Restore baseline
             </button>
           </>
@@ -248,7 +262,7 @@ export default function Page() {
                 </Link>
               )}
               {i.status === "open" && (
-                <button type="button" onClick={() => heal.mutate(i.id)} className="chip cursor-pointer hover:text-text">
+                <button type="button" onClick={() => heal.mutate(i.id)} className="btn btn-primary btn-sm">
                   Heal again
                 </button>
               )}

@@ -157,13 +157,13 @@ export const Robot = memo(function Robot({
           key={mode}
           initial={{ opacity: 0, y: 6, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          className="absolute -top-2 z-10 max-w-[220px] -translate-y-full rounded-lg border bg-[color-mix(in_srgb,var(--lacquer)_92%,transparent)] px-2.5 py-1.5 text-[11px] leading-snug text-text shadow-lg backdrop-blur"
+          className="pointer-events-none absolute -top-1 z-20 w-max max-w-[170px] -translate-y-full rounded-md border bg-[rgb(8_11_20/0.94)] px-2 py-1 font-mono text-[10px] leading-snug text-text shadow-lg"
           style={{
             borderColor: `color-mix(in srgb, ${accent} 55%, transparent)`,
             boxShadow: `0 0 14px -4px ${accent}`,
           }}
         >
-          <span className="line-clamp-3">{state.bubble}</span>
+          <span className="line-clamp-2">{state.bubble}</span>
         </motion.div>
       )}
       <motion.svg

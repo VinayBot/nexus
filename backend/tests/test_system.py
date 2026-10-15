@@ -29,3 +29,12 @@ def test_profile_defaults_and_overrides(monkeypatch: pytest.MonkeyPatch) -> None
     models = get_settings().models
     assert models.main == "qwen2.5-coder:7b"
     assert models.fast == "qwen3:4b"
+
+
+def test_large_json_responses_are_gzipped_small_ones_are_not() -> None:
+    with TestClient(create_app()) as client:
+        big = client.get("/api/v1/agents", headers={"Accept-Encoding": "gzip"})
+        small = client.get("/api/v1/health", headers={"Accept-Encoding": "gzip"})
+    assert big.headers.get("content-encoding") == "gzip"
+    assert len(big.json()) == 14  # TestClient transparently decompresses
+    assert "content-encoding" not in small.headers

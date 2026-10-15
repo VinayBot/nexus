@@ -2,7 +2,7 @@
 
 NEXUS is a multi-agent orchestration system built on **LangGraph** and **local open
 models (Ollama)**. It has automated retries, **SQLite persistence** and **human approval
-gates**. The UI is a "Sunset Command" that animates the system from real backend
+gates**. The UI is a sci-fi "Sunset Command" HUD that animates the system from real backend
 events only.
 
 ## 1. Request flow

@@ -236,12 +236,7 @@ function Editor({ agent, allTools, onClose }: { agent: AgentInfo; allTools: stri
         </div>
       </div>
       <div className="mt-3 flex gap-2">
-        <button
-          type="button"
-          onClick={() => save.mutate()}
-          disabled={save.isPending}
-          className="rounded-lg bg-[#1e5e3f] px-4 py-1.5 text-sm font-semibold text-white ring-1 ring-success/60"
-        >
+        <button type="button" onClick={() => save.mutate()} disabled={save.isPending} className="btn btn-success">
           Save
         </button>
         <button type="button" onClick={onClose} className="chip cursor-pointer">
@@ -280,7 +275,7 @@ export default function Page() {
         actions={
           <button
             type="button"
-            className="chip cursor-pointer hover:text-text"
+            className="btn btn-primary btn-sm"
             onClick={() =>
               setEditing({
                 id: "new_agent",
@@ -322,7 +317,7 @@ export default function Page() {
                   <span className={cn("w-5 text-right font-mono", i < 3 ? "text-gold" : "text-faint")}>{i + 1}</span>
                   <span className="flex-1">{r.name}</span>
                   <span className="text-faint">
-                    {r.wins ?? 0}🏆 · {r.missions ?? 0} missions
+                    {r.wins ?? 0} wins · {r.missions ?? 0} missions
                   </span>
                   <span className="w-12 text-right font-mono text-accent">{(r.reputation ?? 0).toFixed(1)}</span>
                 </li>
@@ -353,7 +348,7 @@ export default function Page() {
               type="button"
               onClick={() => play.mutate()}
               disabled={play.isPending}
-              className="chip cursor-pointer px-3 py-1.5 hover:text-text"
+              className="btn btn-secondary btn-sm"
             >
               {play.isPending ? "Thinking (real model)…" : "Run one ReAct task"}
             </button>

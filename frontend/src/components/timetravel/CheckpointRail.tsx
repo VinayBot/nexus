@@ -30,7 +30,15 @@ const LANE_H = 64;
 const STEP_W = 46;
 
 /** The unrolled scroll: one lane per branch, seals per checkpoint, rivers at forks. */
-export function ScrollOfTime({
+/** Node colour by kind: fork violet, interrupt coral, verdict gold, plain checkpoint cyan. */
+function nodeColor(c: { source?: string | null; interrupted?: boolean; has_verdict?: boolean }): string {
+  if (c.source === "update") return "#8b7bff";
+  if (c.interrupted) return "#ff4f6d";
+  if (c.has_verdict) return "#ffb547";
+  return "#4fe3f0";
+}
+
+export function CheckpointRail({
   checkpoints,
   branches,
   selected,
@@ -54,19 +62,24 @@ export function ScrollOfTime({
 
   return (
     <div className="relative">
-      {/* scroll rods */}
-      <div className="absolute inset-y-0 left-0 z-10 w-3 rounded-full bg-gradient-to-r from-[#3b1d0f] to-[#6b3a1c] shadow-lg" />
-      <div className="absolute inset-y-0 right-0 z-10 w-3 rounded-full bg-gradient-to-l from-[#3b1d0f] to-[#6b3a1c] shadow-lg" />
       <motion.div
         initial={{ clipPath: "inset(0 100% 0 0)" }}
         animate={{ clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 1.1, ease: "easeOut" }}
-        className="mx-2 overflow-x-auto rounded-md bg-[linear-gradient(180deg,#efe2c4,#e3d1aa)] text-[#3b2410] shadow-inner"
+        className="holo-grid overflow-x-auto rounded-lg border border-[rgb(79_227_240/0.2)] bg-[rgb(4_8_16/0.7)] text-text"
       >
         <svg width={layout.width} height={layout.height} className="block">
           {branches.map((b, i) => (
             <g key={b.head}>
-              <text x={8} y={20 + i * LANE_H} fontSize={10} fill="#7a5530" fontWeight={600}>
+              <text
+                x={8}
+                y={20 + i * LANE_H}
+                fontSize={10}
+                fill="#4fe3f0"
+                fontWeight={600}
+                fontFamily="var(--font-mono)"
+                letterSpacing={1}
+              >
                 {b.label}
                 {b.outcome ? ` · ${b.outcome}` : ""}
               </text>
@@ -75,7 +88,7 @@ export function ScrollOfTime({
                 x2={layout.width - 10}
                 y1={36 + i * LANE_H}
                 y2={36 + i * LANE_H}
-                stroke="#b89a6a"
+                stroke="rgb(79 227 240 / 0.25)"
                 strokeDasharray="2 6"
               />
             </g>
@@ -94,7 +107,8 @@ export function ScrollOfTime({
                     ? `M${p.x},${p.y} C${p.x + 30},${p.y} ${q.x - 30},${q.y} ${q.x},${q.y}`
                     : `M${p.x},${p.y} L${q.x},${q.y}`
                 }
-                stroke={split ? "#2f8fbf" : "#8e6a3c"}
+                stroke={split ? "#8b7bff" : "#4fe3f0"}
+                style={{ filter: `drop-shadow(0 0 3px ${split ? "#8b7bff" : "#4fe3f0"})` }}
                 strokeWidth={split ? 3 : 2}
                 fill="none"
                 opacity={0.8}
@@ -105,7 +119,6 @@ export function ScrollOfTime({
             const q = layout.pos[c.checkpoint_id];
             if (!q) return null;
             const sel = selected === c.checkpoint_id;
-            const fork = c.source === "update";
             return (
               <g
                 key={c.checkpoint_id}
@@ -114,21 +127,27 @@ export function ScrollOfTime({
                 onClick={() => onSelect(c.checkpoint_id)}
               >
                 <title>{`step ${c.step} · ${c.writer ?? c.source} → ${c.next.join(", ") || "end"}`}</title>
-                <rect
-                  x={-11}
-                  y={-11}
-                  width={22}
-                  height={22}
-                  rx={4}
-                  transform={`rotate(${((c.step ?? 0) % 3) - 1})`}
-                  fill={fork ? "#2f8fbf" : c.interrupted ? "#c8341f" : c.has_verdict ? "#b07a1c" : "#8e1b17"}
-                  stroke={sel ? "#140909" : "rgba(255,255,255,0.4)"}
-                  strokeWidth={sel ? 3 : 1}
+                {sel && (
+                  <circle
+                    r={17}
+                    fill="none"
+                    stroke="#ffb547"
+                    strokeWidth={1.5}
+                    strokeDasharray="4 3"
+                    className="spin-slow"
+                  />
+                )}
+                <path
+                  d="M0,-12 L10.4,-6 L10.4,6 L0,12 L-10.4,6 L-10.4,-6 Z"
+                  fill={`${nodeColor(c)}33`}
+                  stroke={sel ? "#ffb547" : nodeColor(c)}
+                  strokeWidth={sel ? 2.2 : 1.4}
+                  style={{ filter: `drop-shadow(0 0 ${sel ? 8 : 4}px ${sel ? "#ffb547" : nodeColor(c)})` }}
                 />
-                <text textAnchor="middle" dy={3.5} fontSize={9} fill="#fff1e0" fontWeight={700}>
+                <text textAnchor="middle" dy={3.5} fontSize={9} fill="#eef1f8" fontWeight={700}>
                   {c.step ?? "·"}
                 </text>
-                <text textAnchor="middle" y={24} fontSize={8} fill="#7a5530">
+                <text textAnchor="middle" y={24} fontSize={8} fill="#a3abc2">
                   {(c.writer ?? c.source ?? "").replace("memory_write", "memory").slice(0, 9)}
                 </text>
               </g>
@@ -138,16 +157,16 @@ export function ScrollOfTime({
       </motion.div>
       <div className={cn("mt-2 flex flex-wrap gap-2 px-3 text-[10.5px] text-muted")}>
         <span className="chip">
-          <span className="size-2 rounded-sm bg-[#8e1b17]" /> checkpoint
+          <span className="size-2 rounded-sm bg-[#4fe3f0]" /> checkpoint
         </span>
         <span className="chip">
-          <span className="size-2 rounded-sm bg-[#b07a1c]" /> has verdict
+          <span className="size-2 rounded-sm bg-[#ffb547]" /> has verdict
         </span>
         <span className="chip">
-          <span className="size-2 rounded-sm bg-[#c8341f]" /> interrupt
+          <span className="size-2 rounded-sm bg-[#ff4f6d]" /> interrupt
         </span>
         <span className="chip">
-          <span className="size-2 rounded-sm bg-[#2f8fbf]" /> fork (update_state)
+          <span className="size-2 rounded-sm bg-[#8b7bff]" /> fork (update_state)
         </span>
       </div>
     </div>

@@ -13,9 +13,14 @@ export function PageHeader({
   return (
     <div className="reveal mb-4 flex flex-wrap items-end justify-between gap-3 px-1">
       <div className="min-w-0">
-        <h1 className="font-display text-2xl font-bold tracking-wide text-text uppercase md:text-3xl">
+        <p className="kicker mb-1">
+          <span className="size-1.5 rotate-45 bg-[var(--cyan)] shadow-[0_0_8px_var(--cyan)]" />
+          NEXUS / {title}
+        </p>
+        <h1 className="font-display text-2xl font-bold tracking-wide text-text uppercase md:text-[2rem]">
           <span className="title-gradient">{title}</span>
         </h1>
+        <span className="header-bar mt-2 block h-[2px] w-24 rounded-full bg-[image:var(--grad-sunset)]" />
         {description && <p className="mt-1 max-w-3xl text-sm text-muted">{description}</p>}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}

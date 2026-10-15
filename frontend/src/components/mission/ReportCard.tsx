@@ -32,7 +32,7 @@ export function ReportCard({ mission }: { mission: Mission }) {
         </span>
       </summary>
       <div className="mt-2 grid gap-3 md:grid-cols-[minmax(0,1fr)_260px]">
-        <div className="prose-sm max-h-56 overflow-y-auto text-sm leading-relaxed text-text [&_code]:font-mono [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-black/40 [&_pre]:p-2">
+        <div className="prose-sm max-h-40 overflow-y-auto text-sm leading-relaxed text-text [&_code]:font-mono [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-black/40 [&_pre]:p-2">
           {r.answer ? (
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{r.answer}</ReactMarkdown>
           ) : (
@@ -40,7 +40,7 @@ export function ReportCard({ mission }: { mission: Mission }) {
           )}
           {r.diff && <pre className="mt-2 text-[11px]">{r.diff}</pre>}
         </div>
-        <ul className="space-y-1 text-[11.5px] text-muted">
+        <ul className="max-h-40 space-y-1 overflow-y-auto pr-1 text-[11.5px] text-muted">
           {(r.highlights ?? []).map((h, i) => (
             <li key={i}>• {h}</li>
           ))}

@@ -48,8 +48,8 @@ function MissionControl() {
 
   const status = replayOn ? "replay" : view.status !== "idle" ? view.status : (mission.data?.status ?? "idle");
   return (
-    <div className="grid h-full min-h-[640px] grid-cols-1 gap-3 lg:grid-cols-[290px_minmax(0,1fr)_340px] lg:grid-rows-[minmax(0,1fr)_auto]">
-      <aside className="flex min-h-0 flex-col gap-3 lg:row-span-2">
+    <div className="grid min-h-[640px] grid-cols-1 gap-3 lg:grid-cols-[260px_minmax(0,1fr)] xl:h-full xl:grid-cols-[280px_minmax(0,1fr)_330px] xl:grid-rows-[minmax(0,1fr)_auto]">
+      <aside className="flex min-h-0 flex-col gap-3 lg:row-span-3 xl:row-span-2">
         <MissionComposer
           onCreated={(m) => {
             setActive(m.id);
@@ -65,7 +65,7 @@ function MissionControl() {
         />
       </aside>
 
-      <section className="flex min-h-0 flex-col gap-2" aria-label="Command Center floor">
+      <section className="flex min-h-0 flex-col gap-2 xl:overflow-hidden" aria-label="Command Center floor">
         <div className="panel flex flex-wrap items-center gap-2 px-3 py-2">
           <div className="min-w-0 flex-1">
             <h1 className="truncate font-display text-lg text-text">
@@ -130,7 +130,7 @@ function MissionControl() {
             </div>
           )}
           {status === "running" && !replayOn && (
-            <button type="button" onClick={() => cancel.mutate()} className="chip cursor-pointer hover:text-danger">
+            <button type="button" onClick={() => cancel.mutate()} className="btn btn-ghost btn-sm hover:!text-danger">
               Cancel
             </button>
           )}
@@ -205,8 +205,12 @@ function MissionControl() {
         {mission.data?.report && <ReportCard mission={mission.data} />}
       </section>
 
-      <ThoughtStream view={view} agents={agents.data} className="min-h-[420px] lg:row-span-2" />
-      <div className="lg:col-start-2">
+      <ThoughtStream
+        view={view}
+        agents={agents.data}
+        className="min-h-[420px] lg:col-start-2 lg:h-[460px] xl:col-start-3 xl:row-span-2 xl:row-start-1 xl:h-auto"
+      />
+      <div className="lg:col-start-2 xl:row-start-2">
         <Timeline view={view} />
       </div>
     </div>

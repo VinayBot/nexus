@@ -56,7 +56,7 @@ Ticked = implemented, tested and committed. Phases follow spec §18.
 
 ## Phase 7 — Advanced screens
 - [x] Arena, Memory, Agents, Tools, Chaos Lab, Insights (Observatory, Benchmarks)
-- [x] Architecture Explorer, Curriculum Map, Under the Hood, Settings, 3D landing hero
+- [x] Architecture Explorer, Curriculum Map, Under the Hood, Settings, animated landing hero
 
 ## Phase 8 — Nova guide + polish
 - [x] Guide chat (RAG + live-state tools + UI actions + tours)

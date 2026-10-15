@@ -1,35 +1,42 @@
 /*
- * NEXUS design tokens — "Sunset Command".
- * Raw palette first, then semantic tokens the components use. The night theme
- * only remaps semantic tokens; components never reference raw palette names.
+ * NEXUS design tokens: "Sunset Command", an aurora HUD.
+ * A deep void base, sunset aurora light (ember, gold, coral) and neon tech accents
+ * (cyan, violet). The palette comes first, then the semantic tokens components use.
+ * Themes and sky moods only remap tokens; components never reference palette names directly.
  */
 :root {
   /* palette */
+  --void: #05060b;
+  --ink: #0a0c14;
+  --lacquer: #0e111c;
+  --panel-2: #141828;
+  --ember: #ff6b3d;
+  --sun-gold: #ffb547;
+  --sun-core: #ffd89a;
+  --coral: #ff4f6d;
+  --magenta: #e040a0;
+  --violet: #8b7bff;
+  --cyan: #4fe3f0;
+  --jade: #34d399;
+  --amber: #ffb020;
+  --danger: #ff4d5e;
+  --shell: #eef1f6;
+  --visor: #0b0e15;
+  /* legacy names still used by scenery */
   --sky-deep: #3b0a0a;
   --sky-crimson: #8e1b17;
   --sky-vermilion: #c8341f;
-  --ember: #f2662a;
-  --sun-gold: #f7a440;
-  --sun-core: #ffd08a;
-  --ink: #140909;
-  --lacquer: #1e0f0e;
-  --shell: #f5f2ec;
-  --visor: #0e1116;
-  --cyan: #4fe3f0;
-  --jade: #3fd18b;
-  --amber: #ffb020;
-  --danger: #ff4d4f;
 
   /* semantic */
-  --bg: var(--ink);
-  --surface: color-mix(in srgb, var(--lacquer) 80%, transparent);
-  --surface-strong: color-mix(in srgb, var(--lacquer) 92%, transparent);
-  --surface-hover: color-mix(in srgb, #3a1d19 85%, transparent);
-  --border: color-mix(in srgb, var(--sun-gold) 28%, transparent);
-  --border-strong: color-mix(in srgb, var(--sun-gold) 55%, transparent);
-  --text: #f6ebe0;
-  --text-muted: #c9b2a3;
-  --text-faint: #9a8173;
+  --bg: var(--void);
+  --surface: rgb(13 16 27 / 0.86);
+  --surface-strong: rgb(13 16 27 / 0.97);
+  --surface-hover: rgb(30 36 58 / 0.75);
+  --border: rgb(148 163 210 / 0.13);
+  --border-strong: rgb(255 181 71 / 0.5);
+  --text: #eef1f8;
+  --text-muted: #a3abc2;
+  --text-faint: #6e7791;
   --accent: var(--cyan);
   --accent-warm: var(--sun-gold);
   --success: var(--jade);
@@ -37,22 +44,32 @@
   --error: var(--danger);
   --focus-ring: var(--cyan);
 
-  /* sky gradient stops — overridden per sky mood */
-  --sky-top: var(--sky-deep);
-  --sky-mid: var(--sky-crimson);
-  --sky-low: var(--sky-vermilion);
-  --sky-horizon: var(--ember);
-  --sun-color: var(--sun-gold);
-  --sun-glow: var(--sun-core);
-  --silhouette: var(--ink);
+  /* aurora light behind the app; sky moods override these */
+  --aura-1: rgb(255 107 61 / 0.42);
+  --aura-2: rgb(224 64 160 / 0.26);
+  --aura-3: rgb(79 227 240 / 0.16);
+  --horizon: rgb(255 140 60 / 0.55);
+
+  /* sunset sky (the command deck window and the landing page) */
+  --sky-top: #2a0a14;
+  --sky-mid: #7a1a26;
+  --sky-low: #d2452a;
+  --sky-horizon: #ff8a3d;
+  --sun-color: #ffb547;
+  --sun-glow: #ffe0a8;
+  --silhouette: #07060c;
   --cloud-speed: 90s;
 
   --radius-sm: 6px;
-  --radius: 10px;
-  --radius-lg: 16px;
-  --shadow-panel: 0 10px 40px -12px rgb(0 0 0 / 0.65), inset 0 1px 0 rgb(255 208 138 / 0.06);
-  --glow-cyan: 0 0 12px rgb(79 227 240 / 0.55);
-  --glow-gold: 0 0 18px rgb(247 164 64 / 0.45);
+  --radius: 8px;
+  --radius-lg: 10px;
+  /* HUD corner-bracket colour */
+  --hud: rgb(79 227 240 / 0.6);
+  --shadow-panel: 0 24px 60px -28px rgb(0 0 0 / 0.9), inset 0 1px 0 rgb(255 255 255 / 0.05);
+  --glow-cyan: 0 0 14px rgb(79 227 240 / 0.55);
+  --glow-gold: 0 0 22px rgb(255 181 71 / 0.5);
+  --grad-sunset: linear-gradient(110deg, #ff6b3d 0%, #ffb547 45%, #ff4f6d 100%);
+  --grad-tech: linear-gradient(110deg, #4fe3f0 0%, #8b7bff 100%);
 
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -60,6 +77,10 @@
 
 /* sky moods reflect system state */
 [data-sky="incident"] {
+  --aura-1: rgb(255 40 40 / 0.5);
+  --aura-2: rgb(255 79 109 / 0.32);
+  --aura-3: rgb(255 140 60 / 0.18);
+  --horizon: rgb(255 50 40 / 0.6);
   --sky-top: #220404;
   --sky-mid: #6e0d0b;
   --sky-low: #a8160f;
@@ -69,6 +90,10 @@
   --cloud-speed: 35s;
 }
 [data-sky="dawn"] {
+  --aura-1: rgb(255 200 110 / 0.42);
+  --aura-2: rgb(139 123 255 / 0.3);
+  --aura-3: rgb(52 211 153 / 0.18);
+  --horizon: rgb(255 210 140 / 0.55);
   --sky-top: #2a1b3d;
   --sky-mid: #7a3b5c;
   --sky-low: #e07a5f;
@@ -79,6 +104,10 @@
 }
 
 [data-theme="night"] {
+  --aura-1: rgb(91 110 255 / 0.36);
+  --aura-2: rgb(139 123 255 / 0.28);
+  --aura-3: rgb(79 227 240 / 0.2);
+  --horizon: rgb(120 140 255 / 0.45);
   --sky-top: #05070f;
   --sky-mid: #0d1430;
   --sky-low: #1b2450;
@@ -86,15 +115,7 @@
   --sun-color: #e8ecf5;
   --sun-glow: #b8c6ff;
   --silhouette: #03040a;
-  --bg: #05070f;
-  --surface: color-mix(in srgb, #0d1124 82%, transparent);
-  --surface-strong: color-mix(in srgb, #0d1124 94%, transparent);
-  --surface-hover: color-mix(in srgb, #18203f 85%, transparent);
-  --border: color-mix(in srgb, #8ea2ff 26%, transparent);
-  --border-strong: color-mix(in srgb, #8ea2ff 50%, transparent);
-  --text: #e9edf7;
-  --text-muted: #aab3cc;
-  --text-faint: #7b84a0;
+  --border-strong: rgb(142 162 255 / 0.55);
   --accent-warm: #c7d2ff;
   --cloud-speed: 140s;
 }

@@ -94,7 +94,7 @@ export function BenchmarksPanel() {
                   type="button"
                   disabled={running || start.isPending}
                   onClick={() => start.mutate(s.id)}
-                  className="chip cursor-pointer px-3 py-1.5 hover:text-text disabled:opacity-40"
+                  className="btn btn-secondary btn-sm"
                 >
                   {last?.status === "running" ? "Running…" : "Run suite"}
                 </button>

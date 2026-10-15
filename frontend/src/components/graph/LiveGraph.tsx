@@ -68,9 +68,15 @@ const LanternNode = memo(function LanternNode({ data }: NodeProps<Node<LanternDa
   if (terminal) {
     return (
       <div className="grid size-9 place-items-center rounded-full border border-border-strong bg-black/60 text-[10px] text-faint">
-        <Handle type="target" position={Position.Left} className="!opacity-0" />
+        <Handle type="target" id="tl" position={Position.Left} className="!opacity-0" />
+        <Handle type="target" id="tr" position={Position.Right} className="!opacity-0" />
+        <Handle type="target" id="tt" position={Position.Top} className="!opacity-0" />
+        <Handle type="target" id="tb" position={Position.Bottom} className="!opacity-0" />
         {data.label === "start" ? "▶" : "■"}
-        <Handle type="source" position={Position.Right} className="!opacity-0" />
+        <Handle type="source" id="sr" position={Position.Right} className="!opacity-0" />
+        <Handle type="source" id="sl" position={Position.Left} className="!opacity-0" />
+        <Handle type="source" id="sb" position={Position.Bottom} className="!opacity-0" />
+        <Handle type="source" id="st" position={Position.Top} className="!opacity-0" />
       </div>
     );
   }
@@ -87,18 +93,20 @@ const LanternNode = memo(function LanternNode({ data }: NodeProps<Node<LanternDa
       }
       transition={active ? { repeat: Infinity, duration: 1.4 } : { duration: 0.3 }}
       className={cn(
-        "relative min-w-[132px] rounded-xl border px-3 py-2 text-center",
-        "bg-[color-mix(in_srgb,var(--lacquer)_92%,transparent)]",
-        s === "idle" && "border-border/60 opacity-70",
-        s === "done" && "border-border-strong",
+        "relative min-w-[136px] rounded-md border px-3 py-2 text-center",
+        "bg-[rgb(8_11_20/0.94)]",
+        s === "idle" && "border-border opacity-75",
+        s === "done" && "border-[rgb(79_227_240/0.45)]",
         active && (interrupt ? "border-danger" : "border-accent"),
         s === "error" && "border-danger",
         s === "interrupted" && "animate-alarm border-danger",
         data.parallel && "outline outline-1 outline-offset-4 outline-accent/30",
       )}
     >
-      <Handle type="target" position={Position.Left} className="!size-1.5 !border-0 !bg-border-strong" />
-      <Handle type="target" id="t" position={Position.Top} className="!opacity-0" />
+      <Handle type="target" id="tl" position={Position.Left} className="!size-1.5 !border-0 !bg-[var(--cyan)]" />
+      <Handle type="target" id="tr" position={Position.Right} className="!opacity-0" />
+      <Handle type="target" id="tt" position={Position.Top} className="!opacity-0" />
+      <Handle type="target" id="tb" position={Position.Bottom} className="!opacity-0" />
       <div
         className={cn("text-[12px] font-semibold", active ? "text-text" : s === "done" ? "text-gold" : "text-muted")}
       >
@@ -122,8 +130,10 @@ const LanternNode = memo(function LanternNode({ data }: NodeProps<Node<LanternDa
           Send ×{data.fanout}
         </span>
       )}
-      <Handle type="source" position={Position.Right} className="!size-1.5 !border-0 !bg-border-strong" />
-      <Handle type="source" id="b" position={Position.Bottom} className="!opacity-0" />
+      <Handle type="source" id="sr" position={Position.Right} className="!size-1.5 !border-0 !bg-[var(--cyan)]" />
+      <Handle type="source" id="sl" position={Position.Left} className="!opacity-0" />
+      <Handle type="source" id="sb" position={Position.Bottom} className="!opacity-0" />
+      <Handle type="source" id="st" position={Position.Top} className="!opacity-0" />
     </motion.div>
   );
 });
@@ -141,7 +151,7 @@ const FlowEdge = memo(function FlowEdge(props: EdgeProps<Edge<FlowData>>) {
         id={props.id}
         path={path}
         style={{
-          stroke: hot ? "var(--cyan)" : d?.conditional ? "rgba(247,164,64,0.35)" : "rgba(247,164,64,0.55)",
+          stroke: hot ? "var(--cyan)" : d?.conditional ? "rgba(255,181,71,0.4)" : "rgba(148,163,210,0.45)",
           strokeWidth: hot ? 2.2 : 1.2,
           strokeDasharray: d?.conditional && !hot ? "5 5" : undefined,
           filter: hot ? "drop-shadow(0 0 4px var(--cyan))" : undefined,
@@ -202,10 +212,25 @@ export function LiveGraph({ view, showInspector = false }: { view: MissionView; 
       const fanoutHot = e.source === "dispatch" && e.target === "worker" && view.currentNode === "worker";
       const directHot = view.currentNode === e.target && view.nodes[e.source]?.status === "done" && !e.conditional;
       const hot = fanoutHot ? lastFanout : takenAt && takenIdx === recent.length - 1 ? 1 : directHot ? 1 : 0;
+      // pick the sides that face each other so the snake's rows connect cleanly
+      const a = positionOf(e.source, 0);
+      const b = positionOf(e.target, 0);
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const [sh, th] =
+        Math.abs(dy) > Math.abs(dx) * 0.8
+          ? dy > 0
+            ? ["sb", "tt"]
+            : ["st", "tb"]
+          : dx >= 0
+            ? ["sr", "tl"]
+            : ["sl", "tr"];
       return {
         id: `${e.source}->${e.target}`,
         source: e.source,
         target: e.target,
+        sourceHandle: sh,
+        targetHandle: th,
         type: "flow",
         data: { label: e.label, hot, conditional: e.conditional, taken: takenAt?.label ?? null },
       };
@@ -226,7 +251,7 @@ export function LiveGraph({ view, showInspector = false }: { view: MissionView; 
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           fitView
-          fitViewOptions={{ padding: 0.12 }}
+          fitViewOptions={{ padding: 0.08 }}
           minZoom={0.3}
           proOptions={{ hideAttribution: true }}
           colorMode="dark"

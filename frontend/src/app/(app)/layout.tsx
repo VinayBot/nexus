@@ -5,13 +5,13 @@ import { LiveBridge } from "@/components/layout/LiveBridge";
 import { Toasts } from "@/components/layout/Toasts";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopBar } from "@/components/layout/TopBar";
-import { SkyBackdrop } from "@/components/scenery/SkyBackdrop";
+import { AppBackdrop } from "@/components/scenery/AppBackdrop";
 
 /** Shell for every in-app screen: sky behind, nav on the left, top bar, scrolling content. */
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-dvh">
-      <SkyBackdrop />
+      <AppBackdrop />
       <LiveBridge />
       <a
         href="#main"
@@ -30,6 +30,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <Nova />
       <TourOverlay />
       <CommandPalette />
+      <div className="scanlines perf-hide" aria-hidden />
     </div>
   );
 }

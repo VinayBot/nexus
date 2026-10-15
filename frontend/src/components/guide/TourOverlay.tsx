@@ -92,15 +92,10 @@ export function TourOverlay() {
             <p className="mt-1 text-sm text-text">{step.body}</p>
             {!rect && <p className="mt-1 text-[11px] text-faint">(open a mission first to see this part live)</p>}
             <div className="mt-3 flex gap-2">
-              <button
-                type="button"
-                onClick={prev}
-                disabled={index === 0}
-                className="chip cursor-pointer disabled:opacity-40"
-              >
+              <button type="button" onClick={prev} disabled={index === 0} className="btn btn-ghost btn-sm">
                 ← Back
               </button>
-              <button type="button" onClick={next} className="chip cursor-pointer border-accent text-accent">
+              <button type="button" onClick={next} className="btn btn-primary btn-sm">
                 {index + 1 === steps.length ? "Finish" : "Next →"}
               </button>
               <button type="button" onClick={stop} className="chip ml-auto cursor-pointer">

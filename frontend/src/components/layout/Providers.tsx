@@ -5,6 +5,7 @@ import { MotionConfig } from "motion/react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useActiveMission } from "@/stores/missions";
 import { useUi } from "@/stores/ui";
+import { Interactions } from "./Interactions";
 
 /** Mirrors UI preferences onto <html> data attributes that the CSS tokens key off. */
 function DocumentAttributes() {
@@ -36,6 +37,7 @@ export function Providers({ children }: { children: ReactNode }) {
     <QueryClientProvider client={client}>
       <MotionConfig reducedMotion={perf ? "always" : "user"}>
         <DocumentAttributes />
+        <Interactions />
         {children}
       </MotionConfig>
     </QueryClientProvider>

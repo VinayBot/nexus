@@ -7,8 +7,9 @@ the Commander (supervisor) routes it to a playbook, plans, delegates to a squad 
 runs evidence-grounded tournaments, asks a human before anything risky, and keeps every
 step rewindable.
 
-The UI is a "Sunset Command" with original robots, and every animation in Live
-mode is driven by a real backend event.
+The UI is "Sunset Command", a sci-fi HUD: a void-black base under sunset aurora light,
+neon corner-bracketed panels, a rolling grid horizon and original animated mecha robots.
+Every animation in Live mode is driven by a real backend event.
 
 ![Mission Control](docs/images/mission-control.jpg)
 
@@ -21,6 +22,7 @@ Prerequisites: macOS or Linux, [uv](https://docs.astral.sh/uv/), Node 22,
 make setup     # uv sync + pnpm install, creates .env
 make models    # pulls llama3.2:3b + nomic-embed-text (lite profile, ~2.3 GB)
 make dev       # backend :8000 (also launches the demo-service :8100), frontend :3000
+make prod      # same ports, optimised build without dev compiling or reloaders: fastest
 ```
 
 Open <http://localhost:3000>. For the walkthrough, see
@@ -75,7 +77,7 @@ do better, but I have not benchmarked it here.
 
 | | |
 |---|---|
-| ![Landing](docs/images/gate.jpg) Landing (R3F city hero) | ![Robots](docs/images/robots.jpg) Agents |
+| ![Landing](docs/images/gate.jpg) Landing | ![Robots](docs/images/robots.jpg) Agents |
 | ![Arena](docs/images/arena.jpg) Arena | ![Approvals](docs/images/approvals.jpg) Approvals |
 | ![Time travel](docs/images/time-travel.jpg) Time Travel | ![Chaos Lab](docs/images/chaos-lab.jpg) Chaos Lab |
 | ![Memory](docs/images/memory.jpg) Memory | ![Insights](docs/images/insights.jpg) Insights |

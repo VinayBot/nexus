@@ -279,7 +279,7 @@ export function ApprovalCard({ approval }: { approval: Approval }) {
               type="button"
               disabled={!text || decide.isPending}
               onClick={() => submit("respond")}
-              className="rounded-lg bg-accent/20 px-4 py-2 text-sm font-semibold text-accent ring-1 ring-accent/60 disabled:opacity-40"
+              className="btn btn-secondary"
             >
               Answer
             </button>
@@ -289,7 +289,7 @@ export function ApprovalCard({ approval }: { approval: Approval }) {
                 type="button"
                 disabled={decide.isPending || (requiresOverride && !text)}
                 onClick={() => submit("approve")}
-                className="rounded-lg bg-[#1e5e3f] px-4 py-2 text-sm font-semibold text-white ring-1 ring-success/60 hover:bg-[#237049] disabled:opacity-40"
+                className="btn btn-success"
               >
                 {requiresOverride ? "Override & approve" : "Approve"}
               </button>
@@ -297,21 +297,21 @@ export function ApprovalCard({ approval }: { approval: Approval }) {
                 type="button"
                 disabled={decide.isPending}
                 onClick={() => (mode === "reject" ? submit("reject") : setMode("reject"))}
-                className="rounded-lg bg-[#5c120f] px-4 py-2 text-sm font-semibold text-white ring-1 ring-danger/60 hover:bg-[#71170f]"
+                className="btn btn-danger"
               >
                 {mode === "reject" ? "Confirm reject" : "Reject"}
               </button>
               <button
                 type="button"
                 onClick={() => (mode === "edit" ? submit("edit") : setMode("edit"))}
-                className="chip cursor-pointer px-3 py-2 hover:text-text"
+                className="btn btn-ghost"
               >
                 {mode === "edit" ? "Apply edit & approve" : "Edit"}
               </button>
               <button
                 type="button"
                 onClick={() => (mode === "respond" ? submit("respond") : setMode("respond"))}
-                className="chip cursor-pointer px-3 py-2 hover:text-text"
+                className="btn btn-ghost"
               >
                 {mode === "respond" ? "Send feedback (replan)" : "Respond"}
               </button>

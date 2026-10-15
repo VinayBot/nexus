@@ -53,7 +53,7 @@ class Settings(BaseSettings):
     )
 
     env: Literal["dev", "test", "prod"] = "dev"
-    log_level: str = "INFO"
+    log_level: str = "WARNING"
     log_json: bool = False
 
     api_host: str = "127.0.0.1"

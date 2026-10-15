@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Robot, RobotDefs } from "@/components/robots/Robot";
 import { avatarOf, nameOf, type AgentInfo } from "@/lib/agents";
 import type { MissionView } from "@/lib/missionView";
@@ -106,8 +106,19 @@ export function MissionFloor({
 }) {
   const now = useNow(1000);
   const done = useRef(new Set<number>());
-  const baseline = useRef<number | null>(null);
-  if (baseline.current === null) baseline.current = view.lastSeq; // don't replay old handoffs on mount
+  // robot size follows the floor's width so the squad never piles up on small screens
+  const box = useRef<HTMLDivElement>(null);
+  const [floorW, setFloorW] = useState(640);
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => e && setFloorW(e.contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const unit = Math.max(40, Math.min(70, floorW / 9.5));
+  // only animate what is happening now: opening a finished mission replays nothing
+  const fresh = (ts: number) => ts * 1000 > now - 5000;
 
   const present = useMemo(() => {
     const ids = new Set(SQUAD);
@@ -115,16 +126,23 @@ export function MissionFloor({
     return [...ids];
   }, [view.robots]);
 
-  const flying = view.handoffs.filter((h) => h.seq > (baseline.current ?? 0) && !done.current.has(h.seq)).slice(-6);
+  const flying = view.handoffs.filter((h) => fresh(h.ts) && !done.current.has(h.seq)).slice(-6);
   const beams = Object.entries(view.toolCalls)
     .filter(([, c]) => !c.done && c.agent)
     .slice(-6);
   const tests = Object.entries(view.council.tests);
-  const celebrating = view.status === "completed" && view.outcome === "success";
+  const lastTs = view.thoughts.at(-1)?.ts ?? 0;
+  const celebrating = view.status === "completed" && view.outcome === "success" && fresh(lastTs);
   const waiting = view.status === "paused";
 
   return (
-    <div className={cn("relative overflow-hidden rounded-2xl border border-border bg-[#120806]", className)}>
+    <div
+      ref={box}
+      className={cn(
+        "relative overflow-hidden rounded-[var(--radius-lg)] border border-[rgb(79_227_240/0.25)] bg-[#070910] shadow-[0_0_40px_-20px_rgb(79_227_240/0.6)]",
+        className,
+      )}
+    >
       <RobotDefs />
       <CommandDeck />
 
@@ -159,11 +177,16 @@ export function MissionFloor({
         const post = postOf(id, i);
         const state = settle(view.robots[id] ?? initialRobot(0), now);
         const idle = !view.robots[id];
+        const busy = state.mode !== "idle" && state.mode !== "sleeping";
         return (
           <motion.div
             key={id}
-            className="absolute -translate-x-1/2 -translate-y-1/2"
-            style={{ left: `${post.x}%`, top: `${post.y}%`, zIndex: (post.z ?? 1) + Math.round(post.y / 10) }}
+            className="absolute -translate-x-1/2 -translate-y-1/2 hover:!z-50"
+            style={{
+              left: `${post.x}%`,
+              top: `${post.y}%`,
+              zIndex: (busy ? 30 : 0) + (post.z ?? 1) + Math.round(post.y / 10),
+            }}
             animate={{ opacity: idle ? 0.55 : 1, filter: idle ? "saturate(0.6)" : "saturate(1)" }}
           >
             {!idle && (
@@ -180,7 +203,8 @@ export function MissionFloor({
               state={state}
               isCommander={id === "commander"}
               label={nameOf(id, agents)}
-              size={id === "commander" ? 92 : 70}
+              size={id === "commander" ? unit * 1.25 : unit}
+              showBubble={view.status === "running" || view.status === "paused"}
             />
           </motion.div>
         );

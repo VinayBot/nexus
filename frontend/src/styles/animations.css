@@ -1,4 +1,4 @@
-/* Keyframes shared across scenery and UI. Transform/opacity only for 60 fps. */
+/* Keyframes shared across scenery and UI. Transform/opacity only where possible, for 60 fps. */
 
 @keyframes drift-x {
   from {
@@ -52,11 +52,10 @@
     transform: translateX(100%);
   }
 }
-
 @keyframes reveal-up {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(14px) scale(0.985);
   }
   to {
     opacity: 1;
@@ -70,11 +69,25 @@
 }
 @keyframes btn-sweep {
   0% {
-    transform: translateX(-120%) skewX(-20deg);
+    transform: translateX(-160%) skewX(-20deg);
   }
   60%,
   100% {
-    transform: translateX(260%) skewX(-20deg);
+    transform: translateX(320%) skewX(-20deg);
+  }
+}
+@keyframes btn-sweep-once {
+  from {
+    transform: translateX(-160%) skewX(-20deg);
+  }
+  to {
+    transform: translateX(320%) skewX(-20deg);
+  }
+}
+@keyframes ripple {
+  to {
+    transform: scale(2.6);
+    opacity: 0;
   }
 }
 @keyframes core-spin {
@@ -85,19 +98,108 @@
 @keyframes border-glow {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgb(79 227 240 / 0);
+    box-shadow:
+      0 0 0 0 rgb(255 181 71 / 0),
+      0 10px 28px -10px rgb(255 107 61 / 0.8);
   }
   50% {
-    box-shadow: 0 0 18px -2px rgb(79 227 240 / 0.45);
+    box-shadow:
+      0 0 32px 2px rgb(255 181 71 / 0.45),
+      0 10px 28px -10px rgb(255 107 61 / 0.9);
+  }
+}
+@keyframes aurora-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(12vw, 6vh, 0) scale(1.15);
+  }
+}
+@keyframes aurora-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.1);
+  }
+  50% {
+    transform: translate3d(-14vw, 10vh, 0) scale(0.9);
+  }
+}
+@keyframes aurora-c {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(8vw, -8vh, 0);
+  }
+}
+@keyframes grid-roll {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 64px, 0);
+  }
+}
+@keyframes line-flow {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 200% 50%;
+  }
+}
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+@keyframes float-y {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+@keyframes deck-scan {
+  from {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  to {
+    transform: translateY(300px);
+    opacity: 0;
+  }
+}
+@keyframes icon-pop {
+  0% {
+    transform: scale(1) rotate(0);
+  }
+  40% {
+    transform: scale(1.25) rotate(-8deg);
+  }
+  100% {
+    transform: scale(1.1) rotate(0);
   }
 }
 
 /* Staggered entrance: children of .stagger rise in one after another. */
 .reveal {
-  animation: reveal-up 0.5s var(--ease-out) both;
+  animation: reveal-up 0.55s var(--ease-out) both;
 }
 .stagger > * {
-  animation: reveal-up 0.5s var(--ease-out) both;
+  animation: reveal-up 0.55s var(--ease-out) both;
 }
 .stagger > *:nth-child(2) {
   animation-delay: 0.05s;
@@ -123,19 +225,20 @@
   background: linear-gradient(
     90deg,
     var(--text) 0%,
-    var(--sun-core) 25%,
+    var(--sun-core) 20%,
+    var(--sun-gold) 30%,
     var(--text) 50%,
-    var(--cyan) 75%,
+    var(--cyan) 72%,
     var(--text) 100%
   );
   background-size: 200% auto;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: title-sheen 9s linear infinite;
+  animation: title-sheen 10s linear infinite;
 }
 
-/* A light sweep across buttons every few seconds. */
+/* A light sweep across a button every few seconds (hero CTAs). */
 .btn-shine {
   position: relative;
   overflow: hidden;
@@ -145,7 +248,7 @@
   position: absolute;
   inset: 0;
   width: 40%;
-  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.28), transparent);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.3), transparent);
   animation: btn-sweep 4s var(--ease-out) infinite;
   pointer-events: none;
 }
@@ -153,29 +256,41 @@
 /* Cards lift and glow on hover. */
 .card-lift {
   transition:
-    transform 0.25s var(--ease-out),
-    box-shadow 0.25s var(--ease-out),
-    border-color 0.25s var(--ease-out);
+    transform 0.3s var(--ease-out),
+    box-shadow 0.3s var(--ease-out),
+    border-color 0.3s var(--ease-out);
 }
 .card-lift:hover {
-  transform: translateY(-3px);
+  transform: translateY(-4px);
   border-color: var(--border-strong);
   box-shadow:
     var(--shadow-panel),
-    0 0 24px -8px var(--sun-gold);
+    0 18px 40px -18px rgb(255 140 60 / 0.55);
 }
 
-/* Spinning ring behind the logo mark. */
+/* Spinning dashed ring behind the logo mark. */
 .logo-core::before {
   content: "";
   position: absolute;
-  inset: -3px;
+  inset: -4px;
   border-radius: 14px;
   border: 1.5px dashed rgb(79 227 240 / 0.7);
-  animation: core-spin 12s linear infinite;
+  animation: core-spin 14s linear infinite;
 }
 .glow-pulse {
-  animation: border-glow 2.4s ease-in-out infinite;
+  animation: border-glow 2.6s ease-in-out infinite;
+}
+/* A gradient hairline that flows along the bottom edge (top bar, active cards). */
+.flow-line {
+  background: linear-gradient(90deg, transparent, var(--sun-gold), var(--coral), var(--cyan), transparent);
+  background-size: 200% 100%;
+  animation: line-flow 6s linear infinite;
+}
+.float-y {
+  animation: float-y 5s ease-in-out infinite;
+}
+.group:hover .icon-pop {
+  animation: icon-pop 0.45s var(--ease-spring) forwards;
 }
 
 .animate-sun-pulse {
@@ -192,6 +307,9 @@
   stroke-dasharray: 6 6;
   animation: flow-dash 0.8s linear infinite;
 }
+.deck-scan {
+  animation: deck-scan 6s linear infinite;
+}
 
 /* Respect reduced motion and the in-app performance mode. */
 @media (prefers-reduced-motion: reduce) {
@@ -207,24 +325,45 @@
   display: none !important;
 }
 [data-perf="on"] *,
-[data-perf="on"] *::before {
+[data-perf="on"] *::before,
+[data-perf="on"] *::after {
   animation-play-state: paused;
 }
 
-/* Command deck: a slow scan band sweeping down the floor. */
-@keyframes deck-scan {
+@keyframes bar-grow {
   from {
-    transform: translateY(0);
-    opacity: 0;
-  }
-  15% {
-    opacity: 1;
+    transform: scaleX(0);
   }
   to {
-    transform: translateY(300px);
-    opacity: 0;
+    transform: scaleX(1);
   }
 }
-.deck-scan {
-  animation: deck-scan 6s linear infinite;
+.header-bar {
+  transform-origin: left;
+  animation: bar-grow 0.8s 0.15s var(--ease-out) both;
+  box-shadow: 0 0 12px rgb(255 140 60 / 0.6);
+}
+
+/* Holographic grid surface (timelines, scopes). */
+.holo-grid {
+  background-image:
+    linear-gradient(rgb(79 227 240 / 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(79 227 240 / 0.06) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+.spin-slow {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: core-spin 6s linear infinite;
+}
+@keyframes ecg-sweep {
+  from {
+    transform: translateX(-40px);
+  }
+  to {
+    transform: translateX(600px);
+  }
+}
+.ecg-sweep {
+  animation: ecg-sweep 3s linear infinite;
 }

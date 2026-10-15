@@ -127,7 +127,7 @@ export function UnderTheHoodPanel() {
           type="button"
           onClick={() => run.mutate(effective)}
           disabled={run.isPending || !effective}
-          className="rounded-lg bg-gradient-to-r from-[var(--sky-crimson)] to-[var(--ember)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+          className="btn btn-primary"
         >
           {run.isPending ? "Both agents are working (real model)…" : "Run side by side"}
         </button>
@@ -151,8 +151,8 @@ export function UnderTheHoodPanel() {
           The raw agent is ~250 lines you can read top to bottom — fast and transparent, but every concern lives in one
           loop. The LangGraph worker is a typed state machine: each step is checkpointed, the loop has a declared
           max-iteration guard, retries/validation/routing come from the shared gateway, context is pruned to the
-          agent&apos;s token budget, and every Thought/Action/Observation is an event the Command Center animates. Run the
-          benchmark in the Benchmarks for averages over several tasks.
+          agent&apos;s token budget, and every Thought/Action/Observation is an event the Command Center animates. Run
+          the benchmark in the Benchmarks for averages over several tasks.
         </p>
       </section>
     </>

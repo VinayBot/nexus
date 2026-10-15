@@ -1,10 +1,21 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { Suspense } from "react";
-import { ArchitecturePanel } from "@/components/learn/ArchitecturePanel";
-import { CurriculumPanel } from "@/components/learn/CurriculumPanel";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { UrlTabs } from "@/components/ui/Tabs";
+import { PanelSkeleton, UrlTabs } from "@/components/ui/Tabs";
+
+const ArchitecturePanel = dynamic(
+  () => import("@/components/learn/ArchitecturePanel").then((m) => m.ArchitecturePanel),
+  {
+    loading: PanelSkeleton,
+    ssr: false,
+  },
+);
+const CurriculumPanel = dynamic(() => import("@/components/learn/CurriculumPanel").then((m) => m.CurriculumPanel), {
+  loading: PanelSkeleton,
+  ssr: false,
+});
 
 const TABS = [
   { id: "architecture", label: "Architecture", render: () => <ArchitecturePanel /> },
@@ -14,7 +25,10 @@ const TABS = [
 export default function Page() {
   return (
     <>
-      <PageHeader title="How it Works" description="Click through the system, and see where each Week-4 topic lives in the code." />
+      <PageHeader
+        title="How it Works"
+        description="Click through the system, and see where each Week-4 topic lives in the code."
+      />
       <Suspense>
         <UrlTabs tabs={TABS} layoutId="learn-tab" />
       </Suspense>

@@ -3,7 +3,7 @@ SHELL := /bin/bash
 export COREPACK_ENABLE_DOWNLOAD_PROMPT := 0
 COMPOSE := $(shell docker compose version >/dev/null 2>&1 && echo "docker compose" || echo docker-compose)
 
-.PHONY: help setup models dev backend frontend test test-backend test-frontend lint typecheck e2e \
+.PHONY: help setup models dev prod backend frontend test test-backend test-frontend lint typecheck e2e \
         types sandbox-image mail demo reset check
 
 help: ## Show this help
@@ -21,6 +21,9 @@ models: ## Pull the Ollama models for the configured profile
 
 dev: ## Run backend :8000 and frontend :3000 together
 	./scripts/dev.sh
+
+prod: ## Fast mode: optimised frontend build + backend without the reloader
+	./scripts/prod.sh
 
 backend: ## Run only the backend
 	cd backend && uv run uvicorn nexus.api.app:app --reload --reload-dir nexus --port 8000

@@ -32,14 +32,14 @@ export function UrlTabs({ tabs, layoutId }: { tabs: TabDef[]; layoutId: string }
                 router.replace(t.id === tabs[0]!.id ? pathname : `${pathname}?tab=${t.id}`, { scroll: false })
               }
               className={cn(
-                "relative rounded-lg px-4 py-1.5 text-sm transition-colors",
+                "relative rounded-md px-4 py-1.5 text-sm transition-colors",
                 active ? "text-text" : "text-muted hover:text-text",
               )}
             >
               {active && (
                 <motion.span
                   layoutId={layoutId}
-                  className="absolute inset-0 rounded-lg border border-border-strong bg-[color-mix(in_srgb,var(--sun-gold)_14%,transparent)]"
+                  className="absolute inset-0 rounded-md border border-[rgb(79_227_240/0.5)] bg-[rgb(79_227_240/0.12)] shadow-[0_0_18px_-6px_var(--cyan)]"
                   transition={{ type: "spring", stiffness: 420, damping: 34 }}
                 />
               )}
@@ -57,5 +57,17 @@ export function UrlTabs({ tabs, layoutId }: { tabs: TabDef[]; layoutId: string }
         {current.render()}
       </motion.div>
     </>
+  );
+}
+
+/** Shimmering placeholder while a lazily loaded panel arrives. */
+export function PanelSkeleton() {
+  return (
+    <div className="grid gap-3 md:grid-cols-3" aria-busy="true" aria-label="Loading">
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="skeleton h-28" />
+      ))}
+      <div className="skeleton h-64 md:col-span-3" />
+    </div>
   );
 }

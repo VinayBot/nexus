@@ -62,9 +62,9 @@ function Vessel({ name, used, budget, pruned }: { name: string; used: number; bu
               initial={{ y: 0, opacity: 1 }}
               animate={{ y: -30, opacity: 0 }}
               exit={{ opacity: 0 }}
-              className="absolute top-2 left-1/2 -translate-x-1/2 text-xs"
+              className="absolute top-2 left-1/2 -translate-x-1/2 font-mono text-[9px] text-[#b8a7ff]"
             >
-              📜
+              ✦ pruned
             </motion.span>
           )}
         </AnimatePresence>
@@ -173,12 +173,12 @@ export default function Page() {
           <div className="mt-4 rounded-lg border border-border/50 p-3">
             <p className="text-[11px] text-muted">
               How the window works — system prompt and pinned items (task, plan, current step) always stay; the oldest
-              turns drop first; with <em>summarise</em> they fold into one pinned summary scroll:
+              turns drop first; with <em>summarise</em> they fold into one pinned summary:
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-1 text-[10px]">
-              <span className="rounded bg-accent/20 px-2 py-1 text-accent">system 📌</span>
-              <span className="rounded bg-accent/20 px-2 py-1 text-accent">task 📌</span>
-              <span className="rounded bg-[#e9d8a6]/20 px-2 py-1 text-[#e9d8a6]">summary 📜</span>
+              <span className="rounded bg-accent/20 px-2 py-1 text-accent">system ◆</span>
+              <span className="rounded bg-accent/20 px-2 py-1 text-accent">task ◆</span>
+              <span className="rounded bg-[#8b7bff]/20 px-2 py-1 text-[#b8a7ff]">summary ✦</span>
               {[1, 2, 3, 4, 5].map((n) => (
                 <span
                   key={n}
@@ -240,7 +240,7 @@ export default function Page() {
                 >
                   {name} · {n}
                 </button>
-                <div className="mt-1 flex h-16 items-end gap-0.5 border-b-4 border-[#5a3a1a] px-1">
+                <div className="mt-1 flex h-16 items-end gap-0.5 border-b-2 border-[rgb(79_227_240/0.5)] px-1 shadow-[0_2px_10px_-2px_rgb(79_227_240/0.6)]">
                   {(shelf === name
                     ? (items.data ?? [])
                     : Array.from({ length: Math.min(n, 30) }, (_, i) => ({
@@ -271,10 +271,10 @@ export default function Page() {
             ))}
           </div>
           {book && (
-            <div className="mt-3 rounded-lg bg-[linear-gradient(180deg,#efe2c4,#e3d1aa)] p-3 text-[#3b2410]">
+            <div className="holo-grid mt-3 rounded-lg border border-[rgb(79_227_240/0.3)] bg-[rgb(4_8_16/0.7)] p-3 text-text">
               <div className="flex">
-                <p className="font-display text-sm">{book.title}</p>
-                <button type="button" className="ml-auto text-xs" onClick={() => setBook(null)}>
+                <p className="font-display text-sm text-accent">{book.title}</p>
+                <button type="button" className="btn btn-ghost btn-sm ml-auto" onClick={() => setBook(null)}>
                   close
                 </button>
               </div>

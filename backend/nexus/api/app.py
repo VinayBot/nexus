@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 
 from nexus import __version__
 from nexus.api import (
@@ -91,6 +92,8 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    # event logs and summaries run to 100+ KB of JSON; SSE streams are excluded by Starlette
+    app.add_middleware(GZipMiddleware, minimum_size=2048, compresslevel=5)
     for module in (
         routes_system,
         routes_governor,

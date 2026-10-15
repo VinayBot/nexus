@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { ChevronDown, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { useState } from "react";
+import { LogoMark, Wordmark } from "@/components/brand/Logo";
 import { NAV } from "@/lib/nav";
 import { cn } from "@/lib/cn";
 import { useUi } from "@/stores/ui";
@@ -25,12 +26,18 @@ export function Sidebar() {
       transition={{ type: "spring", stiffness: 320, damping: 34 }}
       className="panel z-20 m-3 mr-0 flex shrink-0 flex-col overflow-hidden"
     >
-      <Link href="/" className="flex items-center gap-3 px-4 pt-4 pb-3" aria-label="NEXUS home">
-        <span className="logo-core relative grid size-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[var(--sun-core)] to-[var(--ember)] font-display text-lg font-bold text-[var(--ink)] shadow-[var(--glow-gold)]">
-          N
+      <Link href="/" className="group flex items-center gap-3 px-4 pt-4 pb-3" aria-label="NEXUS home">
+        <span className="transition-transform duration-500 group-hover:rotate-[60deg]">
+          <LogoMark size={34} />
         </span>
-        {!collapsed && <span className="font-display text-xl tracking-[0.2em] text-gold">NEXUS</span>}
+        {!collapsed && (
+          <span className="flex flex-col leading-none">
+            <Wordmark className="text-xl" />
+            <span className="mt-1 font-mono text-[9px] tracking-[0.25em] text-faint uppercase">Multi-agent OS</span>
+          </span>
+        )}
       </Link>
+      <div className="mx-4 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
       <div className="flex-1 overflow-y-auto px-2 pb-2">
         {NAV.map((group) => (
           <div key={group.title} className="mt-3">
@@ -75,21 +82,25 @@ export function Sidebar() {
                           title={collapsed ? item.label : undefined}
                           aria-current={active ? "page" : undefined}
                           className={cn(
-                            "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:bg-surface-hover hover:text-text",
-                            active && "text-text",
+                            "group relative flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted transition-[color,background-color,transform] duration-200 hover:translate-x-0.5 hover:bg-surface-hover hover:text-text",
+                            active && "font-medium text-text",
                           )}
                         >
                           {active && (
                             <motion.span
                               layoutId="nav-active"
-                              className="absolute inset-0 rounded-lg border border-border-strong bg-[color-mix(in_srgb,var(--sun-gold)_12%,transparent)]"
+                              className="absolute inset-0 rounded-md border border-[rgb(79_227_240/0.35)] bg-[linear-gradient(90deg,rgb(79_227_240/0.2),rgb(79_227_240/0.03))] shadow-[0_0_24px_-8px_rgb(79_227_240/0.8)]"
                               transition={{ type: "spring", stiffness: 400, damping: 36 }}
-                            />
+                            >
+                              <span className="absolute top-1.5 bottom-1.5 -left-px w-[3px] rounded-full bg-[var(--cyan)] shadow-[0_0_10px_var(--cyan)]" />
+                            </motion.span>
                           )}
                           <Icon
                             className={cn(
-                              "relative size-4 shrink-0",
-                              active ? "text-accent" : "text-faint group-hover:text-gold",
+                              "icon-pop relative size-4 shrink-0 transition-colors",
+                              active
+                                ? "text-[var(--cyan)] drop-shadow-[0_0_6px_var(--cyan)]"
+                                : "text-faint group-hover:text-accent",
                             )}
                             aria-hidden
                           />

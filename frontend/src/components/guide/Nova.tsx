@@ -314,11 +314,7 @@ export function Nova() {
                 className="min-w-0 flex-1 rounded-lg border border-border bg-black/40 px-3 py-2 text-sm"
                 aria-label="Message Nova"
               />
-              <button
-                type="submit"
-                disabled={busy}
-                className="rounded-lg bg-accent/20 px-3 text-sm text-accent ring-1 ring-accent/50 disabled:opacity-40"
-              >
+              <button type="submit" disabled={busy} className="btn btn-secondary btn-sm">
                 Ask
               </button>
             </form>

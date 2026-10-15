@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { Activity, Box, Database, FlaskConical, FolderGit2, Mail, Plug, Ticket, type LucideIcon } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -43,14 +44,14 @@ interface Call {
   duration_ms: number;
 }
 
-const WEAPON: Record<string, string> = {
-  workspace: "🗡",
-  sandbox: "🛡",
-  knowledge: "📜",
-  tickets: "🏮",
-  notify: "✉",
-  observability: "🔭",
-  demo: "🎯",
+const ICON: Record<string, { icon: LucideIcon; tint: string }> = {
+  workspace: { icon: FolderGit2, tint: "#4fe3f0" },
+  sandbox: { icon: Box, tint: "#34d399" },
+  knowledge: { icon: Database, tint: "#8b7bff" },
+  tickets: { icon: Ticket, tint: "#ffb547" },
+  notify: { icon: Mail, tint: "#ff4f6d" },
+  observability: { icon: Activity, tint: "#4fe3f0" },
+  demo: { icon: FlaskConical, tint: "#ff6b3d" },
 };
 
 function defaults(tool: Tool): string {
@@ -102,7 +103,9 @@ export default function Page() {
             <span className={sandbox.data?.isolated ? "text-success" : "text-warning"}>
               {sandbox.data?.backend ?? "…"}
             </span>
-            {sandbox.data && !sandbox.data.isolated && <span className="text-faint"> — {sandbox.data.reason}</span>}
+            {sandbox.data && !sandbox.data.isolated && (
+              <span className="text-faint"> — Docker isn&apos;t running, so tests run in a local subprocess.</span>
+            )}
           </>
         }
       />
@@ -116,12 +119,25 @@ export default function Page() {
               type="button"
               whileHover={{ y: -3 }}
               onClick={() => setServer(server === s.name ? null : s.name)}
-              className={cn("panel p-3 text-left", server === s.name && "border-border-strong")}
+              className={cn("panel group p-3 text-left", server === s.name && "border-border-strong")}
             >
               <div className="flex items-center gap-2">
-                <span className="text-2xl" aria-hidden>
-                  {WEAPON[s.name] ?? "⚔"}
-                </span>
+                {(() => {
+                  const ic = ICON[s.name] ?? { icon: Plug, tint: "#4fe3f0" };
+                  return (
+                    <span
+                      className="grid size-8 place-items-center rounded-md transition-transform duration-300 group-hover:scale-110"
+                      style={{
+                        background: `${ic.tint}1f`,
+                        border: `1px solid ${ic.tint}66`,
+                        boxShadow: `0 0 16px -6px ${ic.tint}`,
+                      }}
+                      aria-hidden
+                    >
+                      <ic.icon className="size-4" style={{ color: ic.tint }} />
+                    </span>
+                  );
+                })()}
                 <span className="font-display text-base">{s.name}</span>
                 <span
                   className={cn(
@@ -137,8 +153,8 @@ export default function Page() {
                 {s.health?.ping_ms ?? "—"} ms
                 {s.system_only && <span className="ml-1 text-warning">· system-only</span>}
               </p>
-              {/* weapon rack: one blade per tool */}
-              <div className="mt-2 flex gap-1.5">
+              {/* one chip per tool */}
+              <div className="mt-2 flex flex-wrap gap-1.5">
                 {s.tools.map((t) => (
                   <span
                     key={t.name}
@@ -206,7 +222,7 @@ export default function Page() {
               {tryTool.error && <p className="mt-1 text-xs text-danger">{tryTool.error.message}</p>}
             </>
           ) : (
-            <p className="mt-2 text-xs text-faint">Click a blade on any rack to inspect its schema and call it.</p>
+            <p className="mt-2 text-xs text-faint">Click any tool chip above to inspect its schema and call it.</p>
           )}
         </section>
         <section className="panel min-w-0 p-3">

@@ -1,9 +1,10 @@
 "use client";
 
+import { RotateCcw, Shuffle } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { Suspense, use, useEffect, useState } from "react";
-import { ScrollOfTime, type Branch, type CheckpointNode } from "@/components/timetravel/ScrollOfTime";
+import { CheckpointRail, type Branch, type CheckpointNode } from "@/components/timetravel/CheckpointRail";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { get, post } from "@/lib/api";
@@ -115,7 +116,7 @@ function TimeTravel({ missionId }: { missionId: string }) {
       ) : (
         <div className="space-y-3">
           <div className="panel p-3">
-            <ScrollOfTime
+            <CheckpointRail
               checkpoints={history.data.checkpoints}
               branches={branches}
               selected={selected}
@@ -145,17 +146,17 @@ function TimeTravel({ missionId }: { missionId: string }) {
                   type="button"
                   disabled={running || !selected || rerun.isPending}
                   onClick={() => rerun.mutate()}
-                  className="chip w-full cursor-pointer justify-center py-2 hover:text-text disabled:opacity-40"
+                  className="btn btn-ghost w-full"
                 >
-                  ⟲ Re-run from this checkpoint
+                  <RotateCcw className="size-4" /> Re-run from this checkpoint
                 </button>
                 <button
                   type="button"
                   disabled={running || runnerUp.isPending}
                   onClick={() => runnerUp.mutate()}
-                  className="chip w-full cursor-pointer justify-center py-2 hover:text-text disabled:opacity-40"
+                  className="btn btn-ghost w-full"
                 >
-                  ⚖ Choose the tournament runner-up instead
+                  <Shuffle className="size-4" /> Choose the tournament runner-up instead
                 </button>
                 {(rerun.error || runnerUp.error) && (
                   <p className="text-xs text-danger">{String((rerun.error ?? runnerUp.error)?.message)}</p>
@@ -193,7 +194,7 @@ function TimeTravel({ missionId }: { missionId: string }) {
                   disabled={running || !selected || fork.isPending}
                   onClick={() => fork.mutate()}
                   data-tour="fork-button"
-                  className="w-full rounded-lg bg-[#2f8fbf]/30 py-2 text-sm font-semibold text-text ring-1 ring-[#2f8fbf] disabled:opacity-40"
+                  className="btn btn-secondary w-full"
                 >
                   ⑂ Fork & run branch
                 </button>
@@ -205,7 +206,7 @@ function TimeTravel({ missionId }: { missionId: string }) {
                   <button
                     type="button"
                     onClick={() => setCmp([branches[0]!.head, branches[branches.length - 1]!.head])}
-                    className="chip w-full cursor-pointer justify-center py-2 hover:text-text"
+                    className="btn btn-secondary w-full"
                   >
                     {branches[0]!.label} ⇄ {branches[branches.length - 1]!.label}
                   </button>

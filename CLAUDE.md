@@ -1,7 +1,7 @@
 # NEXUS — project memory
 
 Local-first multi-agent OS (Week-4 bootcamp project). LangGraph orchestration, Ollama models,
-SQLite persistence, MCP tools, human approval gates, a "Sunset Command" UI where every Live
+SQLite persistence, MCP tools, human approval gates, a sci-fi "Sunset Command" HUD UI where every Live
 animation is driven by a real backend event. Checklist: `docs/PLAN.md`; topic → code map:
 `docs/TOPIC_COVERAGE.md`; architecture: `docs/ARCHITECTURE.md`; decisions: `docs/adr/`.
 
@@ -10,12 +10,13 @@ animation is driven by a real backend event. Checklist: `docs/PLAN.md`; topic �
   official `ollama` client behind our `LLMProvider` · `mcp` 2.x (`MCPServer`, in-process `Client`) ·
   SQLAlchemy async + aiosqlite · ChromaDB (only the backend process opens it) · tenacity · structlog.
 - **frontend/** Next.js 15 App Router · TS strict (`noUncheckedIndexedAccess`) · Tailwind v4 with
-  tokens in `src/styles/tokens.css` · motion · @xyflow/react · R3F (landing only, lazy) · zustand ·
+  tokens in `src/styles/tokens.css` · motion · @xyflow/react · zustand ·
   TanStack Query · pnpm 12 (build scripts allow-listed in `pnpm-workspace.yaml`).
 - Ollama runs natively (not Docker). Docker (Colima here) is only for Mailpit and the sandbox image.
 
 ## Commands (from repo root)
-`make setup` · `make models` · `make dev` (backend :8000, frontend :3000) · `make test` ·
+`make setup` · `make models` · `make dev` (backend :8000, frontend :3000, Turbopack) ·
+`make prod` (optimised build, no reloader — fastest) · `make test` ·
 `make lint` · `make typecheck` · `make check` (all) · `make e2e` · `make types` · `make reset`.
 Compose CLI is `docker-compose` on this machine; the Makefile detects it.
 
@@ -37,5 +38,10 @@ Compose CLI is `docker-compose` on this machine; the Makefile detects it.
   the next tournament round. Don't regress these.
 - Files stay under ~400 lines; split instead. Pydantic models for every agent I/O.
 - Untrusted text (tickets, docs, logs, tool output) is always wrapped by `safety.guardrails.fence()`.
+- Theme: void base, sunset aurora + neon HUD (tokens in `styles/tokens.css`). Cyan = navigation/system
+  chrome, warm gradient = primary actions (`.btn-primary`). Buttons use `.btn` variants; panels get HUD
+  corner brackets and a pointer spotlight from `components/layout/Interactions.tsx`. Only floating
+  elements (`.glass`) use backdrop blur — panels never do, it is what kept the UI fast.
+- Logs are quiet by default (`NEXUS_LOG_LEVEL=WARNING`, no uvicorn access log); set INFO to debug.
 - Approval email links: GET shows a confirm page, POST decides (link prefetchers must not approve).
 - Commit at the end of each phase; tick `docs/PLAN.md`.

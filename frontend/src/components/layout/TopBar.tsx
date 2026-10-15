@@ -111,7 +111,7 @@ function QuickSettings() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.96 }}
             transition={{ duration: 0.16 }}
-            className="panel absolute top-11 right-0 z-50 w-60 p-1.5"
+            className="glass absolute top-11 right-0 z-50 w-60 p-1.5"
           >
             <Toggle
               on={theme === "night"}
@@ -168,12 +168,13 @@ export function TopBar() {
       <button
         type="button"
         onClick={() => useTour.getState().start(undefined, true)}
-        className="btn-shine chip cursor-pointer hover:text-text"
+        className="btn btn-secondary btn-sm"
         title="Presentation mode: an auto-advancing guided tour"
       >
         ▶ Present
       </button>
       <QuickSettings />
+      <span aria-hidden className="flow-line pointer-events-none absolute inset-x-8 -bottom-px h-px opacity-80" />
     </header>
   );
 }
