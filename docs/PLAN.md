@@ -19,19 +19,19 @@ Ticked = implemented, tested and committed. Phases follow spec §18.
 - [x] Raw SDK ReAct agent (httpx only) + tests
 
 ## Phase 2 — LangGraph core, persistence, events
-- [ ] `MissionState` + documented, tested reducers
-- [ ] Main graph (intake → rewrite → route → plan → assemble → dispatch ⇄ workers → … → report)
-- [ ] ReAct worker subgraph
-- [ ] AsyncSqliteSaver checkpoints; resume unfinished missions on startup
-- [ ] Event bus, event persistence, WebSockets (per mission + global, resume from seq)
-- [ ] Sliding-window + summarisation pruning with events
-- [ ] Missions API
+- [x] `MissionState` + documented, tested reducers
+- [x] Main graph (intake → rewrite → route → plan → assemble → dispatch ⇄ workers → … → report)
+- [x] ReAct worker subgraph
+- [x] AsyncSqliteSaver checkpoints; resume unfinished missions on startup
+- [x] Event bus, event persistence, WebSockets (per mission + global, resume from seq)
+- [x] Sliding-window + summarisation pruning with events
+- [x] Missions API
 
 ## Phase 3 — MCP servers & tools
-- [ ] workspace-fs (path jail), sandbox-exec (Docker / labelled local fallback), knowledge, tickets, notify, observability
-- [ ] MCP hub (in-process clients), per-agent allowlists, call log
-- [ ] Sandbox runner image
-- [ ] Armory API
+- [x] workspace-fs (path jail), sandbox-exec (Docker / labelled local fallback), knowledge, tickets, notify, observability
+- [x] MCP hub (in-process clients), per-agent allowlists, call log
+- [x] Sandbox runner image (Dockerfile; Docker path written, local labelled fallback verified — Colima was not running)
+- [x] Armory API
 
 ## Phase 4 — Tournament + HITL + safety
 - [ ] Council/Tournament subgraph (parallel proposals, sandbox grounding, anonymised review, debate cycle, judge, escalation)

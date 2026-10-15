@@ -52,6 +52,8 @@ class MissionContext:
 
 mission_context: ContextVar[MissionContext | None] = ContextVar("mission_context", default=None)
 agent_context: ContextVar[str | None] = ContextVar("agent_context", default=None)
+#: The graph node currently executing in this task (task-local, safe under fan-out).
+node_context: ContextVar[str | None] = ContextVar("node_context", default=None)
 
 Sink = Callable[[list[Event]], Awaitable[None]]
 
@@ -117,7 +119,7 @@ class EventBus:
             checkpoint_id=ctx.checkpoint_id if ctx and ctx.mission_id == mid else None,
             ts=time.time(),
             agent_id=agent_id or agent_context.get(),
-            node=node or (ctx.node if ctx else None),
+            node=node or node_context.get(),
             type=type_,
             payload=data,
         )

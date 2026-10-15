@@ -36,6 +36,8 @@ def configure_logging(level: str = "INFO", *, json: bool = False) -> None:
     root = logging.getLogger()
     root.handlers[:] = [handler]
     root.setLevel(level.upper())
+    for noisy in ("httpx", "httpcore", "chromadb", "mcp", "aiosqlite"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
 
 
 def get_logger(name: str) -> structlog.stdlib.BoundLogger:

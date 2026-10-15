@@ -88,6 +88,7 @@ class Settings(BaseSettings):
     github_token: str | None = None
     demo_service_port: int = 8100
     mission_token_limit: int = 120_000
+    pruning_strategy: Literal["sliding_window", "summarise"] = "summarise"
     #: Seconds the verifier watches demo-service health after a fix.
     verify_window_s: float = 12.0
 

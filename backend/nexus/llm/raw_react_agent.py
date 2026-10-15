@@ -174,7 +174,7 @@ class RawReActAgent:
         if unknown:
             return (
                 f"ERROR: {name} does not take {sorted(unknown)}; "
-                f'call it with action_input {{{", ".join(f"{p!r}: ..." for p in expected)}}}'
+                f"call it with action_input {{{', '.join(f'{p!r}: ...' for p in expected)}}}"
             )
         try:
             out = tool.fn(**args)

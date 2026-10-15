@@ -1,0 +1,36 @@
+# NEXUS safety policies. Editable from Settings → Policies (saved to data/policies.yaml).
+policies:
+  - id: email_requires_approval
+    description: No email is sent to anyone without a human approval.
+    kind: require_approval
+    applies_to: [send_email]
+    enabled: true
+  - id: patch_requires_approval
+    description: Code changes to a running service always need a human approval.
+    kind: require_approval
+    applies_to: [apply_patch]
+    enabled: true
+  - id: ticket_comment_requires_approval
+    description: Posting to a ticket system needs approval.
+    kind: require_approval
+    applies_to: [comment_ticket]
+    enabled: true
+  - id: mission_token_cap
+    description: A single mission may use at most this many tokens.
+    kind: token_cap
+    value: 120000
+    enabled: true
+  - id: sandbox_no_network
+    description: Sandboxed commands run with networking disabled.
+    kind: sandbox_network
+    value: false
+    enabled: true
+  - id: workspace_jail
+    description: Agents may never read or write files outside the mission workspace.
+    kind: path_jail
+    enabled: true
+  - id: block_critical
+    description: CRITICAL-risk actions are blocked unless a human explicitly overrides.
+    kind: block_level
+    value: CRITICAL
+    enabled: true

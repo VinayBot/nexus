@@ -11,31 +11,60 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from nexus import __version__
-from nexus.api import routes_governor, routes_system
-from nexus.core.config import get_settings
+from nexus.api import (
+    routes_approvals,
+    routes_governor,
+    routes_graph,
+    routes_mcp,
+    routes_memory,
+    routes_missions,
+    routes_system,
+    ws,
+)
+from nexus.core.config import PROJECT_ROOT, get_settings
 from nexus.core.logging import configure_logging, get_logger
-from nexus.core.services import build_services, set_services
+from nexus.core.runtime import runtime
+from nexus.memory.long_term import index_docs
 
 log = get_logger(__name__)
+
+DOC_PATHS = [PROJECT_ROOT / "README.md", *sorted((PROJECT_ROOT / "docs").glob("*.md"))]
+
+
+async def _index_docs_later(svc: object) -> None:
+    await asyncio.sleep(2)  # let the API come up first
+    memory = getattr(svc, "extras", {}).get("memory")
+    if memory is None:
+        return
+    try:
+        paths = [*DOC_PATHS, *sorted((PROJECT_ROOT / "docs" / "adr").glob("*.md"))]
+        added = await index_docs(memory, paths)
+        log.info("docs.indexed", chunks_added=added)
+    except Exception as exc:
+        log.warning("docs.index_failed", error=str(exc))
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
-    settings.data_dir.mkdir(parents=True, exist_ok=True)
-    svc = getattr(app.state, "services", None) or build_services(settings)
-    set_services(svc)
     log.info(
         "nexus.start", profile=settings.model_profile.value, models=settings.models.model_dump()
     )
-    monitor = asyncio.create_task(svc.governor.run(), name="governor")
-    try:
-        yield
-    finally:
-        monitor.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await monitor
-        log.info("nexus.stop")
+    async with runtime(settings) as svc:
+        app.state.services = svc
+        background = [
+            asyncio.create_task(svc.governor.run(), name="governor"),
+            asyncio.create_task(_index_docs_later(svc), name="index-docs"),
+        ]
+        try:
+            yield
+        finally:
+            for task in background:
+                task.cancel()
+            for task in background:
+                with contextlib.suppress(asyncio.CancelledError, Exception):
+                    await task
+    log.info("nexus.stop")
 
 
 def create_app() -> FastAPI:
@@ -53,8 +82,17 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    for module in (routes_system, routes_governor):
+    for module in (
+        routes_system,
+        routes_governor,
+        routes_missions,
+        routes_approvals,
+        routes_graph,
+        routes_mcp,
+        routes_memory,
+    ):
         app.include_router(module.router, prefix="/api/v1")
+    app.include_router(ws.router)
     return app
 
 

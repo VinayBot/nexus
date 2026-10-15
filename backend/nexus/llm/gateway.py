@@ -21,9 +21,10 @@ from typing import Any, TypeVar
 from pydantic import BaseModel, ValidationError
 
 from nexus.core.event_types import AgentToken, LlmCall, Retry
-from nexus.core.events import agent_context, emit
+from nexus.core.events import agent_context, emit, mission_context
 from nexus.core.governor import ResourceGovernor
 from nexus.core.logging import get_logger
+from nexus.core.meter import meter
 from nexus.llm.provider import LLMProvider, ProviderError
 from nexus.llm.router import ModelRouter
 from nexus.llm.tokens import calibration, estimate_messages
@@ -145,6 +146,8 @@ class LLMGateway:
         validation_failures: int = 0,
     ) -> LLMResult:
         agent_id = agent_id or agent_context.get()
+        ctx = mission_context.get()
+        meter.check(ctx.mission_id if ctx else None)
         _, primary = self.router.pick(purpose, role=role, validation_failures=validation_failures)
         base = LLMRequest(
             model=primary,
