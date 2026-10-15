@@ -1,0 +1,49 @@
+# NEXUS services. Ollama runs NATIVELY on macOS (Docker on Mac has no Metal GPU);
+# containers reach it at host.docker.internal:11434.
+# Give Docker Desktop / Colima ~3–4 GB RAM on a 16 GB Mac.
+name: nexus
+
+services:
+  backend:
+    build: { context: ., dockerfile: backend/Dockerfile }
+    ports: ["8000:8000"]
+    env_file: [{ path: .env, required: false }]
+    environment:
+      NEXUS_API_HOST: 0.0.0.0
+      NEXUS_OLLAMA_BASE_URL: http://host.docker.internal:11434
+      NEXUS_SMTP_HOST: mailpit
+      NEXUS_SANDBOX_BACKEND: docker
+    volumes:
+      - nexus-data:/app/backend/data
+      - /var/run/docker.sock:/var/run/docker.sock  # sandbox-exec starts sibling containers
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    depends_on: [mailpit]
+    deploy: { resources: { limits: { memory: 1536m } } }
+
+  frontend:
+    build:
+      context: ./frontend
+      args: { NEXT_PUBLIC_API_URL: "http://localhost:8000" }
+    ports: ["3000:3000"]
+    depends_on: [backend]
+    deploy: { resources: { limits: { memory: 512m } } }
+
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports: ["8025:8025", "1025:1025"]
+    deploy: { resources: { limits: { memory: 128m } } }
+
+  # Build-only: the image sandbox-exec runs tests in (no network, 1 CPU, 512 MB at run time).
+  sandbox-runner:
+    build: ./sandbox
+    image: nexus-sandbox:latest
+    profiles: [build]
+
+  # Optional tracing UI.
+  phoenix:
+    image: arizephoenix/phoenix:version-11.0.0
+    ports: ["6006:6006"]
+    profiles: [observability]
+
+volumes:
+  nexus-data:

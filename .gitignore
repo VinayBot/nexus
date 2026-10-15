@@ -1,0 +1,27 @@
+# env & secrets
+.env
+*.local
+
+# python
+__pycache__/
+*.pyc
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# node
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+playwright-report/
+test-results/
+
+# runtime data (SQLite, Chroma, workspaces, sandboxes)
+backend/data/
+data/
+
+.DS_Store

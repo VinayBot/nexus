@@ -1,0 +1,87 @@
+/* Keyframes shared across scenery and UI. Transform/opacity only for 60 fps. */
+
+@keyframes drift-x {
+  from {
+    transform: translateX(-30%);
+  }
+  to {
+    transform: translateX(130%);
+  }
+}
+@keyframes sun-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.95;
+  }
+  50% {
+    transform: scale(1.025);
+    opacity: 1;
+  }
+}
+@keyframes lantern-glow {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes lantern-alarm {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+@keyframes flow-dash {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+@keyframes shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.animate-sun-pulse {
+  animation: sun-pulse 8s ease-in-out infinite;
+  transform-origin: center;
+}
+.animate-lantern {
+  animation: lantern-glow 2.4s ease-in-out infinite;
+}
+.animate-alarm {
+  animation: lantern-alarm 1.1s ease-in-out infinite;
+}
+.animate-flow {
+  stroke-dasharray: 6 6;
+  animation: flow-dash 0.8s linear infinite;
+}
+
+/* Respect reduced motion and the in-app performance mode. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+[data-perf="on"] .perf-hide {
+  display: none !important;
+}
+[data-perf="on"] *,
+[data-perf="on"] *::before {
+  animation-play-state: paused;
+}

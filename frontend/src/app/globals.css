@@ -1,0 +1,98 @@
+@import "tailwindcss";
+@import "../styles/tokens.css";
+@import "../styles/animations.css";
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-strong: var(--surface-strong);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-muted: var(--text-muted);
+  --color-faint: var(--text-faint);
+  --color-accent: var(--accent);
+  --color-gold: var(--accent-warm);
+  --color-ember: var(--ember);
+  --color-crimson: var(--sky-crimson);
+  --color-vermilion: var(--sky-vermilion);
+  --color-shell: var(--shell);
+  --color-visor: var(--visor);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--error);
+  --font-display: var(--font-shippori), "Hiragino Mincho ProN", serif;
+  --font-sans: var(--font-zen-kaku), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+  --radius-panel: var(--radius-lg);
+}
+
+html {
+  background: var(--bg);
+}
+
+body {
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: rgb(79 227 240 / 0.35);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(247 164 64 / 0.35) transparent;
+}
+
+@layer components {
+  /* lacquer glass panel with a thin gold border and washi grain */
+  .panel {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-panel);
+    backdrop-filter: blur(14px) saturate(1.15);
+    -webkit-backdrop-filter: blur(14px) saturate(1.15);
+  }
+  .panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background-image: url("/textures/washi.svg");
+    opacity: 0.05;
+    mix-blend-mode: overlay;
+  }
+  .panel-title {
+    font-family: var(--font-display);
+    letter-spacing: 0.02em;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    font-size: 0.72rem;
+    line-height: 1.2rem;
+    color: var(--text-muted);
+    background: rgb(0 0 0 / 0.25);
+  }
+}
