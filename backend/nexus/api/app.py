@@ -15,6 +15,7 @@ from nexus.api import (
     routes_approvals,
     routes_governor,
     routes_graph,
+    routes_hitl,
     routes_mcp,
     routes_memory,
     routes_missions,
@@ -88,6 +89,7 @@ def create_app() -> FastAPI:
         routes_missions,
         routes_approvals,
         routes_graph,
+        routes_hitl,
         routes_mcp,
         routes_memory,
     ):

@@ -69,6 +69,7 @@ class MissionRunner:
         configurable: dict[str, Any] = {"thread_id": mission_id}
         if checkpoint_id:
             configurable["checkpoint_id"] = checkpoint_id
+            configurable["checkpoint_ns"] = ""  # root graph namespace (needed by update_state)
         return {"configurable": configurable, "recursion_limit": 250}
 
     def is_running(self, mission_id: str) -> bool:

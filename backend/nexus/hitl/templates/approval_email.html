@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+<body style="margin:0;padding:0;background:#140909;font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#f6ebe0;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#140909;padding:24px 0;">
+    <tr><td align="center">
+      <table role="presentation" width="640" cellpadding="0" cellspacing="0" style="max-width:640px;background:#1e0f0e;border:1px solid #6b4a24;border-radius:14px;">
+        <tr><td style="padding:22px 28px 8px 28px;">
+          <div style="font-size:12px;letter-spacing:3px;color:#f7a440;">NEXUS · SHOGUN'S SEAL</div>
+          <h1 style="margin:8px 0 4px 0;font-family:Georgia,serif;font-size:22px;color:#ffd08a;">Approval needed: {{ title }}</h1>
+          <div style="font-size:13px;color:#c9b2a3;">Mission <code>{{ mission_id }}</code> is paused and waiting for you.</div>
+        </td></tr>
+        <tr><td style="padding:8px 28px;">
+          <span style="display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:bold;background:{{ risk_color }};color:#140909;">RISK {{ risk_level }}{% if risk_score is not none %} · {{ '%.2f'|format(risk_score) }}{% endif %}</span>
+          {% if requires_override %}<span style="display:inline-block;margin-left:6px;padding:4px 10px;border-radius:999px;font-size:12px;background:#ff4d4f;color:#fff;">CRITICAL — override required (use the app)</span>{% endif %}
+          <p style="font-size:15px;line-height:1.5;margin:12px 0 4px 0;">{{ summary }}</p>
+          {% if risk_explanation %}<p style="font-size:12px;color:#9a8173;margin:0;">{{ risk_explanation }}</p>{% endif %}
+        </td></tr>
+        {% if verdict %}
+        <tr><td style="padding:8px 28px;">
+          <div style="font-size:13px;color:#f7a440;margin-bottom:4px;">Tournament verdict</div>
+          <div style="font-size:13px;">Winner <b>{{ verdict.winner_label }}</b> ({{ verdict.winner }}) · confidence {{ verdict.confidence }}{% if verdict.runner_up %} · runner-up {{ verdict.runner_up }}{% endif %}</div>
+          <div style="font-size:12px;color:#c9b2a3;margin-top:4px;">Dissent: {{ verdict.dissent }}</div>
+        </td></tr>
+        {% endif %}
+        {% for item in evidence %}
+        <tr><td style="padding:8px 28px;">
+          <div style="font-size:13px;color:#f7a440;margin-bottom:4px;">{{ item.title }}</div>
+          <pre style="margin:0;padding:10px;background:#0e1116;border-radius:8px;font-size:12px;line-height:1.4;color:#e6e6e6;white-space:pre-wrap;word-break:break-word;">{{ item.content }}</pre>
+        </td></tr>
+        {% endfor %}
+        {% if dry_run %}
+        <tr><td style="padding:8px 28px;font-size:13px;">Dry run: <b style="color:{{ '#3fd18b' if dry_run.ok else '#ff4d4f' }}">{{ 'passed' if dry_run.ok else 'failed' }}</b> — {{ dry_run.summary }}</td></tr>
+        {% endif %}
+        <tr><td style="padding:18px 28px 24px 28px;">
+          {% if not requires_override %}
+          <a href="{{ approve_url }}" style="display:inline-block;padding:11px 22px;margin-right:8px;border-radius:8px;background:#3fd18b;color:#0b1a12;font-weight:bold;text-decoration:none;">Approve</a>
+          {% endif %}
+          <a href="{{ reject_url }}" style="display:inline-block;padding:11px 22px;margin-right:8px;border-radius:8px;background:#8e1b17;color:#fff;font-weight:bold;text-decoration:none;">Reject</a>
+          <a href="{{ open_url }}" style="display:inline-block;padding:10px 20px;border-radius:8px;border:1px solid #f7a440;color:#f7a440;text-decoration:none;">Open in NEXUS</a>
+          <p style="font-size:11px;color:#9a8173;margin:14px 0 0 0;">Links are signed, single-use and expire in 24 hours. Each opens a confirmation page — nothing happens until you confirm.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>

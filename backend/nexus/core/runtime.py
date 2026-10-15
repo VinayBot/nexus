@@ -24,6 +24,10 @@ from nexus.db.engine import Database
 from nexus.graph.main_graph import build_graph
 from nexus.graph.runner import MissionRunner
 from nexus.hitl.approvals import ApprovalService
+from nexus.hitl.email_approvals import EmailApprovals
+from nexus.hitl.mailer import Mailer
+from nexus.hitl.timetravel import TimeTravel
+from nexus.hitl.tokens import TokenService
 from nexus.llm.provider import LLMProvider
 from nexus.safety.policies import PolicyEngine
 
@@ -76,7 +80,15 @@ async def runtime(
         )
         svc.register("checkpointer", saver)
         svc.register("runner", runner)
-        svc.register("approvals", ApprovalService(db, runner))
+        approvals = ApprovalService(db, runner)
+        svc.register("approvals", approvals)
+        svc.register("timetravel", TimeTravel(runner))
+        tokens = TokenService(settings.secret_key, db)
+        svc.register("tokens", tokens)
+        mailer = svc.extras.get("mailer") or Mailer(db, settings.smtp_host, settings.smtp_port)
+        svc.register("email_approvals", EmailApprovals(settings, approvals, mailer, tokens))
+        if settings.secret_key == "dev-only-change-me":
+            log.warning("security.default_secret", hint="set NEXUS_SECRET_KEY in .env")
 
         if extra_setup is not None:
             await extra_setup(svc, stack)

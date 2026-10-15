@@ -16,8 +16,6 @@ from nexus.llm.types import ChatMessage
 from nexus.playbooks import all_playbooks
 from nexus.safety.guardrails import scan
 
-PLAYBOOK_IDS = {"council_qa", "self_healing", "ticket_solver", "project_builder", "dynamic"}
-
 
 async def intake(state: dict[str, Any]) -> dict[str, Any]:
     """Guardrails on the raw request: redact secrets/PII, flag injection attempts."""
@@ -76,7 +74,7 @@ async def rewrite(state: dict[str, Any]) -> dict[str, Any]:
 async def route(state: dict[str, Any]) -> dict[str, Any]:
     """Mission Router: honour an explicit playbook, else classify with the fast model."""
     preset = (state.get("inputs") or {}).get("playbook")
-    if preset in PLAYBOOK_IDS:
+    if preset and preset in {p.id for p in all_playbooks()}:
         return {"playbook": preset, "route_reason": "chosen by the user"}
     rewritten = RewrittenTask.model_validate(state["rewritten"])
     menu = "\n".join(f"- {p.id}: {p.description}" for p in all_playbooks())

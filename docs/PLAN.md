@@ -34,10 +34,10 @@ Ticked = implemented, tested and committed. Phases follow spec §18.
 - [x] Armory API
 
 ## Phase 4 — Tournament + HITL + safety
-- [ ] Council/Tournament subgraph (parallel proposals, sandbox grounding, anonymised review, debate cycle, judge, escalation)
-- [ ] Risk scorer, policy engine, guardrails (injection filter, redaction, allowlists)
-- [ ] Interrupts + approvals (UI + signed single-use email links via Mailpit)
-- [ ] Time travel (history, re-run, fork, compare) + audit log
+- [x] Council/Tournament subgraph (parallel proposals, sandbox grounding, anonymised review, debate cycle, judge, escalation) — code-mode grounding exercised by the Self-Healing playbook in phase 5
+- [x] Risk scorer, policy engine, guardrails (injection filter, redaction, allowlists)
+- [x] Interrupts + approvals (UI + signed single-use email links via Mailpit)
+- [x] Time travel (history, re-run, fork, compare) + audit log
 
 ## Phase 5 — Playbooks
 - [ ] demo-service with chaos switches, managed by the backend

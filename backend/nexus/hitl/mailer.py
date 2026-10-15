@@ -3,6 +3,9 @@ the UI can show what was sent — or what would have been sent if SMTP is down."
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
+import time
 import uuid
 from email.message import EmailMessage
 
@@ -26,6 +29,21 @@ class Mailer:
         self.host = host
         self.port = port
         self.sender = sender
+        self._reachable_until = 0.0
+
+    async def reachable(self) -> bool:
+        """Fast TCP probe (aiosmtplib waits its full timeout even on a refused port)."""
+        if time.monotonic() < self._reachable_until:
+            return True
+        try:
+            _, writer = await asyncio.wait_for(asyncio.open_connection(self.host, self.port), 1.0)
+        except (OSError, TimeoutError):
+            return False
+        writer.close()
+        with contextlib.suppress(Exception):
+            await writer.wait_closed()
+        self._reachable_until = time.monotonic() + 30
+        return True
 
     async def send(
         self,
@@ -49,6 +67,8 @@ class Mailer:
         msg.add_alternative(html, subtype="html")
         status = "sent"
         try:
+            if not await self.reachable():
+                raise ConnectionError(f"SMTP {self.host}:{self.port} unreachable")
             await aiosmtplib.send(msg, hostname=self.host, port=self.port, timeout=5)
         except Exception as exc:
             status = "outbox"
