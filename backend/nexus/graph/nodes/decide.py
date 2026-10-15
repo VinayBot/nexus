@@ -8,6 +8,8 @@ from langchain_core.messages import AIMessage
 
 from nexus.agents import reputation
 from nexus.agents.reputation import agent_stats
+from nexus.core.event_types import CouncilProposal
+from nexus.core.events import emit
 from nexus.graph.nodes.common import count, limit, note, status, take
 from nexus.graph.schemas import EvidenceItem, Verdict
 from nexus.graph.subgraphs.tournament import tournament
@@ -39,6 +41,16 @@ async def council(state: dict[str, Any]) -> dict[str, Any]:
         feedback = f"{validation.get('summary', '')}\n{validation.get('details', '')}".strip()
     for sid in brief.solvers:
         status(sid, "walking")
+    for sid, seed in brief.seed_proposals.items():
+        emit(
+            "council.proposal",
+            CouncilProposal(
+                solver_id=sid,
+                strategy=seed.get("strategy", "memory"),
+                summary=seed.get("content", "")[:300],
+            ),
+            agent_id="kagemi",
+        )
     out = await tournament.ainvoke(
         {
             "mission_id": state["mission_id"],
@@ -52,7 +64,7 @@ async def council(state: dict[str, Any]) -> dict[str, Any]:
             "solvers": brief.solvers,
             "critic": brief.critic,
             "judge_id": "hakari",
-            "proposals": {},
+            "proposals": dict(brief.seed_proposals),
             "scores": {},
             "labels": {},
             "round": 0,
@@ -68,12 +80,14 @@ async def council(state: dict[str, Any]) -> dict[str, Any]:
     for sid in brief.solvers:
         await reputation.bump(sid, tournaments=1, wins=1 if sid == verdict.winner else 0)
         status(sid, "success" if sid == verdict.winner else "idle")
-    await reputation.reward(verdict.winner, brief.topic, round(verdict.confidence, 2))
+    if verdict.winner in brief.solvers:
+        await reputation.reward(verdict.winner, brief.topic, round(verdict.confidence, 2))
 
+    round_no = count(state, "fix") + 1
     evidence = [
         EvidenceItem(
             kind="answer" if brief.mode == "answer" else "diff",
-            title=f"Winning proposal {verdict.winner_label} ({winner['strategy']})",
+            title=f"Round {round_no} winner {verdict.winner_label} ({winner['strategy']})",
             content=winner["content"] if brief.mode == "answer" else _diff_text(winner),
         ).with_hash()
     ]
@@ -82,7 +96,7 @@ async def council(state: dict[str, Any]) -> dict[str, Any]:
         evidence.append(
             EvidenceItem(
                 kind="test_report",
-                title=f"Sandbox tests for {verdict.winner_label}",
+                title=f"Round {round_no} sandbox tests for {verdict.winner_label}",
                 content=f"{t.get('passed', 0)} passed, {t.get('failed', 0)} failed, {t.get('errors', 0)} errors\n{t.get('output', '')[-3000:]}",
             ).with_hash()
         )

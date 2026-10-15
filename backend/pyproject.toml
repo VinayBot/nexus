@@ -21,6 +21,7 @@ dependencies = [
     "psutil>=7.2.2",
     "pydantic>=2.14.1",
     "pydantic-settings>=2.16.0",
+    "pypdf>=6.20.1",
     "python-multipart>=0.0.32",
     "pyyaml>=6.0.3",
     "sqlalchemy[asyncio]>=2.1.4",
@@ -50,17 +51,19 @@ packages = ["nexus"]
 
 [tool.ruff]
 line-length = 100
+extend-exclude = ["nexus/playbooks/templates"]
 target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "SIM", "RUF", "ASYNC", "PT"]
-ignore = ["E501", "PT011", "PT018", "RUF001", "RUF002", "RUF003"]  # line length is enforced by `ruff format`
+ignore = ["E501", "PT011", "PT018", "RUF001", "RUF002", "RUF003", "ASYNC240"]  # line length is enforced by `ruff format`
 
 [tool.mypy]
 python_version = "3.12"
 strict = true
 plugins = ["pydantic.mypy"]
 files = ["nexus", "tests"]
+exclude = ["nexus/playbooks/templates/"]
 
 [[tool.mypy.overrides]]
 module = "tests.*"

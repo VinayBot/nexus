@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from nexus import __version__
 from nexus.api import (
     routes_approvals,
+    routes_chaos,
     routes_governor,
     routes_graph,
     routes_hitl,
@@ -20,12 +21,14 @@ from nexus.api import (
     routes_memory,
     routes_missions,
     routes_system,
+    routes_work,
     ws,
 )
 from nexus.core.config import PROJECT_ROOT, get_settings
 from nexus.core.logging import configure_logging, get_logger
 from nexus.core.runtime import runtime
 from nexus.memory.long_term import index_docs
+from nexus.playbooks.watcher import Watcher
 
 log = get_logger(__name__)
 
@@ -57,9 +60,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             asyncio.create_task(svc.governor.run(), name="governor"),
             asyncio.create_task(_index_docs_later(svc), name="index-docs"),
         ]
+        if settings.demo_autostart:
+            await svc.demo.start()
+            watcher = Watcher(svc.demo, svc.db, svc.runner, auto_heal=settings.auto_heal)
+            svc.register("watcher", watcher)
+            background.append(asyncio.create_task(watcher.run(), name="watcher"))
         try:
             yield
         finally:
+            await svc.demo.stop()
             for task in background:
                 task.cancel()
             for task in background:
@@ -88,10 +97,12 @@ def create_app() -> FastAPI:
         routes_governor,
         routes_missions,
         routes_approvals,
+        routes_chaos,
         routes_graph,
         routes_hitl,
         routes_mcp,
         routes_memory,
+        routes_work,
     ):
         app.include_router(module.router, prefix="/api/v1")
     app.include_router(ws.router)

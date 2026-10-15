@@ -29,22 +29,10 @@ def _valid(plan: Plan) -> bool:
     return all(d in known and d != s.id for s in plan.steps for d in s.depends_on)
 
 
-async def plan(state: dict[str, Any]) -> dict[str, Any]:
-    status("sensei", "thinking")
-    playbook = get_playbook(state["playbook"])
-    previous = Plan.model_validate(state["plan"]) if state.get("plan") else None
-    revision = (previous.revision + 1) if previous else 0
-    rewritten = state.get("rewritten") or {}
-    parts = [f"Task:\n{rewritten.get('clarified_task') or state['task']}"]
-    if rewritten.get("constraints"):
-        parts.append("Constraints:\n- " + "\n- ".join(rewritten["constraints"]))
-    if previous:
-        parts.append("Previous plan:\n" + "\n".join(f"- {s.id}: {s.title}" for s in previous.steps))
-        parts.append("Why it failed:\n- " + "\n- ".join(state.get("failure_notes") or ["unknown"]))
-        if state.get("findings"):
-            parts.append("Findings so far:\n" + findings_text(state, 1500))
-    template = playbook.template_plan(state).model_copy(update={"revision": revision})
-    out = await services().llm.structured(
+async def _ask_planner(
+    playbook: Any, parts: list[str], previous: Plan | None, template: Plan
+) -> Plan:
+    out: Plan = await services().llm.structured(
         [
             ChatMessage.system(
                 services().registry.get("sensei").system_prompt
@@ -59,6 +47,32 @@ async def plan(state: dict[str, Any]) -> dict[str, Any]:
         agent_id="sensei",
         default=template,
     )
+    return out
+
+
+async def plan(state: dict[str, Any]) -> dict[str, Any]:
+    playbook = get_playbook(state["playbook"])
+    previous = Plan.model_validate(state["plan"]) if state.get("plan") else None
+    prepared: dict[str, Any] = {}
+    if previous is None:
+        prepared = await playbook.prepare(state)
+        state = {**state, **prepared}
+    status("sensei", "thinking")
+    revision = (previous.revision + 1) if previous else 0
+    rewritten = state.get("rewritten") or {}
+    parts = [f"Task:\n{rewritten.get('clarified_task') or state['task']}"]
+    if rewritten.get("constraints"):
+        parts.append("Constraints:\n- " + "\n- ".join(rewritten["constraints"]))
+    if previous:
+        parts.append("Previous plan:\n" + "\n".join(f"- {s.id}: {s.title}" for s in previous.steps))
+        parts.append("Why it failed:\n- " + "\n- ".join(state.get("failure_notes") or ["unknown"]))
+        if state.get("findings"):
+            parts.append("Findings so far:\n" + findings_text(state, 1500))
+    template = playbook.template_plan(state).model_copy(update={"revision": revision})
+    if playbook.fixed_plan and previous is None:
+        out = template
+    else:
+        out = await _ask_planner(playbook, parts, previous, template)
     source = out.source
     if out is template or not _valid(out):
         out, source = template, "template"
@@ -78,6 +92,7 @@ async def plan(state: dict[str, Any]) -> dict[str, Any]:
     )
     status("sensei", "idle")
     update: dict[str, Any] = {
+        **prepared,
         "plan": out.model_dump(mode="json"),
         "current_step": 0,
         "step_results": {"__reset__": True},

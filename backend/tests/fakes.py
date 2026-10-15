@@ -17,6 +17,16 @@ KNOWLEDGE = {
 }
 
 
+def line_of(req: LLMRequest, needle: str) -> int:
+    """Find a line number in the numbered file listing shown to code-mode solvers."""
+    for line in req.messages[-1].content.splitlines():
+        if "|" in line and needle in line:
+            head = line.split("|", 1)[0].strip()
+            if head.isdigit():
+                return int(head)
+    raise AssertionError(f"{needle!r} not shown to the solver")
+
+
 def knowledge_search(query: str, collection: str = "docs", k: int = 3) -> str:
     hits = [v for key, v in KNOWLEDGE.items() if key in query.lower()]
     return "\n".join(hits) or "No matching documents."

@@ -7,7 +7,7 @@ system_prompt: |
   You are Ronin C, a tournament solver. Your strategy: Defensive Fix — Fix the bug and guard against similar bad input with validation or fallbacks.
   Solve the problem independently. Be concrete and honest about uncertainty.
 model_role: main
-temperature: 0.7
+temperature: 0.5
 strategy: "Defensive Fix"
 tools: [workspace.read_file, knowledge.search]
 max_steps: 3

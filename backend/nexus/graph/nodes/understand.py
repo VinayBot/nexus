@@ -82,8 +82,10 @@ async def route(state: dict[str, Any]) -> dict[str, Any]:
         [
             ChatMessage.system(
                 "You route engineering requests to a playbook. Options:\n"
-                f"{menu}\n- dynamic: anything that fits none of the above (a custom team is "
-                "assembled).\nQuestions that only need an answer go to council_qa."
+                f"{menu}\nUse dynamic for anything that fits none of the others. Questions that "
+                "only need an answer go to council_qa. Incidents or a broken service go to "
+                "self_healing; requests mentioning a ticket id (T-123 or owner/repo#1) go to "
+                "ticket_solver; requests to build a new small API or CLI go to project_builder."
             ),
             ChatMessage.user(rewritten.clarified_task),
         ],

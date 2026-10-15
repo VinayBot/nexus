@@ -74,10 +74,7 @@ async def approval(state: dict[str, Any]) -> dict[str, Any]:
             "dry_run": state.get("execution")
             if (state.get("execution") or {}).get("dry_run")
             else None,
-            "evidence": [
-                {"kind": e["kind"], "title": e["title"], "content": e["content"][:1500]}
-                for e in (state.get("evidence") or [])[-6:]
-            ],
+            "evidence": _approval_evidence(state),
             "answer": (state.get("answer") or "")[:2000],
         }
     )
@@ -93,6 +90,37 @@ async def approval(state: dict[str, Any]) -> dict[str, Any]:
     for agent in ("shogun", "hikyaku"):
         status(agent, "idle")
     return update
+
+
+def _approval_evidence(state: dict[str, Any]) -> list[dict[str, str]]:
+    """The final winner's diff and tests first, then the latest supporting notes."""
+    items: list[dict[str, str]] = []
+    verdict = state.get("verdict") or {}
+    winner = (state.get("proposals") or {}).get(verdict.get("winner", "")) or {}
+    tests = winner.get("tests") or {}
+    if tests.get("diff"):
+        items.append(
+            {
+                "kind": "diff",
+                "title": f"Final patch ({winner.get('strategy')})",
+                "content": tests["diff"][:2500],
+            }
+        )
+    if tests:
+        body = f"{tests.get('summary', '')}\n" + "\n".join(tests.get("failures") or [])
+        items.append(
+            {
+                "kind": "test_report",
+                "title": "Sandbox tests of the final patch",
+                "content": body[:1500],
+            }
+        )
+    seen = {"diff", "test_report"} if tests else set()
+    for e in reversed(state.get("evidence") or []):
+        if e["kind"] in seen or len(items) >= 5:
+            continue
+        items.append({"kind": e["kind"], "title": e["title"], "content": e["content"][:1500]})
+    return items
 
 
 def after_approval(state: dict[str, Any]) -> str:

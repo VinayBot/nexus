@@ -7,13 +7,13 @@ import { ChevronsLeft, ChevronsRight } from "lucide-react";
 import { NAV } from "@/lib/nav";
 import { cn } from "@/lib/cn";
 import { useUi } from "@/stores/ui";
-import { useMissions } from "@/stores/missions";
+import { useActiveMission } from "@/stores/missions";
 
 export function Sidebar() {
   const pathname = usePathname();
   const collapsed = useUi((s) => s.navCollapsed);
   const toggle = useUi((s) => s.toggleNav);
-  const activeMission = useMissions((s) => s.activeId);
+  const activeMission = useActiveMission((s) => s.activeId);
 
   return (
     <motion.nav

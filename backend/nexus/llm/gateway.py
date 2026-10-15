@@ -224,6 +224,7 @@ class LLMGateway:
         temperature: float = 0.1,
         max_reprompts: int = 2,
         default: T | None = None,
+        max_tokens: int = 900,
     ) -> T:
         """Return a validated ``schema`` instance (or ``default``), re-prompting on errors."""
         convo = list(messages)
@@ -243,6 +244,7 @@ class LLMGateway:
                 json_schema=json_schema,
                 stream=False,
                 validation_failures=failures,
+                max_tokens=max_tokens,  # small models can ramble until the timeout otherwise
             )
             try:
                 return schema.model_validate(extract_json(result.content))

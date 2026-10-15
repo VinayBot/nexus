@@ -33,6 +33,8 @@ class TournamentBrief(BaseModel):
     solvers: list[str] = ["ronin_a", "ronin_b", "ronin_c"]
     critic: str | None = "kiri"
     max_rounds: int = 1
+    #: Proposals that enter the tournament without an LLM call (e.g. a Fix Library patch).
+    seed_proposals: dict[str, dict[str, Any]] = {}
 
 
 class Playbook:
@@ -45,6 +47,24 @@ class Playbook:
     planner_hint: ClassVar[str] = ""
     #: Team approval interrupt before work starts (Dynamic Missions).
     approve_team: ClassVar[bool] = False
+    #: Use ``template_plan`` as-is instead of asking the planner (spec-driven plans).
+    fixed_plan: ClassVar[bool] = False
+
+    # -- preparation --------------------------------------------------------------
+    async def prepare(self, state: dict[str, Any]) -> dict[str, Any]:
+        """Deterministic setup before the first plan (workspace, reproduction…).
+
+        Returns state updates; ``inputs`` replaces the mission inputs.
+        """
+        return {}
+
+    async def run_step(self, payload: dict[str, Any]) -> dict[str, Any] | None:
+        """Custom executor for a plan step; return a Finding dict, or None for ReAct."""
+        return None
+
+    async def synthesize(self, state: dict[str, Any]) -> dict[str, Any] | None:
+        """Custom synthesis (no-tournament playbooks); None → the Scribe's summary."""
+        return None
 
     # -- planning -----------------------------------------------------------------
     def template_plan(self, state: dict[str, Any]) -> Plan:

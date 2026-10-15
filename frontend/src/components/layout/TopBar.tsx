@@ -5,6 +5,9 @@ import { Moon, Sun, Volume2, VolumeX, Zap, ZapOff } from "lucide-react";
 import { get } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { useUi } from "@/stores/ui";
+import { useLive } from "@/stores/live";
+import { DojoPower } from "./DojoPower";
+import { MissionSwitcher } from "./MissionSwitcher";
 
 interface Readiness {
   status: "ok" | "degraded" | "down";
@@ -61,11 +64,19 @@ export function BackendLantern() {
   );
 }
 
-export function TopBar({ children }: { children?: React.ReactNode }) {
+export function TopBar() {
   const { theme, toggleTheme, soundOn, toggleSound, performanceMode, togglePerformance } = useUi();
+  const socket = useLive((s) => s.socket);
   return (
     <header className="panel mx-3 mt-3 flex h-14 shrink-0 items-center gap-3 px-4">
-      <div className="flex min-w-0 flex-1 items-center gap-3">{children}</div>
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <MissionSwitcher />
+      </div>
+      <DojoPower />
+      <span className="chip" title="Live event stream">
+        <span className={cn("size-2 rounded-full", socket === "open" ? "bg-accent" : "animate-alarm bg-warning")} />
+        {socket === "open" ? "Live" : socket}
+      </span>
       <BackendLantern />
       <div className="flex items-center gap-0.5">
         <IconToggle

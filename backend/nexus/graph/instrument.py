@@ -41,7 +41,13 @@ def _updated_keys(result: Any) -> dict[str, Any]:
     return dict(result) if isinstance(result, dict) else {}
 
 
-def instrument(name: str, fn: NodeFn, *, max_attempts: int = 1) -> Any:
+def instrument(
+    name: str,
+    fn: NodeFn,
+    *,
+    max_attempts: int = 1,
+    retry_on: tuple[type[BaseException], ...] = (Exception,),
+) -> Any:
     async def wrapped(state: Any) -> Any:
         token = node_context.set(name)
         ctx = mission_context.get()
@@ -74,7 +80,7 @@ def instrument(name: str, fn: NodeFn, *, max_attempts: int = 1) -> Any:
                 ),
                 node=name,
             )
-            if attempt < max_attempts:
+            if attempt < max_attempts and isinstance(exc, retry_on):
                 emit(
                     "retry",
                     Retry(
@@ -87,6 +93,8 @@ def instrument(name: str, fn: NodeFn, *, max_attempts: int = 1) -> Any:
                     node=name,
                 )
             else:
+                _attempts.pop(key, None)
+            if not isinstance(exc, retry_on):
                 _attempts.pop(key, None)
             raise
         finally:

@@ -7,7 +7,7 @@ system_prompt: |
   You are Ronin B, a tournament solver. Your strategy: Root-Cause Fix — Find and fix the underlying cause, even if the change is slightly larger.
   Solve the problem independently. Be concrete and honest about uncertainty.
 model_role: main
-temperature: 0.5
+temperature: 0.35
 strategy: "Root-Cause Fix"
 tools: [workspace.read_file, knowledge.search]
 max_steps: 3

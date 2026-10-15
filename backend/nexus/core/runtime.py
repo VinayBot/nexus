@@ -90,6 +90,13 @@ async def runtime(
         if settings.secret_key == "dev-only-change-me":
             log.warning("security.default_secret", hint="set NEXUS_SECRET_KEY in .env")
 
+        from nexus.playbooks.demo_service import DemoService
+
+        svc.register("demo", DemoService(settings))
+        from nexus.playbooks.ticket_solver import ensure_seed_tickets
+
+        await ensure_seed_tickets(db)
+
         if extra_setup is not None:
             await extra_setup(svc, stack)
 

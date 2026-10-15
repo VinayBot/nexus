@@ -1,3 +1,4 @@
+import { LiveBridge } from "@/components/layout/LiveBridge";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopBar } from "@/components/layout/TopBar";
 import { SkyBackdrop } from "@/components/scenery/SkyBackdrop";
@@ -7,6 +8,7 @@ export default function DojoLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="flex h-dvh">
       <SkyBackdrop />
+      <LiveBridge />
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar />

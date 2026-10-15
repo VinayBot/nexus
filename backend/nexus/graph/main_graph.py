@@ -35,11 +35,8 @@ from nexus.graph.state import MissionState
 from nexus.llm.gateway import LLMUnavailableError
 
 #: Fragile LLM-heavy nodes are retried by LangGraph itself (layer 2 of reliability).
-LLM_RETRY = RetryPolicy(
-    max_attempts=2,
-    initial_interval=1.0,
-    retry_on=(LLMUnavailableError, TimeoutError, ConnectionError),
-)
+RETRYABLE: tuple[type[Exception], ...] = (LLMUnavailableError, TimeoutError, ConnectionError)
+LLM_RETRY = RetryPolicy(max_attempts=2, initial_interval=1.0, retry_on=RETRYABLE)
 
 NODES: dict[str, Any] = {
     "intake": understand.intake,
@@ -98,7 +95,12 @@ def build_graph(
         retry = LLM_RETRY if name in RETRIED else None
         g.add_node(
             name,
-            instrument(name, fn, max_attempts=retry.max_attempts if retry else 1),
+            instrument(
+                name,
+                fn,
+                max_attempts=retry.max_attempts if retry else 1,
+                retry_on=RETRYABLE,
+            ),
             retry_policy=retry,
             # dispatch returns Command(goto=Send…): declare where it can go
             destinations=("worker", "collect") if name == "dispatch" else None,

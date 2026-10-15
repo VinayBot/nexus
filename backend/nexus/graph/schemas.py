@@ -35,7 +35,7 @@ class RewrittenTask(BaseModel):
 
 
 class RouteDecision(BaseModel):
-    playbook: Literal["council_qa", "self_healing", "ticket_solver", "project_builder", "dynamic"]
+    playbook: str = Field(description="One of the listed playbook ids.")
     reason: str
 
 

@@ -62,6 +62,7 @@ async def dispatch(state: dict[str, Any]) -> Command[str]:
                     "agent_id": agent_id,
                     "step": step.model_dump(),
                     "task": state.get("task", ""),
+                    "inputs": state.get("inputs") or {},
                     "goal": p.goal,
                     "context": context,
                     "tools": tools,
@@ -94,6 +95,21 @@ async def worker(payload: dict[str, Any]) -> dict[str, Any]:
         f"Your step ({step['id']}): {step['title']}\n{step['description']}\n"
         f"Success criteria: {step.get('success_criteria') or 'n/a'}"
     )
+    try:
+        custom = await get_playbook(payload["playbook"]).run_step(payload)
+    except Exception as exc:
+        custom = Finding(
+            step_id=step["id"], agent_id=agent_id, summary=f"Step failed: {exc}"[:500], ok=False
+        ).model_dump()
+    if custom is not None:
+        agent_context.reset(token)
+        finding = Finding.model_validate(custom)
+        status(agent_id, "success" if finding.ok else "failed")
+        await reputation.bump(
+            agent_id, steps=1, total_latency_ms=(time.perf_counter() - started) * 1000
+        )
+        data = finding.model_dump()
+        return {"findings": [data], "step_results": {step["id"]: data}}
     try:
         out = await react_worker.ainvoke(
             initial_worker_state(
@@ -157,7 +173,10 @@ def after_collect(state: dict[str, Any]) -> str:
 
 
 async def synthesize(state: dict[str, Any]) -> dict[str, Any]:
-    """No tournament: the Scribe merges worker findings into one answer."""
+    """No tournament: the playbook's synthesis, or the Scribe merges the findings."""
+    custom = await get_playbook(state["playbook"]).synthesize(state)
+    if custom is not None:
+        return custom
     status("kanji", "thinking")
     out = await services().llm.complete(
         [

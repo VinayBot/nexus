@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import asyncio
 import random
+import re
 from typing import Annotated, Any, Literal, TypedDict
 
 from langgraph.graph import END, START, StateGraph
@@ -56,7 +57,7 @@ class TournamentState(TypedDict, total=False):
     topic: str
     question: str
     context: str
-    code_context: dict[str, Any] | None  # {"file": path, "content": str} for code mode
+    code_context: dict[str, Any] | None  # code mode: {"files": {path: content}}
     feedback: str  # why the previous winner failed validation (fix loop)
     solvers: list[str]
     critic: str | None
@@ -81,9 +82,17 @@ class AnswerOut(BaseModel):
 
 
 class CodeOut(BaseModel):
+    """Line-range edit: small models rewrite lines far more reliably than they copy them."""
+
     rationale: str = Field(description="Root cause and why this edit fixes it.")
-    search: str = Field(description="Exact existing lines to replace, copied verbatim.")
-    replace: str = Field(description="The new lines.")
+    file: str = Field(description="Which of the shown files to edit.")
+    start_line: int = Field(ge=1, description="First line number to replace.")
+    end_line: int = Field(
+        ge=1, description="Last line number to replace (same as start for one line)."
+    )
+    replacement: str = Field(
+        description="The new full lines that replace that range, with indentation."
+    )
 
 
 class ReviewItem(BaseModel):
@@ -103,8 +112,38 @@ class Revision(BaseModel):
     decision: Literal["defend", "revise"]
     rationale: str
     answer: str | None = None
-    search: str | None = None
-    replace: str | None = None
+    file: str | None = None
+    start_line: int | None = None
+    end_line: int | None = None
+    replacement: str | None = None
+
+
+_NUMBERED = re.compile(r"^\s*\d+\s*\|\s?")
+
+
+def line_patch(
+    files: dict[str, str], file: str, start: int, end: int, replacement: str
+) -> dict[str, Any]:
+    """Turn a line-range edit into the exact search/replace patch the grounder applies."""
+    if file not in files:
+        file = next(iter(files), file)
+    lines = files.get(file, "").splitlines()
+    start, end = min(start, end), max(start, end)
+    if not lines or start > len(lines):
+        return {"file": file, "search": "", "replace": replacement, "lines": [start, end]}
+    end = min(end, len(lines))
+    # models sometimes echo the " 12| " prefixes we show them
+    cleaned = "\n".join(_NUMBERED.sub("", ln) for ln in replacement.strip("\n").splitlines())
+    return {
+        "file": file,
+        "search": "\n".join(lines[start - 1 : end]),
+        "replace": cleaned,
+        "lines": [start, end],
+    }
+
+
+def numbered(content: str) -> str:
+    return "\n".join(f"{i:3d}| {line}" for i, line in enumerate(content.splitlines(), 1))
 
 
 # --- helpers ------------------------------------------------------------------------
@@ -121,10 +160,17 @@ def _solver_prompt(sid: str, state: dict[str, Any]) -> list[ChatMessage]:
         )
     if state.get("mode") == "code" and state.get("code_context"):
         cc = state["code_context"]
+        for path, content in cc["files"].items():
+            parts.append(f"File {path} (line numbers on the left):\n```\n{numbered(content)}\n```")
+        focus = cc.get("focus")
+        if focus:
+            parts.append(
+                f"The exception is raised in {focus['file']} at line {focus['line']}:\n    {focus['code']}"
+            )
         parts.append(
-            f"File {cc['file']}:\n```python\n{cc['content']}\n```\n"
-            "Return an exact search/replace edit for this file. 'search' must be copied "
-            "verbatim from the file (a few complete lines)."
+            "Fix it with ONE edit: give the file, start_line and end_line of the lines to replace, "
+            "and 'replacement' = the corrected full lines (keep the indentation, no line numbers). "
+            "Change as little as your strategy requires."
         )
     if state.get("feedback"):
         parts.append(f"A previous attempt failed validation:\n{state['feedback']}")
@@ -159,13 +205,15 @@ async def propose(payload: dict[str, Any]) -> dict[str, Any]:
             code = await services().llm.structured(
                 msgs, CodeOut, purpose="solve", agent_id=sid, temperature=spec.temperature
             )
-            file = (payload.get("code_context") or {}).get("file", "")
+            files = (payload.get("code_context") or {}).get("files", {})
             prop = Proposal(
                 solver_id=sid,
                 strategy=spec.strategy or spec.title,
                 content=code.rationale,
                 rationale=code.rationale,
-                patch={"file": file, "search": code.search, "replace": code.replace},
+                patch=line_patch(
+                    files, code.file, code.start_line, code.end_line, code.replacement
+                ),
             )
         else:
             ans = await services().llm.structured(
@@ -343,7 +391,7 @@ async def revise(payload: dict[str, Any]) -> dict[str, Any]:
             "Reviewers critiqued your proposal:\n- "
             + "\n- ".join(critiques or ["(none)"])
             + "\n\nEither defend it (decision 'defend') or revise it (decision 'revise' with the "
-            "full new answer, or new search/replace in code mode)."
+            "full new answer, or in code mode a new file/start_line/end_line/replacement)."
         ),
     ]
     token = agent_context.set(sid)
@@ -362,8 +410,15 @@ async def revise(payload: dict[str, Any]) -> dict[str, Any]:
     new = dict(mine)
     new["round"] = payload.get("round", 1)
     new["rationale"] = rev.rationale
-    if payload["mode"] == "code" and rev.search and rev.replace is not None:
-        new["patch"] = {**mine["patch"], "search": rev.search, "replace": rev.replace}
+    if payload["mode"] == "code" and rev.start_line and rev.replacement is not None:
+        files = (payload.get("code_context") or {}).get("files", {})
+        new["patch"] = line_patch(
+            files,
+            rev.file or mine["patch"]["file"],
+            rev.start_line,
+            rev.end_line or rev.start_line,
+            rev.replacement,
+        )
         new["tests"] = None  # must be re-grounded
     elif rev.answer:
         new["content"] = rev.answer

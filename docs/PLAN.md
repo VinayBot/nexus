@@ -40,19 +40,19 @@ Ticked = implemented, tested and committed. Phases follow spec §18.
 - [x] Time travel (history, re-run, fork, compare) + audit log
 
 ## Phase 5 — Playbooks
-- [ ] demo-service with chaos switches, managed by the backend
-- [ ] Self-Healing (watcher, investigation, reproduction, tournament, approval, apply, verify, rollback, Fix Library)
-- [ ] Ticket Solver (mock tickets + optional GitHub)
-- [ ] Project Builder (scoped, ≤10 files, zip)
-- [ ] Council Q&A, Dynamic Mission (team approval, save as playbook)
-- [ ] Reputation updates
+- [x] demo-service with chaos switches, managed by the backend
+- [x] Self-Healing (watcher, investigation, reproduction, tournament, approval, apply, verify, rollback, Fix Library)
+- [x] Ticket Solver (mock tickets + optional GitHub)
+- [x] Project Builder (scoped, ≤10 files, zip)
+- [x] Council Q&A, Dynamic Mission (team approval, save as playbook)
+- [x] Reputation updates
 
 ## Phase 6 — Frontend core
-- [ ] Event types generated from backend JSON Schema; WS client with resume
-- [ ] Robot SVG system + event-driven animation state machine
-- [ ] Mission Control (composer, Dojo Floor, Thought Stream, timeline)
-- [ ] Live Graph + State Inspector
-- [ ] Approvals (hanko stamp), Scroll of Time
+- [x] Event types generated from backend JSON Schema; WS client with resume
+- [x] Robot SVG system + event-driven animation state machine
+- [x] Mission Control (composer, Dojo Floor, Thought Stream, timeline)
+- [x] Live Graph + State Inspector
+- [x] Approvals (hanko stamp), Scroll of Time
 
 ## Phase 7 — Advanced screens
 - [ ] Council Arena, Memory Palace, Barracks, Armory, Chaos Shrine, Observatory, Evals

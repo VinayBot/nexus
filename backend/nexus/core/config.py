@@ -87,6 +87,8 @@ class Settings(BaseSettings):
     sandbox_image: str = "nexus-sandbox:latest"
     github_token: str | None = None
     demo_service_port: int = 8100
+    demo_autostart: bool = True
+    auto_heal: bool = True
     mission_token_limit: int = 120_000
     pruning_strategy: Literal["sliding_window", "summarise"] = "summarise"
     #: Seconds the verifier watches demo-service health after a fix.
