@@ -195,7 +195,7 @@ export default function Page() {
         </section>
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+      <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5" data-tour="bells">
         {chaos.data?.switches.map((s) => (
           <Bell key={s.id} sw={s} busy={toggle.isPending} onRing={() => toggle.mutate(s)} />
         ))}

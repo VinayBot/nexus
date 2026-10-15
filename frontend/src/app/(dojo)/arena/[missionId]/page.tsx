@@ -111,7 +111,7 @@ export default function Page({ params }: { params: Promise<{ missionId: string }
         kanji="闘技"
         description="Solvers propose independently (same model, different strategy and temperature), code patches are proven in their own sandboxes, proposals are masked as A/B/C for peer review, disagreement triggers debate, and the Judge weighs evidence first."
       />
-      <section className="panel relative overflow-hidden p-4">
+      <section className="panel relative overflow-hidden p-4" data-tour="arena">
         <div className="mx-auto flex max-w-5xl flex-col items-center">
           <div className="flex items-center gap-4">
             <Robot

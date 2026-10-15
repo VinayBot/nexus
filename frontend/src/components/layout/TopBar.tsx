@@ -6,6 +6,7 @@ import { get } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { useUi } from "@/stores/ui";
 import { useLive } from "@/stores/live";
+import { useTour } from "@/stores/tour";
 import { DojoPower } from "./DojoPower";
 import { MissionSwitcher } from "./MissionSwitcher";
 
@@ -72,6 +73,10 @@ export function TopBar() {
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <MissionSwitcher />
       </div>
+      <button type="button" onClick={() => useTour.getState().start(undefined, true)} className="chip cursor-pointer hover:text-text" title="Presentation mode: an auto-advancing guided tour">
+        ▶ Present
+      </button>
+      <span className="chip hidden xl:inline-flex" title="Command palette">⌘K</span>
       <DojoPower />
       <span className="chip" title="Live event stream">
         <span className={cn("size-2 rounded-full", socket === "open" ? "bg-accent" : "animate-alarm bg-warning")} />

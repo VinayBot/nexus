@@ -108,7 +108,7 @@ export default function Page() {
         }
       />
       {servers.isError && <EmptyState title="Backend unreachable" tone="error" />}
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4" data-tour="armory">
         {servers.data?.map((s) => {
           const ok = s.health?.status === "ok";
           return (

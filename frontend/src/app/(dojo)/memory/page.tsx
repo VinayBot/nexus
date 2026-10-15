@@ -125,7 +125,7 @@ export default function Page() {
         description="Short-term memory is each agent's context window — pruned by sliding window or folded into a rolling summary when it nears the budget. Long-term memory lives in ChromaDB: the Fix Library, past missions, project docs and lessons."
       />
       <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <section className="panel p-4">
+        <section data-tour="vessels" className="panel p-4">
           <h2 className="panel-title text-sm text-gold">
             Context vessels {activeId ? `· mission ${activeId}` : "(select a mission in the top bar)"}
           </h2>

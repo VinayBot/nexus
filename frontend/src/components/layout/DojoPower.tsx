@@ -24,6 +24,7 @@ export function DojoPower() {
           type="button"
           className="chip cursor-pointer gap-2 py-1 hover:text-text"
           aria-label="Dojo Power: resource governor"
+          data-tour="dojo-power"
         >
           <svg viewBox="0 0 32 32" className="size-6 -rotate-90" aria-hidden>
             <circle cx="16" cy="16" r="13" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="4" />

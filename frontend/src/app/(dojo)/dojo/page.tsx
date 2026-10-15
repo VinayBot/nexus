@@ -19,6 +19,7 @@ import { cn } from "@/lib/cn";
 import { useMission } from "@/lib/queries";
 import { useActiveMission } from "@/stores/missions";
 import { useMissionStream } from "@/stores/missionStream";
+import { SPEEDS, useReplay } from "@/stores/replay";
 
 const LiveGraph = dynamic(() => import("@/components/graph/LiveGraph").then((m) => m.LiveGraph), {
   ssr: false,
@@ -34,13 +35,18 @@ function MissionControl() {
     if (fromUrl && fromUrl !== activeId) setActive(fromUrl);
   }, [fromUrl, activeId, setActive]);
   const missionId = fromUrl ?? activeId;
-  const view = useMissionStream(missionId);
+  const live = useMissionStream(missionId);
+  const [replayOn, setReplayOn] = useState(false);
+  const [speed, setSpeed] = useState(2);
+  const replay = useReplay(missionId, replayOn, speed);
+  useEffect(() => setReplayOn(false), [missionId]);
+  const view = replayOn ? replay.view : live;
   const mission = useMission(missionId);
   const agents = useAgents();
   const [mode, setMode] = useState<"dojo" | "graph">("dojo");
   const cancel = useMutation({ mutationFn: () => post(`/missions/${missionId}/cancel`) });
 
-  const status = view.status !== "idle" ? view.status : (mission.data?.status ?? "idle");
+  const status = replayOn ? "replay" : view.status !== "idle" ? view.status : (mission.data?.status ?? "idle");
   return (
     <div className="grid h-full min-h-[640px] grid-cols-1 gap-3 lg:grid-cols-[290px_minmax(0,1fr)_340px] lg:grid-rows-[minmax(0,1fr)_auto]">
       <aside className="flex min-h-0 flex-col gap-3 lg:row-span-2">
@@ -84,7 +90,45 @@ function MissionControl() {
               Awaiting your seal →
             </Link>
           )}
-          {status === "running" && (
+          {missionId && (
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setReplayOn((r) => !r)}
+                className={cn("chip cursor-pointer", replayOn && "border-[#b8a7ff] text-[#b8a7ff]")}
+                aria-pressed={replayOn}
+              >
+                {replayOn ? "■ Live" : "⏵ Replay"}
+              </button>
+              {replayOn && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => replay.setPlaying(!replay.playing)}
+                    className="chip cursor-pointer"
+                  >
+                    {replay.playing ? "Pause" : "Play"}
+                  </button>
+                  <button type="button" onClick={replay.restart} className="chip cursor-pointer">
+                    ⟲
+                  </button>
+                  <select
+                    value={speed}
+                    onChange={(e) => setSpeed(Number(e.target.value))}
+                    className="rounded-md border border-border bg-black/40 px-1 py-0.5 text-xs"
+                    aria-label="Replay speed"
+                  >
+                    {SPEEDS.map((s) => (
+                      <option key={s} value={s}>
+                        {s}×
+                      </option>
+                    ))}
+                  </select>
+                </>
+              )}
+            </div>
+          )}
+          {status === "running" && !replayOn && (
             <button type="button" onClick={() => cancel.mutate()} className="chip cursor-pointer hover:text-danger">
               Cancel
             </button>
@@ -114,7 +158,24 @@ function MissionControl() {
         <div className="panel px-2">
           <StageStrip view={view} />
         </div>
-        <motion.div layout className="relative min-h-[420px] flex-1">
+        {replayOn && (
+          <div className="panel flex items-center gap-3 border-[#b8a7ff]/60 px-3 py-1.5 text-xs">
+            <span className="rounded bg-[#b8a7ff]/20 px-2 font-semibold tracking-widest text-[#b8a7ff]">REPLAY</span>
+            <span className="text-muted">Recorded events re-fed at {speed}× — not live.</span>
+            <div className="h-1.5 flex-1 rounded-full bg-white/5">
+              <div
+                className="h-full rounded-full bg-[#b8a7ff]"
+                style={{
+                  width: `${replay.progress.total ? (replay.progress.done / replay.progress.total) * 100 : 0}%`,
+                }}
+              />
+            </div>
+            <span className="font-mono text-faint">
+              {replay.progress.done}/{replay.progress.total}
+            </span>
+          </div>
+        )}
+        <motion.div layout className="relative min-h-[420px] flex-1" data-tour="dojo-floor">
           {mode === "dojo" ? (
             <motion.div
               key="dojo"
@@ -122,7 +183,12 @@ function MissionControl() {
               animate={{ opacity: 1, scale: 1 }}
               className="absolute inset-0"
             >
-              <DojoFloor key={missionId ?? "none"} view={view} agents={agents.data} className="h-full w-full" />
+              <DojoFloor
+                key={`${missionId ?? "none"}-${replayOn}`}
+                view={view}
+                agents={agents.data}
+                className="h-full w-full"
+              />
             </motion.div>
           ) : (
             <motion.div

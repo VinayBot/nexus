@@ -37,6 +37,7 @@ export const useUi = create<UiState>()(
     }),
     {
       name: "nexus-ui",
+      skipHydration: true, // rehydrated after mount so SSR and first client render match
       storage: createJSONStorage(() => localStorage),
       partialize: ({ theme, navCollapsed, soundOn, performanceMode }) => ({
         theme,

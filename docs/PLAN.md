@@ -59,9 +59,9 @@ Ticked = implemented, tested and committed. Phases follow spec §18.
 - [x] Architecture Explorer, Curriculum Map, Under the Hood, Settings, 3D landing hero
 
 ## Phase 8 — Hikari guide + polish
-- [ ] Guide chat (RAG + live-state tools + UI actions + tours)
-- [ ] Command palette, Presentation Mode, sound, Replay speed control
-- [ ] Reduced motion, performance mode, accessibility, empty/loading/error states
+- [x] Guide chat (RAG + live-state tools + UI actions + tours)
+- [x] Command palette, Presentation Mode, sound, Replay speed control
+- [x] Reduced motion, performance mode, accessibility, empty/loading/error states
 
 ## Phase 9 — Quality & docs
 - [ ] Full test suite + Playwright e2e, GitHub Actions

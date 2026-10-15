@@ -193,6 +193,7 @@ function TimeTravel({ missionId }: { missionId: string }) {
                   type="button"
                   disabled={running || !selected || fork.isPending}
                   onClick={() => fork.mutate()}
+                  data-tour="fork-button"
                   className="w-full rounded-lg bg-[#2f8fbf]/30 py-2 text-sm font-semibold text-text ring-1 ring-[#2f8fbf] disabled:opacity-40"
                 >
                   ⑂ Fork & run branch

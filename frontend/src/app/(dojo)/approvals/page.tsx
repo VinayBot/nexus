@@ -63,7 +63,7 @@ export default function Page() {
             inbox.
           </EmptyState>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4" data-tour="approvals-list">
             {pending.data.map((a) => (
               <ApprovalCard key={a.id} approval={a} />
             ))}

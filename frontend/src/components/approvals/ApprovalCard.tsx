@@ -5,6 +5,8 @@ import { AnimatePresence, motion, useAnimationControls } from "motion/react";
 import Link from "next/link";
 import { useState } from "react";
 import { post } from "@/lib/api";
+import { sounds } from "@/lib/sound";
+import { useUi } from "@/stores/ui";
 import { cn } from "@/lib/cn";
 import type { Approval } from "@/lib/queries";
 import { DiffView } from "./DiffView";
@@ -80,6 +82,7 @@ export function ApprovalCard({ approval }: { approval: Approval }) {
     onSuccess: async (_, body) => {
       if (body.decision === "approve" || body.decision === "edit") {
         setStamped(true);
+        if (useUi.getState().soundOn) sounds.taiko();
         await controls.start({ x: [0, -6, 6, -3, 0], transition: { duration: 0.35, delay: 0.15 } });
       } else if (body.decision === "reject") {
         setTorn(true);

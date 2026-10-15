@@ -25,7 +25,7 @@ export default function Page() {
         kanji="学び"
         description={`Every Week-4 topic, where it is implemented, and where to watch it. "Seen live" counts the real events of that kind recorded so far — ${seen}/${CURRICULUM.length} concepts have run on this machine.`}
       />
-      <div className="panel overflow-x-auto">
+      <div className="panel overflow-x-auto" data-tour="curriculum">
         <table className="w-full text-left text-xs">
           <thead className="text-faint">
             <tr className="border-b border-border/50">

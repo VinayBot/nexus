@@ -2,6 +2,7 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { sounds } from "@/lib/sound";
 import { EventSocket } from "@/lib/ws";
 import { useLive } from "@/stores/live";
 import { useUi } from "@/stores/ui";
@@ -21,6 +22,11 @@ export function LiveBridge() {
       onEvent: (e) => {
         useLive.getState().ingest(e);
         const ui = useUi.getState();
+        if (ui.soundOn) {
+          if (e.type === "interrupt.raised" || e.type === "incident.detected") sounds.chime();
+          if (e.type === "chaos.toggled" && e.payload.enabled) sounds.bell();
+          if (e.type === "mission.completed" && e.payload.outcome === "success") sounds.success();
+        }
         switch (e.type) {
           case "incident.detected":
             ui.setSkyMood("incident");

@@ -312,7 +312,7 @@ export default function Page() {
         }
       />
       <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="panel h-[600px] overflow-hidden">
+        <div className="panel h-[600px] overflow-hidden" data-tour="architecture">
           <ReactFlow
             nodes={nodes}
             edges={edges}

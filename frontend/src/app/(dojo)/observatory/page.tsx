@@ -170,7 +170,7 @@ export default function Page() {
       </div>
 
       <div className="mt-3 grid gap-3 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <section className="panel min-w-0 p-3">
+        <section className="panel min-w-0 p-3" data-tour="traces">
           <h2 className="panel-title text-sm text-gold">Trace waterfall</h2>
           <select
             value={selected ?? ""}

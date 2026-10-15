@@ -300,7 +300,7 @@ export default function Page() {
       />
       {editing && <Editor agent={editing} allTools={allTools} onClose={() => setEditing(null)} />}
       <div className="mt-3 grid gap-3 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-5" data-tour="agents">
           {agents.data?.map((a) => (
             <FlipCard key={a.id} a={a} onEdit={() => setEditing(a)} />
           ))}

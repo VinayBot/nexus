@@ -25,7 +25,7 @@ export default function Page({ params }: { params: Promise<{ missionId: string }
           </>
         }
       />
-      <div className="panel min-h-[560px] flex-1 overflow-hidden">
+      <div className="panel min-h-[560px] flex-1 overflow-hidden" data-tour="live-graph">
         <LiveGraph view={view} showInspector />
       </div>
     </div>

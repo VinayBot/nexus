@@ -120,7 +120,14 @@ class TimeTravel:
         snap = await self.graph.aget_state(self.runner.config(mission_id, checkpoint_id))
         if not snap.values:
             raise TimeTravelError("checkpoint not found")
-        return {"summary": _summary(snap), "values": snap.values}
+        writer = None
+        source = (snap.metadata or {}).get("source")
+        if source == "update":
+            writer = "update"
+        elif snap.parent_config:
+            parent = await self.graph.aget_state(snap.parent_config)
+            writer = ",".join(parent.next) or None
+        return {"summary": _summary(snap, writer), "values": snap.values}
 
     def _ensure_idle(self, mission_id: str) -> None:
         if self.runner.is_running(mission_id):

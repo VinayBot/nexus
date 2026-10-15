@@ -15,6 +15,7 @@ validation error, escalation to the main model, and an optional safe default.
 from __future__ import annotations
 
 import asyncio
+import inspect
 import time
 from typing import Any, TypeVar
 
@@ -29,7 +30,14 @@ from nexus.core.tracing import span
 from nexus.llm.provider import LLMProvider, ProviderError
 from nexus.llm.router import ModelRouter
 from nexus.llm.tokens import calibration, estimate_messages
-from nexus.llm.types import ChatMessage, LLMRequest, LLMResult, ModelRole, ToolSpec
+from nexus.llm.types import (
+    ChatMessage,
+    LLMRequest,
+    LLMResult,
+    ModelRole,
+    TokenCallback,
+    ToolSpec,
+)
 from nexus.reliability.circuit_breaker import BreakerRegistry, CircuitOpenError
 from nexus.reliability.json_repair import JsonRepairError, extract_json
 from nexus.reliability.retry import with_retries
@@ -101,7 +109,9 @@ class LLMGateway:
         self.embed_model = embed_model
 
     # -- single attempt against one model --------------------------------------------
-    async def _call_model(self, request: LLMRequest, stream: bool) -> LLMResult:
+    async def _call_model(
+        self, request: LLMRequest, stream: bool, on_token: TokenCallback | None = None
+    ) -> LLMResult:
         breaker = self.breakers.get(f"model:{request.model}")
         breaker.before_call()
         streamer = (
@@ -110,10 +120,20 @@ class LLMGateway:
             else None
         )
 
+        async def relay(piece: str) -> None:
+            if streamer is not None:
+                streamer(piece)
+            if on_token is not None:
+                res = on_token(piece)
+                if inspect.isawaitable(res):
+                    await res
+
+        callback = relay if (streamer is not None or on_token is not None) else None
+
         async def attempt() -> LLMResult:
             async with self.governor.slot(request.model):
                 async with asyncio.timeout(self.timeout_s):
-                    return await self.provider.chat(request, on_token=streamer)
+                    return await self.provider.chat(request, on_token=callback)
 
         try:
             with span(
@@ -150,6 +170,7 @@ class LLMGateway:
         max_tokens: int | None = None,
         stream: bool = True,
         validation_failures: int = 0,
+        on_token: TokenCallback | None = None,
     ) -> LLMResult:
         agent_id = agent_id or agent_context.get()
         ctx = mission_context.get()
@@ -192,7 +213,7 @@ class LLMGateway:
                 )
             estimated = estimate_messages(req.messages, req.model)
             try:
-                result = await self._call_model(req, stream)
+                result = await self._call_model(req, stream, on_token)
             except (ProviderError, CircuitOpenError, TimeoutError) as exc:
                 last_exc = exc
                 log.warning("llm.attempt_failed", model=req.model, step=label, error=str(exc))

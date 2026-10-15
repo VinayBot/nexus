@@ -10,6 +10,7 @@ interface ActiveMissionState {
 export const useActiveMission = create<ActiveMissionState>()(
   persist((set) => ({ activeId: null, setActive: (activeId) => set({ activeId }) }), {
     name: "nexus-active-mission",
+    skipHydration: true,
     storage: createJSONStorage(() => localStorage),
   }),
 );
