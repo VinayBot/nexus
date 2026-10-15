@@ -103,6 +103,8 @@ flowchart LR
   R --> DB[(SQLite: checkpoints · events · approvals · audit · traces)]
 ```
 
+Presenting it? See [docs/PRESENTATION_GUIDE.md](docs/PRESENTATION_GUIDE.md).
+
 Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · decisions: [docs/adr/](docs/adr/) ·
 course mapping: [docs/TOPIC_COVERAGE.md](docs/TOPIC_COVERAGE.md).
 
@@ -110,18 +112,19 @@ course mapping: [docs/TOPIC_COVERAGE.md](docs/TOPIC_COVERAGE.md).
 
 ```bash
 make check     # ruff + ruff format + mypy --strict, eslint + prettier + tsc, pytest + vitest
-make e2e       # Playwright: mission → approve → complete, time-travel fork, guide navigation
+make e2e       # Playwright: every screen error-free, mission → approve → complete, time travel, guide
 ```
 
-- **Backend:** 70 pytest tests. They cover reducers, pruning, guardrails, risk,
+- **Backend:** 71 pytest tests. They cover reducers, pruning, guardrails, risk,
   tournament scoring, the gateway (routing, re-prompts, escalation, fallback, breakers),
   the governor, the raw agent, all MCP servers, graph behaviour (routing, fan-out/fan-in,
   cycle guards, interrupts, crash resume), HITL (e-mail tokens, override, time travel),
   and every playbook end to end. The Self-Healing tests use a real demo-service
   subprocess and real sandbox pytest runs; only the LLM is scripted. `@pytest.mark.live`
   tests need Ollama and are deselected by default.
-- **Frontend:** Vitest for the event reducer and the robot state machine; 3 Playwright
-  flows against a Simulation-mode backend.
+- **Frontend:** 11 Vitest tests (event reducer, robot state machine, legacy ids, scenery) and
+  10 Playwright tests against a Simulation-mode backend, including a sweep that opens every
+  screen and fails on any console error.
 - **CI:** `.github/workflows/ci.yml`. It sits under `assignment4/` and runs when this
   folder is its own repository.
 
