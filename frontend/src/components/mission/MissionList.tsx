@@ -31,12 +31,18 @@ export function MissionList({ activeId, onSelect }: { activeId: string | null; o
     <section className="panel flex min-h-0 flex-col" aria-label="Missions">
       <h2 className="panel-title border-b border-border/60 px-3 py-2 text-sm text-gold">Missions</h2>
       <div className="min-h-0 flex-1 overflow-y-auto p-1.5">
-        {isLoading && <p className="p-3 text-xs text-faint">Loading…</p>}
+        {isLoading && (
+          <div className="space-y-2 p-1.5" aria-busy="true">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="skeleton h-11" />
+            ))}
+          </div>
+        )}
         {isError && <p className="p-3 text-xs text-danger">Backend unreachable.</p>}
         {data?.length === 0 && (
           <p className="p-3 text-xs text-faint">No missions yet — begin one above, or arm a switch in the Chaos Lab.</p>
         )}
-        <ul className="space-y-1">
+        <ul className="stagger space-y-1">
           {data?.map((m) => (
             <li key={m.id}>
               <button
@@ -44,8 +50,10 @@ export function MissionList({ activeId, onSelect }: { activeId: string | null; o
                 onClick={() => onSelect(m.id)}
                 aria-current={m.id === activeId}
                 className={cn(
-                  "w-full rounded-lg border border-transparent px-2.5 py-2 text-left transition-colors hover:bg-surface-hover",
-                  m.id === activeId && "border-border-strong bg-surface-hover",
+                  "relative w-full overflow-hidden rounded-md border border-transparent px-2.5 py-2 text-left transition-[background-color,border-color,transform] duration-200 hover:translate-x-0.5 hover:bg-surface-hover",
+                  m.id === activeId &&
+                    "border-[rgb(79_227_240/0.4)] bg-[rgb(79_227_240/0.07)] shadow-[inset_2px_0_0_var(--cyan)]",
+                  m.status === "running" && "running-sheen",
                 )}
               >
                 <div className="flex items-center gap-2">

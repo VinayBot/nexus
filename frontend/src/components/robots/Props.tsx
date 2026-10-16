@@ -1,7 +1,5 @@
 "use client";
 
-import { motion } from "motion/react";
-
 /**
  * Hand-held gear, drawn in the right hand's local space (hand centre at 0,0).
  * Every prop glows in the robot's accent colour.
@@ -13,15 +11,7 @@ export function Prop({ kind, accent, active }: { kind: string; accent: string; a
       return (
         <g transform="translate(0 -4) rotate(-12)">
           <rect x={-1.4} y={-30} width={2.8} height={40} rx={1.4} fill="#3a404d" />
-          <motion.circle
-            cx={0}
-            cy={-33}
-            r={4.5}
-            fill={accent}
-            {...glow}
-            animate={{ r: active ? [4.5, 6, 4.5] : 4.5 }}
-            transition={{ repeat: Infinity, duration: 1.2 }}
-          />
+          <circle cx={0} cy={-33} r={4.5} fill={accent} {...glow} className={active ? "r-throb" : undefined} />
           <path d="M-5,-29 L0,-40 L5,-29" stroke={accent} strokeWidth={1.2} fill="none" />
         </g>
       );
@@ -40,7 +30,7 @@ export function Prop({ kind, accent, active }: { kind: string; accent: string; a
             strokeWidth={0.8}
           />
           {[0, 1, 2].map((i) => (
-            <motion.rect
+            <rect
               key={i}
               x={1.5}
               y={-7.5 + i * 3.4}
@@ -48,8 +38,8 @@ export function Prop({ kind, accent, active }: { kind: string; accent: string; a
               height={1.2}
               rx={0.6}
               fill={accent}
-              animate={{ opacity: [0.4, 1, 0.4] }}
-              transition={{ repeat: Infinity, duration: 1.6, delay: i * 0.2 }}
+              className="r-pulse"
+              style={{ animationDelay: `${i * 0.2}s` }}
             />
           ))}
         </g>
@@ -59,14 +49,7 @@ export function Prop({ kind, accent, active }: { kind: string; accent: string; a
         <g transform="translate(2 -2)">
           <rect x={-2} y={-4} width={9} height={6} rx={1.5} fill="#3a404d" />
           <circle cx={7} cy={-1} r={1.6} fill={accent} {...glow} />
-          {active && (
-            <motion.path
-              d="M8,-1 L30,-10 L30,8 Z"
-              fill={accent}
-              animate={{ opacity: [0.08, 0.28, 0.08] }}
-              transition={{ repeat: Infinity, duration: 1 }}
-            />
-          )}
+          {active && <path d="M8,-1 L30,-10 L30,8 Z" fill={accent} opacity={0.22} className="r-pulse" />}
         </g>
       );
     case "stylus":
@@ -86,11 +69,7 @@ export function Prop({ kind, accent, active }: { kind: string; accent: string; a
       );
     case "shield": // hex energy shield
       return (
-        <motion.g
-          transform="translate(6 -6)"
-          animate={{ opacity: active ? [0.7, 1, 0.7] : 0.85 }}
-          transition={{ repeat: Infinity, duration: 1.4 }}
-        >
+        <g transform="translate(6 -6)" className={active ? "r-pulse" : undefined} opacity={active ? undefined : 0.85}>
           <path
             d="M0,-14 L12,-7 L12,7 L0,14 L-12,7 L-12,-7 Z"
             fill={accent}
@@ -106,13 +85,13 @@ export function Prop({ kind, accent, active }: { kind: string; accent: string; a
             strokeWidth={0.8}
             opacity={0.7}
           />
-        </motion.g>
+        </g>
       );
     case "blade": // energy blade
       return (
         <g transform="translate(0 -2) rotate(-40)">
           <rect x={-1.6} y={-2} width={3.2} height={7} rx={1} fill="#3a404d" />
-          <motion.rect
+          <rect
             x={-1.3}
             y={-30}
             width={2.6}
@@ -120,8 +99,9 @@ export function Prop({ kind, accent, active }: { kind: string; accent: string; a
             rx={1.3}
             fill={accent}
             {...glow}
-            animate={{ opacity: active ? [0.7, 1, 0.7] : 0.9 }}
-            transition={{ repeat: Infinity, duration: 0.5 }}
+            className={active ? "r-pulse" : undefined}
+            style={active ? { animationDuration: "0.5s" } : undefined}
+            opacity={active ? undefined : 0.9}
           />
           <rect x={-0.5} y={-29} width={1} height={26} rx={0.5} fill="white" opacity={0.7} />
         </g>
@@ -137,14 +117,14 @@ export function Prop({ kind, accent, active }: { kind: string; accent: string; a
       return (
         <g transform="translate(0 -6)">
           <rect x={-3} y={-4} width={6} height={9} rx={2} fill="#3a404d" />
-          <motion.circle
+          <circle
             cx={0}
             cy={-6}
             r={3}
             fill={accent}
             {...glow}
-            animate={{ opacity: [0.3, 1, 0.3] }}
-            transition={{ repeat: Infinity, duration: 1 }}
+            className="r-blink"
+            style={{ animationDuration: "1s" }}
           />
         </g>
       );
@@ -159,19 +139,17 @@ export function BodyGear({ kind, accent, active }: { kind: string; accent: strin
     return (
       <g>
         <path d="M32,64 L14,56 L19,76 Z M68,64 L86,56 L81,76 Z" fill={accent} opacity={0.85} />
-        <motion.path
+        <path
           d="M15,76 l2.5,10 l2.5,-10 Z M80,76 l2.5,10 l2.5,-10 Z"
           fill="#ffd08a"
-          animate={{ scaleY: active ? [1, 1.8, 1] : [1, 1.3, 1] }}
-          transition={{ repeat: Infinity, duration: 0.25 }}
-          style={{ transformOrigin: "50px 76px" }}
+          className={active ? "r-flame r-flame-boost" : "r-flame"}
         />
       </g>
     );
   }
   if (kind === "halo") {
     return (
-      <motion.ellipse
+      <ellipse
         cx={50}
         cy={-3}
         rx={18}
@@ -180,8 +158,7 @@ export function BodyGear({ kind, accent, active }: { kind: string; accent: strin
         stroke={accent}
         strokeWidth={2}
         filter="url(#nexus-led-glow)"
-        animate={{ ry: [4, 5, 4], opacity: [0.7, 1, 0.7] }}
-        transition={{ repeat: Infinity, duration: 2 }}
+        className="r-pulse"
       />
     );
   }

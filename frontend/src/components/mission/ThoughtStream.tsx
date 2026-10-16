@@ -1,7 +1,7 @@
 "use client";
 
-import { motion } from "motion/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { CountUp } from "@/components/ui/CountUp";
 import { nameOf, type AgentInfo } from "@/lib/agents";
 import { cn } from "@/lib/cn";
 import type { MissionView, ThoughtItem, ThoughtKind } from "@/lib/missionView";
@@ -32,13 +32,16 @@ const FILTERS: { id: string; kinds: ThoughtKind[] | null }[] = [
   { id: "Reliability", kinds: ["retry", "guardrail", "memory", "test"] },
 ];
 
-function Item({ t, agents }: { t: ThoughtItem; agents?: AgentInfo[] }) {
+/** One card. Only thoughts that just happened slide in; history renders still (no mass animation). */
+const Item = memo(function Item({ t, agents, fresh }: { t: ThoughtItem; agents?: AgentInfo[]; fresh: boolean }) {
   const s = STYLE[t.kind];
   return (
-    <motion.li
-      initial={{ opacity: 0, x: 12 }}
-      animate={{ opacity: 1, x: 0 }}
-      className="rounded-lg border border-border/60 bg-black/25 px-2.5 py-2"
+    <li
+      className={cn(
+        "thought-card relative overflow-hidden rounded-md border border-border/60 bg-black/25 px-2.5 py-2 transition-colors hover:border-[rgb(79_227_240/0.35)]",
+        fresh && "thought-in",
+      )}
+      style={{ "--kind": s.color } as React.CSSProperties}
     >
       <div className="flex items-center gap-2 text-[11px]">
         <span
@@ -59,9 +62,9 @@ function Item({ t, agents }: { t: ThoughtItem; agents?: AgentInfo[] }) {
         {t.title}
       </p>
       {t.body && <p className="mt-0.5 line-clamp-4 font-mono text-[11px] whitespace-pre-wrap text-muted">{t.body}</p>}
-    </motion.li>
+    </li>
   );
-}
+});
 
 export function ThoughtStream({
   view,
@@ -75,13 +78,18 @@ export function ThoughtStream({
   const [filter, setFilter] = useState("All");
   const [follow, setFollow] = useState(true);
   const box = useRef<HTMLDivElement>(null);
+  // thoughts older than the moment this panel opened are history: render them without animation
+  const [openedAt] = useState(() => Date.now() / 1000);
   const items = useMemo(() => {
     const kinds = FILTERS.find((f) => f.id === filter)?.kinds;
     return (kinds ? view.thoughts.filter((t) => kinds.includes(t.kind)) : view.thoughts).slice(-150);
   }, [view.thoughts, filter]);
 
   useEffect(() => {
-    if (follow && box.current) box.current.scrollTop = box.current.scrollHeight;
+    const el = box.current;
+    if (!follow || !el) return;
+    // jump on first load, glide for live updates
+    el.scrollTo({ top: el.scrollHeight, behavior: el.scrollTop === 0 ? "auto" : "smooth" });
   }, [items, follow]);
 
   return (
@@ -93,7 +101,8 @@ export function ThoughtStream({
       <header className="flex items-center gap-2 border-b border-border/60 px-3 py-2">
         <h2 className="panel-title text-sm text-gold">Thought Stream</h2>
         <span className="ml-auto truncate font-mono text-[10px] text-faint">
-          {view.llm.calls} LLM calls · {(view.llm.prompt + view.llm.completion).toLocaleString()} tokens
+          <CountUp value={String(view.llm.calls)} /> LLM calls ·{" "}
+          <CountUp value={String(view.llm.prompt + view.llm.completion)} /> tokens
         </span>
       </header>
       <div className="flex gap-1 px-3 pt-2">
@@ -124,7 +133,7 @@ export function ThoughtStream({
         ) : (
           <ul className="space-y-1.5">
             {items.map((t) => (
-              <Item key={t.id} t={t} agents={agents} />
+              <Item key={t.id} t={t} agents={agents} fresh={t.ts > openedAt} />
             ))}
           </ul>
         )}

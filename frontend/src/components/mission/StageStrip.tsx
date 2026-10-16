@@ -14,17 +14,27 @@ export function StageStrip({ view }: { view: MissionView }) {
         const waiting = n?.status === "interrupted";
         return (
           <li key={s.id} className="flex items-center gap-1">
-            {i > 0 && <span className={cn("h-px w-3", done || active ? "bg-gold/60" : "bg-border")} />}
+            {i > 0 && (
+              <span className="relative h-px w-3 overflow-hidden bg-border">
+                <span
+                  className={cn(
+                    "absolute inset-0 origin-left bg-[var(--cyan)] shadow-[0_0_6px_var(--cyan)] transition-transform duration-500",
+                    done || active ? "scale-x-100" : "scale-x-0",
+                  )}
+                />
+              </span>
+            )}
             <span
               className={cn(
-                "flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] whitespace-nowrap transition-colors",
-                active && "border-accent bg-accent/15 text-text shadow-[var(--glow-cyan)]",
-                done && !active && "border-border-strong text-gold",
+                "relative flex items-center gap-1 overflow-hidden rounded-full border px-2 py-0.5 text-[10.5px] whitespace-nowrap transition-[color,border-color,box-shadow,background-color] duration-300",
+                active && "stage-active border-accent bg-accent/15 text-text shadow-[var(--glow-cyan)]",
+                done && !active && "border-[rgb(79_227_240/0.35)] text-accent",
                 error && "border-danger text-danger",
                 waiting && "animate-alarm border-danger text-danger",
                 !active && !done && !error && !waiting && "border-border/50 text-faint",
               )}
             >
+              {done && !active && <span aria-hidden>✓</span>}
               {s.label}
               {n && n.visits > 1 && <span className="font-mono text-[9px] text-muted">×{n.visits}</span>}
             </span>

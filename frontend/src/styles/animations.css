@@ -367,3 +367,203 @@
 .ecg-sweep {
   animation: ecg-sweep 3s linear infinite;
 }
+
+/* Thought Stream: new cards slide in with a scan flash; a coloured edge marks the kind. */
+@keyframes thought-in {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes scan-flash {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+.thought-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  background: var(--kind);
+  box-shadow: 0 0 8px var(--kind);
+  opacity: 0.8;
+}
+.thought-in {
+  animation: thought-in 0.35s var(--ease-out) both;
+}
+.thought-in::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgb(79 227 240 / 0.14), transparent);
+  animation: scan-flash 0.7s var(--ease-out) forwards;
+  pointer-events: none;
+}
+
+/* Robot idle loops run on the compositor (CSS), not per-frame JavaScript. */
+@keyframes r-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3.5px);
+  }
+}
+@keyframes r-ring {
+  0%,
+  100% {
+    transform: scaleX(0.9);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scaleX(1.18);
+    opacity: 0.25;
+  }
+}
+@keyframes r-flame {
+  0%,
+  100% {
+    transform: scaleY(0.75);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scaleY(1.05);
+    opacity: 0.65;
+  }
+}
+@keyframes r-flame-boost {
+  0%,
+  100% {
+    transform: scaleY(1.1);
+    opacity: 1;
+  }
+  50% {
+    transform: scaleY(1.9);
+    opacity: 0.75;
+  }
+}
+@keyframes r-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes r-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+}
+@keyframes r-scan {
+  0% {
+    transform: translateX(0);
+  }
+  70%,
+  100% {
+    transform: translateX(56px);
+  }
+}
+.r-bob {
+  animation: r-bob 2.6s ease-in-out infinite;
+}
+.r-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: r-ring 2.4s ease-in-out infinite;
+}
+.r-flame {
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+  animation: r-flame 0.22s linear infinite;
+}
+.r-flame-boost {
+  animation-name: r-flame-boost;
+}
+.r-pulse {
+  animation: r-pulse 1.8s ease-in-out infinite;
+}
+.r-pulse-alt {
+  animation-delay: -0.9s;
+}
+.r-spin {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: core-spin 6s linear infinite;
+}
+.r-blink {
+  animation: r-blink 1.6s ease-in-out infinite;
+}
+.r-scan {
+  animation: r-scan 3.2s linear infinite;
+}
+@keyframes r-throb {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.33);
+  }
+}
+.r-throb {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: r-throb 1.2s ease-in-out infinite;
+}
+
+/* Mission switch: a holographic scan line wipes down the floor. */
+@keyframes mission-scan {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+.mission-scan {
+  pointer-events: none;
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 60;
+  height: 100%;
+  background: linear-gradient(180deg, rgb(79 227 240 / 0.28), rgb(79 227 240 / 0) 12%);
+  border-top: 2px solid var(--cyan);
+  box-shadow: 0 -6px 24px var(--cyan);
+  animation: mission-scan 0.9s var(--ease-out) forwards;
+}
+
+/* Active workflow stage: a light sweep runs through the pill. */
+.stage-active::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgb(79 227 240 / 0.35), transparent);
+  animation: shimmer 1.4s linear infinite;
+}
+
+/* A running mission in the list carries a slow sheen. */
+.running-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgb(79 227 240 / 0.1), transparent);
+  animation: shimmer 2.2s linear infinite;
+  pointer-events: none;
+}

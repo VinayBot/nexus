@@ -29,4 +29,11 @@ test("start a mission, watch events, approve it, see it complete", async ({ page
   await expect(page.getByText("Mission completed successfully.").first()).toBeVisible();
   const audit = await (await request.get(`${API}/audit?mission_id=${id}`)).json();
   expect(audit[0].action).toBe("approval.approve");
+
+  // re-opening a finished mission loads its history at once: no card replays an entrance animation
+  await page.waitForTimeout(1000);
+  await page.reload();
+  const stream = page.locator('[data-tour="thought-stream"]');
+  await expect(stream.locator("li").nth(5)).toBeVisible();
+  await expect(stream.locator("li.thought-in")).toHaveCount(0);
 });

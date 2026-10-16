@@ -177,6 +177,7 @@ function MissionControl() {
           </div>
         )}
         <motion.div layout className="relative min-h-[420px] flex-1" data-tour="mission-floor">
+          <span key={`scan-${missionId ?? "none"}`} className="mission-scan" aria-hidden />
           {mode === "floor" ? (
             <motion.div
               key="floor"
