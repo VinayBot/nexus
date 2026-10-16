@@ -50,7 +50,7 @@ concept ran on this machine.
 | Concept | Implementation | Tests | UI |
 |---|---|---|---|
 | State interrupts | `interrupt()` in `clarify`, `assemble` (team), `approval`; resumed with `Command(resume=…)` in `runner.resume` | `test_vague_task_interrupts_for_clarification_then_resumes`, `test_dynamic_mission_requires_team_approval…` | Approvals; "Awaiting your approval" in Mission Control |
-| Approval gates | `safety/risk.py` + `policies.yaml` route to approval; `hitl/approvals.py` | `test_hitl.py` (approve, reject, CRITICAL override) | Approvals (risk gauge, approval stamp stamp) |
+| Approval gates | `safety/risk.py` + `policies.yaml` route to approval; `hitl/approvals.py` | `test_hitl.py` (approve, reject, CRITICAL override) | Approvals (risk gauge, APPROVED stamp) |
 | E-mail approvals | `hitl/tokens.py` (signed, expiring, single-use), `hitl/email_approvals.py` (GET confirm, POST decide), Mailpit | `test_approval_email_link_resumes_mission_and_is_single_use`, `test_tampered_and_expired_tokens_are_rejected` | Mailpit inbox; e-mail status chip on approval cards |
 | Time travel | `hitl/timetravel.py` — history tree, `state_at`, re-run, fork via `update_state`, choose runner-up, compare | `test_time_travel_runner_up_fork_and_compare`, `test_fork_with_state_patch_reruns_from_checkpoint`; e2e `timetravel.spec.ts` | Time Travel |
 | Safety | guardrails (injection, redaction, fencing), allowlists, path jail, sandbox, policies, audit log | `test_units_core.py` guardrail and risk tests; `test_ticket_injection_is_flagged` | Settings → Policies; Audit log tab |

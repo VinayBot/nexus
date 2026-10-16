@@ -1,8 +1,12 @@
 # NEXUS presentation guide
 
-This guide explains what NEXUS is, what was built, and what works. It then walks through
-every screen with a short demo you can follow: what to click, what will happen, and what
-to say. A 7-minute demo order and answers to likely questions are at the end.
+This guide explains what NEXUS is, what was built, and what works.
+
+- **Part 1 (sections 1–10):** walks through every screen with a short demo you can follow
+  (what to click, what will happen, what to say), then a 7-minute demo order, what's
+  verified, limitations, and answers to likely questions.
+- **Part 2 (section 11):** a deep dive into every component: what it is, what I built, why
+  I chose that approach, where to show it, and the test that proves it.
 
 ---
 
@@ -516,12 +520,14 @@ shows it).
 | Area | Tests |
 |---|---|
 | Backend (pytest) | 71 tests: reducers, pruning, guardrails, risk, tournament scoring, LLM gateway, governor, all MCP servers, graph routing, fan-out/fan-in, interrupts, crash resume, email tokens, time travel, every playbook end to end, API compression |
-| Frontend unit (vitest) | 11 tests: the event reducer, robot state machine, legacy-id mapping, scenery |
+| Frontend unit (vitest) | 13 tests: the event reducer, robot state machine, stream batching, legacy-id mapping, scenery |
 | End-to-end (Playwright) | 10 tests: every screen with zero console errors, landing, sidebar, tabs, settings, command palette, agent roster, Nova navigation, a full mission with approval, a time-travel fork |
 | Quality gates | ruff + mypy --strict (backend), eslint + prettier + tsc strict (frontend) |
 
 **Performance:**
 
+- Opening a large mission takes 0.48 s (it was 4.2 s), and the floor runs at a steady
+  60 fps.
 - Pages load in about 0.55–0.85 s in production mode.
 - API responses are 2–25 ms, and large responses are gzip-compressed.
 - Heavy tabs load only when opened.
@@ -593,3 +599,805 @@ In the app: How it Works → Curriculum Map. In the repo: `docs/TOPIC_COVERAGE.m
 | Robots and animation | `frontend/src/components/robots/`, `frontend/src/lib/robotMachine.ts` |
 | Architecture and decisions | `docs/ARCHITECTURE.md`, `docs/adr/` |
 | Course topic map | `docs/TOPIC_COVERAGE.md` |
+
+---
+
+# Part 2: Deep dive into every part
+
+This part explains **each component one by one**, so you can answer "how does that work?"
+and "why did you do it that way?" for any part of the system. Each entry has:
+
+- **In simple words:** the concept, explained for a non-expert.
+- **What I built:** the concrete implementation and where it lives.
+- **Why this way:** the decision, and the alternative I rejected.
+- **Show it:** where to point in the app.
+- **Proof:** the test that guarantees it.
+
+The topics follow the Week-4 course days (16–20), then reliability, then the product and
+UI engineering.
+
+---
+
+## Day 16: Multi-agent systems
+
+### 11.1 ReAct workers (Reason → Act → Observe)
+
+**In simple words:** an agent thinks about what to do, calls a tool, looks at the result,
+and repeats until it can answer. It is like a person who checks facts before answering.
+
+**What I built:** a LangGraph **subgraph** (`graph/subgraphs/react_worker.py`) with two
+nodes, `think` and `act`, in a loop, plus `finalize`.
+
+- `think` asks the model for a structured decision: either "call tool X with arguments Y"
+  or "final answer".
+- `act` runs the tool through MCP and adds the observation to the history.
+- An **iteration guard** (max 6 steps per worker) forces `finalize` so a confused agent
+  can never loop forever.
+- Every step emits `agent.thinking`, `agent.action` and `agent.observation` events.
+
+**Why this way:**
+- **Structured turns:** a 3B model is bad at the classic free-text "Thought: … Action: …"
+  format; it often breaks the format. So each turn is a JSON schema, which Ollama
+  enforces, and the output is validated before it is used.
+- **Hard cap:** the iteration guard exists because small models sometimes repeat the same
+  tool call.
+
+**Show it:** Mission Control → Thought Stream, filter **ReAct**. Each card is labelled
+Thought, Action, Observation or Final.
+
+**Proof:** `test_react_iteration_guard_forces_final`, `test_council_qa_runs_end_to_end`.
+
+### 11.2 Plan-and-Execute
+
+**In simple words:** first make a plan with numbered steps, then do the steps. If the
+result fails validation, re-plan.
+
+**What I built:**
+- **Sage** (the planner node in `graph/nodes/planning.py`) produces a typed `Plan`: a goal
+  and steps with dependencies.
+- `dispatch` (`graph/nodes/work.py`) runs the steps whose dependencies are done, possibly
+  several in parallel.
+- When validation fails, the **replanner** creates revision r1, which shows as
+  "Plan r0 / r1".
+
+**Why this way:**
+- **ReAct alone drifts on long tasks.** A plan keeps the team on track and makes the work
+  visible.
+- **Plan + ReAct per step** gives the best of both: structure at the top and flexibility
+  inside each step.
+
+**Show it:** Live Graph (`plan`, `dispatch` ×N) and Thought Stream "Plan r0".
+
+**Proof:**
+- `test_validation_failures_hit_fix_and_replan_guards`;
+- Project Builder writes files in dependency "waves".
+
+### 11.3 Raw SDK agent (no framework)
+
+**In simple words:** the same kind of agent written by hand, with no LangGraph, to show
+what the framework actually gives us.
+
+**What I built:** `llm/raw_react_agent.py`. It uses only `httpx`, with a manual prompt,
+manual parsing, a manual loop and manual retries.
+
+**Why this way:** the course asks you to understand agents *below* the framework. It also
+gives an honest benchmark: on llama3.2:3b both versions scored 2/3, at ~3.9 s and ~1,600
+tokens per task. **The framework's value is not accuracy; it is checkpoints,
+interrupts, parallelism and observability.**
+
+**Show it:** Insights → **Under the Hood** (side by side) and **Benchmarks** → "Raw SDK
+vs LangGraph".
+
+**Proof:** `test_raw_agent.py`.
+
+### 11.4 Conditional routing (choosing the playbook)
+
+**In simple words:** the Commander reads the task and decides which workflow fits.
+
+**What I built:** `graph/nodes/understand.py::route`.
+- Keyword and intent rules plus a model fallback choose among Self-Healing, Ticket
+  Solver, Project Builder, Council Q&A and Dynamic.
+- If the user picked a playbook, that choice wins.
+- The graph then uses `add_conditional_edges` to branch.
+
+**Why this way:**
+- **Rules first:** they are instant and predictable; the model is consulted only when the
+  rules are unsure. That saves tokens and avoids a small model misrouting obvious tasks.
+- **Visible decisions:** every routing decision emits an `edge.taken` event with its
+  label.
+
+**Show it:** Live Graph, where the chosen branch label flashes on the edge. Thought Stream
+"Route".
+
+**Proof:** `test_router_picks_playbook_and_emits_edge`.
+
+---
+
+## Day 17: LangGraph core (state, reducers, cycles)
+
+### 11.5 One typed state and one orchestrator graph
+
+**In simple words:** the whole mission is one shared "notebook" (the state) that every
+step reads and writes, and one map of steps (the graph).
+
+**What I built:**
+- `graph/state.py::MissionState` is a `TypedDict` holding the task, plan, team, evidence,
+  proposals, scores, verdict, risk, loop counters and more.
+- `graph/main_graph.py` compiles **one graph of ~20 nodes**: intake, rewrite, route,
+  clarify, plan, assemble, dispatch, worker, collect, council, synthesise, validate,
+  risk_gate, dry_run, approval, execute, verify, rollback, memory_write, report.
+- Every playbook plugs into that same graph through **hooks** (plan template, validate,
+  execute, verify, rollback). Playbooks don't own separate graphs.
+
+**Why this way (ADR 0001):**
+- **One graph to inspect, draw and test.** The Live Graph shows the *real* compiled graph.
+- **The trade-off:** some nodes are pass-through for some playbooks (Council Q&A has
+  nothing to verify). That is visible and harmless.
+
+**Show it:** Live Graph + State Inspector.
+
+**Proof:** all graph tests in `test_graph_missions.py`.
+
+### 11.6 Reducers (merging parallel updates safely)
+
+**In simple words:** when several agents write to the notebook at the same moment, a
+reducer decides how to combine their writes instead of one overwriting the other.
+
+**What I built:** `graph/reducers.py`:
+
+| Reducer | Job |
+|---|---|
+| `merge_dict` | Merge keyed results (e.g. proposals by solver). |
+| `merge_scores` | Combine review scores. |
+| `dedupe_append` | Add evidence without duplicates. |
+| `sum_counts` | Add up loop counters. |
+| `append_list` | Plain append. |
+| `add_messages` | Chat history. |
+
+The instrumentation wrapper emits a `reducer.merged` event showing which reducer merged
+what.
+
+**Why this way:**
+- **Without reducers, parallel workers overwrite each other.** That is the classic bug in
+  fan-out designs.
+- **Reducers stay pure:** they never emit events themselves (the wrapper does), so they
+  are deterministic and easy to unit test.
+
+**Show it:** State Inspector → "Reducer merges", e.g. `evidence — dedupe_append +2 → 10`.
+
+**Proof:**
+- reducer unit tests in `test_units_core.py`;
+- the parallel fan-in is asserted in `test_council_qa_runs_end_to_end`.
+
+### 11.7 Cycles with guards
+
+**In simple words:** loops are allowed (try, test, fix, test again), but each loop has a
+limit so the system always ends.
+
+**What I built:** `DEFAULT_LIMITS` in `graph/state.py`:
+
+| Loop | Limit |
+|---|---|
+| clarify | 2 |
+| dispatch | 8 |
+| fix | 2 |
+| replan | 2 |
+| verify | 2 |
+| debate | 2 |
+| react | 6 |
+
+Counters live in `state.loops` (merged with `sum_counts`). When a limit is reached, the
+graph takes the safe exit: report, roll back or escalate.
+
+**Why this way:** small models fail more often, so retry loops are essential. Unbounded
+loops would burn tokens and never finish. A guard turns "infinite loop" into "honest
+failure with a report".
+
+**Show it:** the ×N badges on Live Graph nodes, and the counters in the stage strip.
+
+**Proof:**
+- `test_validation_failures_hit_fix_and_replan_guards`;
+- `test_self_healing.py::test_failed_verification_rolls_back`.
+
+### 11.8 Parallel fan-out and fan-in (`Send`)
+
+**In simple words:** the Commander hands out several tasks at once, and the results are
+gathered back.
+
+**What I built:**
+- `dispatch` returns `Command(goto=[Send("worker", step) …])`, so one worker runs per
+  ready step, in parallel.
+- `collect` is the fan-in.
+- The tournament also uses `Send` for the three solvers and their reviewers.
+
+**Why this way:** investigation steps are independent (read logs, read code, search past
+incidents), so running them in parallel cuts wall time. All workers share one loaded
+model (see 11.22), so parallelism doesn't multiply memory.
+
+**Show it:**
+- Mission Floor: several data orbs fly at once, and the "Send ×N" badge appears.
+- Live Graph: "Send ×3" on the worker node.
+
+**Proof:** `test_council_qa_runs_end_to_end` (2 workers, 3 solvers, 3 reviews each).
+
+### 11.9 Subgraphs and `Command` handoffs
+
+**In simple words:**
+- A **subgraph** is a small graph used as one step of the big graph.
+- A **handoff** is the supervisor passing control (and data) to a specific worker.
+
+**What I built:**
+- **Subgraphs:** `react_worker` and `tournament` are compiled subgraphs invoked by
+  nodes. Their structure is exported to the UI.
+- **Handoffs:** `dispatch` uses `Command(goto=…, update=…)` to route and update state in
+  one move.
+
+**Why this way:** subgraphs keep the main graph readable, and each is testable on its own.
+`Command` keeps the routing decision and the state change atomic.
+
+**Show it:**
+- Live Graph: worker and council are marked as subgraphs.
+- Thought Stream: "Handoff commander → echo".
+
+---
+
+## Day 18: Memory systems and context pruning
+
+### 11.10 SQLite persistence and crash recovery
+
+**In simple words:** after every step, the mission is saved to a database file. If the
+app crashes, it continues from the last save.
+
+**What I built (ADR 0002):** two SQLite files.
+- `checkpoints.db`: LangGraph's `AsyncSqliteSaver`, one checkpoint per super-step.
+- `nexus.db`: events, missions, approvals, audit and traces, via async SQLAlchemy with
+  WAL mode, so the UI can read while missions write.
+
+On startup, `runner.recover()` resumes any mission that was still running.
+
+**Why this way:**
+- **No extra services:** SQLite needs nothing else installed and fits "everything on one
+  laptop". The files can be opened in any SQLite browser.
+- **Easy upgrade path:** moving to Postgres means swapping the saver and the database URL.
+
+**Show it:**
+- Time Travel, the checkpoint rail.
+- After a backend restart mid-mission, "Mission resumed from checkpoint" appears in the
+  Thought Stream.
+
+**Proof:** `test_crashed_mission_resumes_from_sqlite_checkpoint`; this was also verified
+live.
+
+### 11.11 Short-term memory: sliding window vs summarisation
+
+**In simple words:** a model can only read a limited amount of text (its context window).
+When the conversation grows too long, you either **drop the oldest turns** (sliding
+window) or **fold them into a summary** (summarisation).
+
+**What I built:** `memory/pruning.py`.
+- **`sliding_window`:** keeps the system prompt, *pinned* items (task, plan, current step)
+  and the most recent turns.
+- **`summarise`:** folds old turns into one rolling pinned summary. If summarising fails,
+  it **falls back to the window**, so pruning never breaks a mission.
+
+The strategy is switchable live in Settings.
+
+**Why this way:** I measured it instead of guessing. With a 420-token budget (about 70% of
+tokens removed), the window kept 0 of 3 early facts answerable and the summary kept 1 of
+3. So **summarise is the default**.
+
+**Show it:**
+- Memory → context vessels: the fill drops and a "pruned" marker floats up.
+- Insights → Benchmarks → pruning suite.
+
+**Proof:**
+- `test_sliding_window_keeps_system_pinned_and_recent`;
+- `test_summarise_folds_old_turns_into_pinned_summary`;
+- `test_summarise_failure_falls_back_to_sliding_window`.
+
+### 11.12 Token counting and budgets
+
+**In simple words:** count how much text goes into the model, so we can stay under limits
+and cap the cost of a mission.
+
+**What I built:**
+- **Estimates:** `llm/tokens.py` estimates tokens and **calibrates itself** against the
+  real counts Ollama reports (`prompt_eval_count`).
+- **Per-mission cap:** `core/meter.py` enforces the cap from the policy file (120,000
+  tokens).
+
+**Why this way:** exact tokenizers differ per model. A calibrated estimate is fast and
+gets more accurate as it runs. The cap protects the laptop from a runaway mission.
+
+**Show it:** Insights → Observatory (tokens by purpose), and the State Inspector token
+bars.
+
+**Proof:**
+- `test_token_estimates_learn_from_real_counts`;
+- live, a mission was stopped at 124,576 / 120,000 tokens with a dead-letter record and
+  no changes applied.
+
+### 11.13 Long-term memory (ChromaDB and the Fix Library)
+
+**In simple words:** a searchable memory that survives restarts. NEXUS remembers past
+fixes, missions, docs and lessons, and finds them by meaning, not exact words.
+
+**What I built:** `memory/long_term.py`.
+- **Four collections:** `fix_library`, `missions`, `docs` and `lessons`, embedded with
+  `nomic-embed-text`.
+- **Fix Library seeding:** a successful heal writes the fix there. Next time a similar
+  incident appears, the remembered patch enters the tournament as a **seed proposal**.
+- **Embedding map:** a 2-D PCA projection of the vectors, shown in the UI.
+
+**Why this way:**
+- **Chroma** is embedded (no server). Only the backend process opens it, because I learned
+  on an earlier project that two processes on one embedded Chroma corrupt each other's
+  view.
+- **Seeding** makes repeat incidents faster and cheaper.
+
+**Show it:** Memory → embedding map, library and semantic search.
+
+**Proof:** `test_knowledge_search`, `test_self_healing_end_to_end` (the Fix Library write).
+
+---
+
+## Day 19: Multi-agent workflows and MCP
+
+### 11.14 Supervisor, workers, agent registry and reputation
+
+**In simple words:** one boss agent (the Commander) assigns work to specialist agents.
+
+**What I built:**
+- **Registry:** every agent is a **YAML spec** in `agents/specs/` (persona, prompt, model
+  role, temperature, max steps, tool allowlist), loaded by the registry and editable in
+  the UI.
+- **Team assembly:** `assemble` chooses the team using **reputation**, which is updated
+  from tournament wins and mission results.
+- **Dynamic missions:** the team is proposed and the graph pauses for a human to approve
+  it.
+
+**Why this way:**
+- **Agents as data:** adding a specialist is a YAML file, not code.
+- **Reputation** lets good performers get picked more often.
+- **Team approval** keeps a human in charge of open-ended tasks.
+
+**Show it:**
+- Agents: flip cards, edit form, leaderboard, playground.
+- Approvals: "Team approval".
+
+### 11.15 Evidence-grounded tournaments and the council
+
+**In simple words:** instead of trusting one answer, three agents each propose a fix, the
+fixes are **tested**, reviewed anonymously, and a judge picks the winner, weighing test
+results most.
+
+**What I built:** `graph/subgraphs/tournament.py` and `scoring.py` (ADR 0004).
+
+1. **Independent proposals:** Blaze (minimal safe fix), Volt (root cause) and Frost
+   (defensive) use the same model with different strategies and temperatures.
+2. **Tested in isolation:** each patch is applied to its **own throwaway copy** of the
+   workspace, and the full test suite runs in the sandbox. That suite includes a
+   reproduction test that must fail on the buggy code.
+3. **Anonymous review:** proposals are relabelled A/B/C in shuffled order.
+4. **Debate only when needed:** a debate round runs only if reviewers disagree beyond a
+   threshold.
+5. **The judge's weights:**
+
+   | Factor | Weight |
+   |---|---|
+   | tests | 0.45 |
+   | peer review | 0.25 |
+   | critic | 0.10 |
+   | diff size | 0.10 |
+   | reputation | 0.10 |
+
+6. **Escalation:** a failing winner, low confidence or high divergence goes to a human.
+7. **Second round:** the failing tests from round 1 are fed into round 2.
+
+**Why this way:**
+- **Debate alone converges on shared mistakes.** Copies of the same model tend to agree
+  with each other, even when they're wrong.
+- **Tests are objective,** and anonymity removes bias toward a name.
+- **I measured the cost honestly:** on easy factual questions, a council (3/4 correct,
+  ~23 s) is *worse* than a single model (4/4, ~3 s). So the council is used where evidence
+  decides (code), not for everything.
+
+**Show it:** the Arena: proposals, sandbox light bars, review scores, the verdict and the
+balance tilt.
+
+**Proof:**
+- tournament scoring tests;
+- live: round 1 patches failed 2/10 tests, and the round 2 winner passed 10/10.
+
+### 11.16 MCP servers (the tool layer)
+
+**In simple words:** MCP (Model Context Protocol) is a standard way for AI agents to use
+tools. Each tool has a strict description of its inputs.
+
+**What I built (ADR 0005):** seven of my own MCP servers in `mcp_servers/`:
+
+| Server | Purpose |
+|---|---|
+| workspace | Files, jailed to the mission folder |
+| sandbox | Tests and commands, no network, CPU/RAM limits |
+| knowledge | RAG over Chroma |
+| tickets | Local tracker or GitHub Issues |
+| notify | Email; **system-only**, so no agent can call it directly |
+| observability | Health, logs and metrics of the demo-service |
+| demo | Tiny deterministic tools for benchmarks |
+
+- **How they're reached:** through real MCP `Client`s over the SDK's **in-memory
+  transport**. That is the full protocol (initialise, list tools, call tool) with no
+  subprocess per call.
+- **The hub** (`hub.py`) adds per-agent allowlists, workspace injection, events, retries
+  and a call log.
+- **Usable outside NEXUS:** any server can also run over stdio for other MCP clients:
+  `python -m nexus.mcp_servers <name>`.
+
+**Why this way:**
+- **Speed:** a subprocess per tool call is slow.
+- **Control:** I didn't use `langchain-mcp-adapters`, because the hub needs to enforce
+  allowlists and emit events, which is my security boundary.
+
+**Show it:** Tools: servers, tool schemas, live "try it", recent calls.
+
+**Proof:** `test_mcp.py` covers every server, the path jail, the allowlist, the notify
+guard, the sandbox and tickets.
+
+---
+
+## Day 20: Human-in-the-loop and safety
+
+### 11.17 Interrupts, approval gates and risk scoring
+
+**In simple words:** before anything risky, the workflow **pauses** and waits for a
+person. How risky something is decides whether it needs approval.
+
+**What I built:**
+- **Pause and resume:** `interrupt()` inside the `clarify`, `assemble` (team) and
+  `approval` nodes pauses the graph. `runner.resume` continues with `Command(resume=…)`.
+- **Risk scoring** (`safety/risk.py`) adds rule-based factors: action type, blast radius,
+  files touched, diff size, tournament confidence and escalation. The score in [0, 1]
+  maps to a level and a route:
+
+  | Level | Score | Route |
+  |---|---|---|
+  | LOW | < 0.25 | auto-execute (logged) |
+  | MEDIUM | < 0.50 | one human approval |
+  | HIGH | < 0.75 | approval **plus a mandatory sandbox dry-run** |
+  | CRITICAL | ≥ 0.75 | blocked unless a human explicitly overrides |
+
+- **Policies** (`safety/policies.yaml`) can only make a route **stricter**, never looser
+  (e.g. "patches always need approval").
+- **History nudge:** past owner decisions adjust the score. Frequent rejections raise
+  it; a clean approval streak lowers it slightly.
+
+**Why this way:**
+- **Rules are explainable:** the Thought Stream shows each factor (e.g. `files_touched
+  +0.05`). A model-based risk judge would be a black box and could be prompt-injected.
+- **Stricter-only policies** mean a configuration mistake can't remove a safety check.
+
+**Show it:**
+- Approvals: risk gauge, diff, dry run.
+- Thought Stream: "Risk HIGH → dry_run" with its factors.
+
+**Proof:** `test_hitl.py` (approve, reject, CRITICAL override), and the interrupt tests in
+`test_graph_missions.py`.
+
+### 11.18 Email approvals
+
+**In simple words:** you can approve from your email inbox, safely.
+
+**What I built:**
+- **Tokens** (`hitl/tokens.py`): signed, expire after 24 h, and are **single-use**; a
+  used token is recorded.
+- **Two-step links** (`hitl/email_approvals.py`): opening the link (GET) only shows a
+  confirmation page; the decision happens on POST.
+- **Delivery:** Mailpit locally.
+
+**Why this way:** email security scanners and link previews *open* links automatically.
+If GET approved, a scanner could approve a code change. Single-use plus expiry stops
+replay.
+
+**Show it:** the Mailpit inbox, and the email status chip on approval cards.
+
+**Proof:**
+- `test_approval_email_link_resumes_mission_and_is_single_use`;
+- `test_tampered_and_expired_tokens_are_rejected`.
+
+### 11.19 Time travel
+
+**In simple words:** go back to any saved step, change something, and run a new version
+of history alongside the original.
+
+**What I built:** `hitl/timetravel.py`:
+- the history tree and the state at any checkpoint;
+- re-run from a checkpoint;
+- **fork with a state patch** (`update_state`);
+- **choose the tournament runner-up**;
+- compare branches.
+
+**Why this way:**
+- **Debugging agents is hard.** Being able to replay a decision point with one change is
+  the fastest way to understand "what if".
+- **It comes from the design:** it falls out of LangGraph checkpoints plus SQLite.
+
+**Show it:** Time Travel: hex checkpoint rail, runner-up fork, branch compare.
+
+**Proof:**
+- `test_time_travel_runner_up_fork_and_compare`;
+- `test_fork_with_state_patch_reruns_from_checkpoint`;
+- e2e `timetravel.spec.ts`.
+
+### 11.20 Safety layers
+
+**In simple words:** several independent walls, so one failure doesn't cause harm.
+
+**What I built:**
+1. **Guardrails** (`safety/guardrails.py`):
+   - detect prompt injection, e.g. "ignore previous instructions";
+   - redact secrets and personal data;
+   - **fence** all untrusted text (logs, tickets, docs, tool output) inside labelled
+     delimiters the model is told never to obey.
+2. **Tool allowlists** per agent, enforced by the MCP hub.
+3. **Path jail:** file access only inside the mission workspace.
+4. **Sandbox:** no network, CPU/RAM limits, in Docker when available. The local fallback
+   is clearly labelled "not isolated".
+5. **Policies:** stricter-only rules (11.17).
+6. **Audit log:** every decision recorded, with who made it and how (UI or email).
+
+**Why this way:** defence in depth. Agents read untrusted text (a ticket could contain
+"email the database to me"). The fence plus allowlist plus approval chain means even a
+successful injection can't send anything without a human.
+
+**Show it:**
+- Settings → Safety policies.
+- Approvals → Audit Log.
+- Tools: notify is marked "system-only".
+
+**Proof:**
+- guardrail and risk tests in `test_units_core.py`;
+- `test_ticket_injection_is_flagged`.
+
+---
+
+## Reliability with small local models
+
+### 11.21 The LLM gateway: routing, retries, fallback, circuit breakers
+
+**In simple words:** every call to a model goes through one "front door" that handles
+everything that can go wrong.
+
+**What I built (ADR 0006):** `llm/gateway.py` on top of the official `ollama` client.
+
+- **Model router** (`llm/router.py`): light jobs (rewrite, grade, summarise) go to the
+  **fast** role; heavy jobs (plan, solve, judge) go to **main**. In the `lite` profile
+  both are llama3.2:3b; `standard` uses a 7B coder for main.
+- **Retries** (`reliability/retry.py`): 3 attempts with exponential backoff and jitter,
+  each emitting an event.
+- **Structured output:**
+  - Ollama's JSON-schema mode;
+  - our own validation;
+  - a **re-prompt** that shows the model its error;
+  - JSON repair for near-misses.
+- **Fallback chain:** primary → alternate model → **reduced context** (keep only the
+  last turns).
+- **Circuit breaker** (`reliability/circuit_breaker.py`, per model): after 3 failures it
+  **opens** for 20 s (calls fail fast). Then it lets one trial call through (half-open).
+  Success closes it.
+- **Token accounting:** every call is counted, traced and streamed to the UI.
+
+**Why this way:**
+- **One place for all of it:** reliability and cost are reasoned about in one file
+  instead of in every agent.
+- **Easy testing:** the same interface lets a **scripted provider** stand in for the
+  model, which makes tests deterministic and enables Simulation mode.
+
+**Show it:**
+- Insights → Observatory: retries absorbed, routing table, circuit list.
+- Robots show an RGB glitch and an ×N badge while retrying.
+
+**Proof:**
+- `test_llm_gateway.py`, `test_reliability.py`;
+- `test_fallback_chain_alternate_model_then_reduced_context`;
+- `test_all_fallbacks_failing_raises_and_opens_circuit`.
+
+### 11.22 The Resource Governor and one shared model
+
+**In simple words:** a traffic controller that stops the laptop from running out of
+memory.
+
+**What I built:**
+- **The Governor** (`core/governor.py`):
+  - samples free RAM every 2 s and classifies pressure as normal, elevated or critical;
+  - under **elevated** pressure it **halves** the number of concurrent model calls; under
+    **critical** it allows **one**;
+  - extra calls **queue** instead of failing;
+  - it records tokens per second.
+- **One shared model (ADR 0003):** all parallel agents share **one loaded model** and
+  differ only by prompt, persona and temperature.
+
+**Why this way:** the owner's 16 GB Mac had crashed under bigger models. One model per
+agent would multiply memory. With sharing plus the governor, memory stays flat however
+many agents run.
+
+**Show it:** **System Power** in the top bar, and the Governor charts in Insights.
+
+**Proof:** governor tests; live missions ran on llama3.2:3b without memory crashes.
+
+### 11.23 Observability and benchmarks
+
+**In simple words:** measure everything, so claims are backed by numbers.
+
+**What I built:**
+- **Tracing** (`core/tracing.py`): OpenTelemetry-style spans for mission, node, LLM and
+  tool, stored in SQLite, shown as a **waterfall**.
+- **Metrics:** tokens by purpose, latency, retries, breaker states, governor history.
+- **Benchmarks** (`evals/harness.py`): three live suites, run one at a time so the laptop
+  stays responsive:
+  - Raw SDK vs LangGraph;
+  - Council vs single model;
+  - pruning strategies.
+
+**Why this way:** with small models, intuition is often wrong. The council benchmark
+proved a council *hurts* on easy questions, which changed how I use it.
+
+**Show it:** Insights → Observatory and Benchmarks.
+
+---
+
+## Product and UI engineering
+
+### 11.24 The event-driven UI ("nothing is faked")
+
+**In simple words:** the screen is a live picture of what the backend is really doing.
+
+**What I built:**
+1. **Events from every node:** every graph node is wrapped by `graph/instrument.py`, so
+   it emits typed events (node started or completed, edge taken, reducer merged, agent
+   thinking, tool called, test result, and so on). There are 45 typed event kinds.
+2. **Saved and streamed:** events go to an **event bus**, are saved to SQLite with a
+   sequence number, and are streamed over **WebSocket**. Reconnects resume from the last
+   sequence number, so nothing is lost or duplicated.
+3. **One pure reducer:** in the browser, `lib/missionView.ts::reduceMission` turns events
+   into the whole screen state: nodes, robots, thoughts, council, checkpoints.
+4. **Robot state machine:** `lib/robotMachine.ts` maps each event to a robot mode
+   (thinking, using a tool, retrying, waiting for approval, success, failed, sleeping and
+   more). Each mode has its own animation.
+
+**Why this way:**
+- **Honesty:** a demo where animations are scripted proves nothing. Here, if a robot
+  sparks, a tool was really called.
+- **Testability:** a pure reducer is easy to unit test, and the same reducer powers Live,
+  Replay and the Graph view.
+
+**Proof:**
+- `lib/__tests__/missionView.test.ts`;
+- `stores/__tests__/missionStream.test.ts`.
+
+### 11.25 Replay mode and Simulation mode
+
+**In simple words:**
+- **Replay** plays back a finished mission like a video.
+- **Simulation** runs the app without a real model, for demos and tests.
+
+**What I built:**
+- **Replay** (`stores/replay.ts`) feeds the *recorded* events through the same reducer
+  at 0.5×–8× speed. Long human pauses are compressed. It is always labelled "REPLAY — not
+  live".
+- **Simulation** (`NEXUS_LLM_PROVIDER=simulation`) uses a scripted model. A purple
+  **SIMULATION** badge is always visible.
+
+**Why this way:** both keep the "never mislead" rule. Replay uses real recorded events,
+and simulation is clearly labelled. The end-to-end tests run in Simulation mode, so they
+are fast and deterministic.
+
+### 11.26 The self-healing demo-service and the Chaos Lab
+
+**In simple words:** a small real shop app that we can deliberately break, so NEXUS has
+something real to fix.
+
+**What I built:**
+- **The service** (`demo-service/`): a FastAPI shop processing orders, running with hot
+  reload on port 8100.
+- **Five chaos switches** edit its **live source code** to inject real bugs (null
+  handling, off-by-one, bad config, slow dependency, schema mismatch).
+- **Hawk** polls its health every 2 s; two bad readings in a row open an incident.
+- **The heal pipeline:**
+  1. reproduce the bug with a failing test;
+  2. run the tournament;
+  3. score the risk and do a dry run;
+  4. get human approval;
+  5. apply the fix on a git branch;
+  6. **verify on live traffic** for a time window;
+  7. on failure, **roll back automatically**;
+  8. on success, promote to `main` and store the fix in the Fix Library.
+
+**Why this way:** "self-healing" is only convincing on a real running service with a real
+bug. The verification step proves the fix works on traffic, not only in tests.
+
+**Proof:**
+- `test_self_healing.py` uses a real demo-service subprocess and real sandbox pytest
+  runs; only the model is scripted.
+- Live: 103 orders, 0 new errors.
+
+### 11.27 Nova, the guide
+
+**In simple words:** a help robot that answers questions about NEXUS and can drive the
+UI.
+
+**What I built:**
+- **Answers:** `guide/nova.py` answers from the project docs (RAG) plus the **live state**
+  of the current mission, streamed over SSE.
+- **Actions:** it returns structured actions such as navigate, spotlight an element,
+  start the tour or start a demo mission.
+
+**Why this way:** an evaluator can ask "where is time travel?" and be taken there. Nova
+says when something is a guess instead of inventing live facts.
+
+**Proof:** e2e `guide.spec.ts` ("show me the tools" navigates to Tools).
+
+### 11.28 Theme and animation design
+
+**In simple words:** a sci-fi command-center look that is also easy to read.
+
+**What I built:**
+- **The theme:**
+  - "Sunset Command": a void-black base, sunset aurora light, and neon cyan HUD details
+    (corner brackets, uppercase titles with a glowing marker, faint scanlines);
+  - **colour rules:** cyan for navigation and system chrome, the warm gradient only for
+    primary actions, so it's always clear what to click;
+  - everything is driven by tokens in `styles/tokens.css`, so the Night theme and the sky
+    moods (calm, incident, dawn) only swap tokens.
+- **The robots:** original animated SVG mecha with thrusters, an LED visor with
+  expressions, a reactor core and per-agent colours and gear.
+- **Animations with a meaning:**
+  - Live animations show real events: orbs on handoffs, sparks on tool calls, light bars
+    on tests, a scan-in when you switch missions, the stage strip filling as stages
+    complete.
+  - Ambient motion (aurora, grid, idle robots) is subtle.
+- **Buttons:** one system (`.btn` variants) with hover lift, press, a light sweep and a
+  ripple.
+
+**Why this way:** the first version used a Japanese theme. The feedback asked for English
+names and an advanced sci-fi look. Animations with a meaning make the system
+understandable, not just pretty.
+
+### 11.29 Performance engineering
+
+**In simple words:** make it feel instant and smooth, even on a laptop running a model.
+
+**What was slow, and the fix:**
+
+| Problem | Fix | Result |
+|---|---|---|
+| Opening a mission replayed its whole history over the WebSocket one event at a time (hundreds of re-renders, and every Thought card animated in) | Load history in **one request, one store update**; the socket resumes after the last event; live events are batched to **one update per frame**; only *new* thoughts animate | Opening a large mission: **4.2 s → 0.48 s** |
+| ~130 JavaScript animation loops for 13 robots | Idle loops moved to **CSS keyframes** (GPU compositor); robots re-render only when their visible state changes | Steady 60 fps, no long tasks |
+| Every panel blurred the animated background (`backdrop-filter`) | Blur only on floating elements (popovers, toasts) | Much less GPU work per frame |
+| Heavy tabs loaded up front | Lazy-loaded tab panels | Insights first load **302 KB → 162 KB** |
+| 3D landing scene (three.js) | Replaced with a CSS/SVG hero | No large 3D download |
+| Slow dev compiles | Turbopack; `make prod` for an optimised build | Pages in 0.55–0.85 s in production |
+| Large JSON API responses | gzip compression | Events and summaries shrink several times |
+
+**Why this way:** I measured first (open time, frame rate, long tasks) and fixed the real
+bottleneck rather than guessing.
+
+### 11.30 Testing strategy
+
+**What I built:**
+- **Backend:** 71 pytest tests with a **scripted model**, so they are fast and
+  deterministic. They still use real SQLite, real MCP servers, real sandbox test runs and
+  a real demo-service subprocess. Tests that need Ollama are marked `live` and run
+  separately.
+- **Frontend:** 13 Vitest tests for the pure reducer, the robot state machine, stream
+  batching, legacy IDs and scenery.
+- **End-to-end:** 10 Playwright tests against a Simulation-mode backend on separate ports
+  (they never disturb your dev servers):
+  - every screen must load with **zero console errors**;
+  - the full mission and approval flow, including that re-opening a finished mission
+    replays no animations;
+  - time-travel fork, guide navigation, tabs, settings, command palette.
+- **Quality gates:** ruff, mypy `--strict`, eslint, prettier, TypeScript strict.
+
+**Why this way:** a scripted model makes tests reproducible, while everything else stays
+real. That means the tests catch real integration bugs, not mocked ones.
