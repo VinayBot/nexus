@@ -8,6 +8,9 @@ This guide explains what NEXUS is, what was built, and what works.
 - **Part 2 (section 11):** a deep dive into every component: what it is, what I built, why
   I chose that approach, where to show it, and the test that proves it.
 
+To *learn* how everything works inside (one mission followed through the real code, with
+worked examples and hands-on exercises), read [HOW_IT_WORKS.md](HOW_IT_WORKS.md).
+
 ---
 
 ## 1. NEXUS in one minute

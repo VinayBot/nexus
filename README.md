@@ -103,7 +103,8 @@ flowchart LR
   R --> DB[(SQLite: checkpoints · events · approvals · audit · traces)]
 ```
 
-Presenting it? See [docs/PRESENTATION_GUIDE.md](docs/PRESENTATION_GUIDE.md).
+Presenting it? See [docs/PRESENTATION_GUIDE.md](docs/PRESENTATION_GUIDE.md). Learning how it
+works inside? See [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md).
 
 Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · decisions: [docs/adr/](docs/adr/) ·
 course mapping: [docs/TOPIC_COVERAGE.md](docs/TOPIC_COVERAGE.md).
