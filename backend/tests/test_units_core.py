@@ -267,3 +267,38 @@ def test_python_patch_never_hides_a_real_syntax_error() -> None:
 
     res = apply_python_patch(SRC, "    return t", "    return f'{t")
     assert res.ok and not compiles(res.content)  # the sandbox reports it honestly
+
+
+def test_project_builder_plan_fits_its_file_limit() -> None:
+    from nexus.playbooks.builder import MAX_FILES, FileSpec, ProjectBuilder, ProjectSpec
+
+    files = [FileSpec(path=f"app/m{i}.py", purpose="x") for i in range(MAX_FILES - 1)]
+    files.append(FileSpec(path="tests/test_all.py", purpose="tests"))
+    spec = ProjectSpec(kind="fastapi_crud", name="n", entity="Book", files=files)
+    plan = ProjectBuilder().template_plan({"inputs": {"spec": spec.model_dump()}})
+    assert len(plan.steps) == MAX_FILES
+
+
+def test_builder_contract_rejects_a_repair_that_drops_an_imported_name() -> None:
+    from nexus.playbooks.builder_contract import broken_contract, import_culprit
+
+    files = {
+        "app/models.py": "class Book: ...\nclass BookIn: ...\n",
+        "app/store.py": "from app.models import Book, BookIn\n",
+        "tests/test_api.py": "from app.main import app\n",
+    }
+    assert broken_contract("app/models.py", "class BookIn: ...\n", files) == ["Book"]
+    assert broken_contract("app/models.py", files["app/models.py"], files) == []
+    out = "E   ImportError: cannot import name 'Book' from 'app.models' (/x/app/models.py)"
+    assert import_culprit(out) == ("app/models.py", "Book")
+
+
+def test_builder_fields_are_recovered_from_constraints_or_the_request() -> None:
+    from nexus.playbooks.scaffold import normalise_fields
+
+    assert normalise_fields([], ["title: str", "year: int", "titles are unique"], "x") == (
+        ["title: str", "year: int"],
+        ["titles are unique"],
+    )
+    fields, _ = normalise_fields([], [], "an API for books (title, author, year) with tests")
+    assert fields == ["title: str", "author: str", "year: int"]

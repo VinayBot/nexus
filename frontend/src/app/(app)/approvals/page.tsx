@@ -31,7 +31,7 @@ export default function Page() {
     <>
       <PageHeader
         title="Approvals"
-        description="Paused missions wait here for a human. Every decision — from this screen or a signed email link — is audited and resumes the graph with Command(resume=…)."
+        description="Missions that need your decision wait here, with the full risk breakdown and evidence. You can also decide from the pop-up or a signed email link. Every decision is recorded in the audit log."
         actions={
           <div className="flex rounded-lg border border-border p-0.5" role="tablist">
             {(["pending", "history"] as const).map((t) => (

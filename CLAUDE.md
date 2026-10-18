@@ -1,8 +1,9 @@
 # NEXUS — project memory
 
 Local-first multi-agent OS (Week-4 bootcamp project). LangGraph orchestration, Ollama models,
-SQLite persistence, MCP tools, human approval gates, a sci-fi "Sunset Command" HUD UI where every Live
-animation is driven by a real backend event. Checklist: `docs/PLAN.md`; topic → code map:
+SQLite persistence, MCP tools, human approval gates, a calm professional "Studio" UI where every Live
+animation is driven by a real backend event. Mission guide: `docs/HOW_IT_WORKS.md`; code walkthrough:
+`docs/CODE_WALKTHROUGH.md`. Checklist: `docs/PLAN.md`; topic → code map:
 `docs/TOPIC_COVERAGE.md`; architecture: `docs/ARCHITECTURE.md`; decisions: `docs/adr/`.
 
 ## Stack
@@ -21,8 +22,11 @@ animation is driven by a real backend event. Checklist: `docs/PLAN.md`; topic �
 Compose CLI is `docker-compose` on this machine; the Makefile detects it.
 
 ## Conventions
-- Model names only in config (`nexus/core/config.py` profiles). Default profile `lite`
-  (llama3.2:3b) because the owner's 16 GB Mac has crashed under bigger models; `standard` = 7B.
+- Model names only in config (`nexus/core/config.py` profiles): `lite` (llama3.2:3b), `balanced`
+  (qwen2.5:3b + qwen2.5-coder:3b for the `code` role, llama3.2 fallback), `standard` (7B, not pulled:
+  the owner's 16 GB Mac crashed under bigger models). The owner's pick in Settings → Models is saved
+  to `data/model_profile.json` and wins over `NEXUS_MODEL_PROFILE`. Avoid "thinking" models (qwen3):
+  they think even with think=False under a JSON schema and blow the token caps.
 - Every node is wrapped by `graph/instrument.py` so it emits node/reducer events; never emit
   events from inside reducers (they must stay pure).
 - Live UI = real events only. Scripted motion exists only in Replay (recorded events) and the
@@ -38,10 +42,14 @@ Compose CLI is `docker-compose` on this machine; the Makefile detects it.
   the next tournament round. Don't regress these.
 - Files stay under ~400 lines; split instead. Pydantic models for every agent I/O.
 - Untrusted text (tickets, docs, logs, tool output) is always wrapped by `safety.guardrails.fence()`.
-- Theme: void base, sunset aurora + neon HUD (tokens in `styles/tokens.css`). Cyan = navigation/system
-  chrome, warm gradient = primary actions (`.btn-primary`). Buttons use `.btn` variants; panels get HUD
-  corner brackets and a pointer spotlight from `components/layout/Interactions.tsx`. Only floating
-  elements (`.glass`) use backdrop blur — panels never do, it is what kept the UI fast.
+- Theme "Studio": slate base, one indigo accent (`--indigo`/`--cyan` token) for nav and primary
+  actions, status colours only for status. Plain sentence-case headings, no HUD brackets/scanlines.
+  The sunset palette is only for the robots' mission floor and the landing page. Keep animations
+  (lift, sweep, springs). Only floating elements (`.glass`) use backdrop blur.
+- Approvals: `ApprovalPrompt` pops a dialog on any screen for approvals raised this session; the
+  top-bar "N waiting" button reopens it; `QuickApproval` is reused inline in Mission Control.
+- Results read: You asked → outcome sentence → output (page/zip/answer) → How the team did it.
+  Report highlights are plain English (`graph/nodes/finish.py`).
 - Logs are quiet by default (`NEXUS_LOG_LEVEL=WARNING`, no uvicorn access log); set INFO to debug.
 - Approval email links: GET shows a confirm page, POST decides (link prefetchers must not approve).
 - Commit at the end of each phase; tick `docs/PLAN.md`.

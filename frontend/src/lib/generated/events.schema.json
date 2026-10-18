@@ -3981,6 +3981,7 @@
           "enum": [
             "main",
             "fast",
+            "code",
             "embed"
           ],
           "title": "Role",

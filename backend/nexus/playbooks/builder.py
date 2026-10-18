@@ -37,6 +37,9 @@ from nexus.graph.schemas import (
 )
 from nexus.llm.types import ChatMessage
 from nexus.playbooks.base import Playbook
+from nexus.playbooks.builder_contract import broken_contract, import_culprit, required_names
+from nexus.playbooks.patching import compiles
+from nexus.playbooks.scaffold import crud_file, normalise_fields, project_summary
 from nexus.safety.guardrails import fence
 
 TEMPLATES = Path(__file__).parent / "templates"
@@ -76,6 +79,29 @@ def _template(kind: str) -> dict[str, str]:
     }
 
 
+def _layout(kind: str) -> list[FileSpec]:
+    """The template's own file layout, with dependencies read from its imports.
+
+    Live runs showed 3B models inventing layouts (e.g. ``Book`` defined in two modules
+    that import each other); the single-file repair loop cannot fix an import cycle.
+    The model still decides *what* is built (entity, fields, constraints); the
+    proven template decides *where* it goes.
+    """
+    files = _template(kind)
+    out = []
+    for path, code in files.items():
+        deps = [
+            f"app/{m}.py"
+            for m in re.findall(r"^from app\.(\w+) import", code, re.M)
+            if f"app/{m}.py" in files and f"app/{m}.py" != path
+        ]
+        purpose = (
+            "tests" if path.startswith("tests/") else f"adapt {Path(path).name} from the template"
+        )
+        out.append(FileSpec(path=path, purpose=purpose, depends_on=deps))
+    return out
+
+
 def _slug(path: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", path.lower()).strip("-")[:40]
 
@@ -104,9 +130,10 @@ class ProjectBuilder(Playbook):
             [
                 ChatMessage.system(
                     "You turn requirements into a small project spec. kind is fastapi_crud for "
-                    f"web APIs and cli_tool for command-line tools. List at most {MAX_FILES} files "
-                    "under app/ and tests/ (always include app/__init__-free modules and at least "
-                    "one tests/test_*.py). Use depends_on for files that import others."
+                    "web APIs and cli_tool for command-line tools. fields: ONLY the fields the "
+                    "user listed, as 'name: type' (str, int, float, bool); if none are given, "
+                    "choose 2-4 sensible ones. constraints: only rules the user stated. "
+                    f"List at most {MAX_FILES} files under app/ and tests/."
                 ),
                 ChatMessage.user(
                     f"Requirements:\n{state['task']}\n\nDocuments:\n{doc_text or '(none)'}"
@@ -125,6 +152,10 @@ class ProjectBuilder(Playbook):
                     FileSpec(path=p, purpose="from template") for p in _template("fastapi_crud")
                 ],
             ),
+        )
+        fields, constraints = normalise_fields(spec.fields, spec.constraints, state["task"])
+        spec = spec.model_copy(
+            update={"files": _layout(spec.kind), "fields": fields, "constraints": constraints}
         )
         template = _template(spec.kind)
         emit(
@@ -174,6 +205,7 @@ class ProjectBuilder(Playbook):
 
     async def run_step(self, payload: dict[str, Any]) -> dict[str, Any] | None:
         svc = services()
+        agent_id = payload["agent_id"]
         inputs = payload.get("inputs") or {}
         spec = ProjectSpec.model_validate(inputs["spec"])
         path = payload["step"]["description"].split(":", 1)[0]
@@ -191,28 +223,10 @@ class ProjectBuilder(Playbook):
             ),
             "",
         )
-        out = await svc.llm.structured(
-            [
-                ChatMessage.system(services().registry.get(payload["agent_id"]).system_prompt),
-                ChatMessage.user(
-                    f"Project: {spec.name} ({spec.kind}). Entity {spec.entity} with fields {', '.join(spec.fields)}.\n"
-                    f"Constraints: {'; '.join(spec.constraints) or 'none'}.\nAll files: "
-                    + ", ".join(f"{f.path} ({f.purpose})" for f in spec.files)
-                    + f"\n\nWrite the complete content of {path}. Import project modules as `from app.x import y`."
-                    + (f"\n\nAdapt this template:\n```python\n{template}\n```" if template else "")
-                    + "".join(
-                        f"\n\nAlready written {p}:\n```python\n{c[:2000]}\n```"
-                        for p, c in list(written.items())[:4]
-                    )
-                ),
-            ],
-            FileOut,
-            purpose="code",
-            max_tokens=2000,
-            agent_id=payload["agent_id"],
-            default=FileOut(content=template or f'"""{path} (generation failed)"""\n'),
-        )
-        content = out.content.strip().removeprefix("```python").removesuffix("```").strip() + "\n"
+        if spec.kind == "fastapi_crud":
+            content = await crud_file(spec.entity, spec.fields, spec.constraints, path, agent_id)
+        else:
+            content = await self._generate(spec, path, template, written, agent_id)
         res = await svc.mcp.call(
             "workspace.write_file",
             {"path": path, "content": content},
@@ -230,9 +244,62 @@ class ProjectBuilder(Playbook):
             iterations=1,
         ).model_dump()
 
+    async def _generate(
+        self,
+        spec: ProjectSpec,
+        path: str,
+        template: str,
+        written: dict[str, str],
+        agent_id: str,
+    ) -> str:
+        """LLM-written file (CLI projects), with one shorter retry if it is invalid."""
+        svc = services()
+        prompt = [
+            ChatMessage.system(services().registry.get(agent_id).system_prompt),
+            ChatMessage.user(
+                f"Project: {spec.name} ({spec.kind}). Entity {spec.entity} with fields {', '.join(spec.fields)}.\n"
+                f"Constraints: {'; '.join(spec.constraints) or 'none'}.\nAll files: "
+                + ", ".join(f"{f.path} ({f.purpose})" for f in spec.files)
+                + f"\n\nWrite the complete content of {path}. Import project modules as `from app.x import y`."
+                + (" Keep it short: at most 5 focused tests." if path.startswith("tests/") else "")
+                + (f"\n\nAdapt this template:\n```python\n{template}\n```" if template else "")
+                + "".join(
+                    f"\n\nAlready written {p}:\n```python\n{c[:2000]}\n```"
+                    for p, c in list(written.items())[:4]
+                )
+            ),
+        ]
+        fallback = FileOut(content=template or f'"""{path} (generation failed)"""\n')
+        content = ""
+        for attempt in range(2):  # a cut-off or invalid file gets one shorter retry
+            out = await svc.llm.structured(
+                prompt,
+                FileOut,
+                purpose="code",
+                max_tokens=3000,
+                agent_id=agent_id,
+                default=fallback,
+            )
+            content = out.content.strip().removeprefix("```python").removesuffix("```").strip()
+            content += "\n"
+            if compiles(content):
+                break
+            if attempt == 0:
+                prompt = [
+                    *prompt,
+                    ChatMessage.user(
+                        "That file was cut off or is not valid Python. Write a shorter, complete "
+                        "version (under 80 lines)."
+                    ),
+                ]
+        else:
+            content = fallback.content
+        return content
+
     async def synthesize(self, state: dict[str, Any]) -> dict[str, Any] | None:
         """First pass: summarise. After a failed validation: repair the implicated file."""
         svc = services()
+        spec = ProjectSpec.model_validate((state.get("inputs") or {})["spec"])
         ws = svc.workspaces.path_for(state["mission_id"])
         validation = state.get("validation") or {}
         if validation and not validation.get("ok"):
@@ -243,15 +310,28 @@ class ProjectBuilder(Playbook):
                 if p.name != "__init__.py" and "__pycache__" not in p.parts
             }
             implicated = re.findall(r"\b((?:app|tests)/[\w/]+\.py)", output)
-            fallback = next(
-                (p for p in reversed(implicated) if p in files), next(iter(files), "app/main.py")
+            culprit = import_culprit(output)
+            fallback = (
+                culprit[0]
+                if culprit and culprit[0] in files
+                else next(
+                    (p for p in reversed(implicated) if p in files),
+                    next(iter(files), "app/main.py"),
+                )
             )
             shown = "\n\n".join(f"File {p}:\n```python\n{c}\n```" for p, c in files.items())
+            contracts = "\n".join(
+                f"- {path} must define: "
+                + ", ".join(f"{n} (used by {', '.join(users)})" for n, users in names.items())
+                for path, names in required_names(files).items()
+            )
+            hint = f"\nStart with {fallback}: {culprit[1]} is imported from it." if culprit else ""
             fix = await svc.llm.structured(
                 [
                     ChatMessage.system(svc.registry.get("forge").system_prompt),
                     ChatMessage.user(
-                        f"The project's tests fail:\n{output}\n\n{shown}\n\nFind the file that "
+                        f"The project's tests fail:\n{output}\n\n{shown}\n\nThese imports must "
+                        f"keep working:\n{contracts or '(none)'}{hint}\n\nFind the file that "
                         "causes the failure (often not the test file) and return its corrected "
                         "full content."
                     ),
@@ -263,15 +343,18 @@ class ProjectBuilder(Playbook):
                 default=Repair(path=fallback, content=files.get(fallback, "")),
             )
             path = fix.path if fix.path in files else fallback
+            missing = broken_contract(path, fix.content, files)
+            if missing:  # the "repair" would break other files: keep the current version
+                return {"answer": f"Rejected a repair of {path}: it dropped {', '.join(missing)}."}
             await svc.mcp.call(
                 "workspace.write_file",
                 {"path": path, "content": fix.content},
                 agent_id="forge",
                 allowlist=None,
             )
-            return {"answer": f"Repaired {path} after failing tests."}
-        built = sorted(str(p.relative_to(ws)) for p in ws.rglob("*.py"))
-        return {"answer": "Built files:\n" + "\n".join(f"- {f}" for f in built)}
+            note = f"_Forge repaired `{path}` after a failing test run._"
+            return {"answer": project_summary(spec.kind, spec.entity, spec.fields, note)}
+        return {"answer": project_summary(spec.kind, spec.entity, spec.fields)}
 
     async def validate(self, state: dict[str, Any]) -> ValidationResult:
         ws = services().workspaces.path_for(state["mission_id"])

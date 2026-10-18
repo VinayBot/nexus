@@ -52,7 +52,7 @@ export function ReportCard({ mission }: { mission: Mission }) {
     <motion.section
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="panel overflow-hidden"
+      className="result-stagger panel overflow-hidden"
       aria-label="Mission result"
       data-testid="mission-result"
     >
@@ -62,7 +62,10 @@ export function ReportCard({ mission }: { mission: Mission }) {
       </div>
       <header className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-border px-4 py-3">
         <span
-          className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold", o.tone)}
+          className={cn(
+            "result-badge inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold",
+            o.tone,
+          )}
         >
           <o.Icon className="size-3.5" /> {o.label}
         </span>

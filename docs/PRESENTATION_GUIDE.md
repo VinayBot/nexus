@@ -9,7 +9,8 @@ This guide explains what NEXUS is, what was built, and what works.
   I chose that approach, where to show it, and the test that proves it.
 
 To *learn* how everything works inside (one mission followed through the real code, with
-worked examples and hands-on exercises), read [HOW_IT_WORKS.md](HOW_IT_WORKS.md).
+worked examples and hands-on exercises), read [CODE_WALKTHROUGH.md](CODE_WALKTHROUGH.md).
+What every mission type can do and how to demo it: [HOW_IT_WORKS.md](HOW_IT_WORKS.md).
 
 ---
 

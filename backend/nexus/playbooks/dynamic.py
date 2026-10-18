@@ -8,12 +8,14 @@ as a reusable YAML playbook (its plan becomes the template, no team approval).
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any, ClassVar, Literal
 
 import yaml
 from pydantic import BaseModel, Field
 
+from nexus.core.services import services
 from nexus.graph.schemas import Plan
 from nexus.playbooks.base import Playbook
 from nexus.playbooks.council_qa import CouncilQA
@@ -31,8 +33,22 @@ class Dynamic(Playbook):
         "result is a written answer for the user."
     )
 
+    async def prepare(self, state: dict[str, Any]) -> dict[str, Any]:
+        """Give the team a *copy* of the demo shop's code when the task is about it.
+
+        Without this, "review the demo-service code" ran in an empty workspace and the
+        agents could only report that there were no files.
+        """
+        demo = services().extras.get("demo")
+        if demo is not None and DEMO_TOPIC.search(state.get("task", "")):
+            services().workspaces.copy_from(demo.live, state["mission_id"])
+        return {}
+
     async def validate(self, state: dict[str, Any]) -> Any:
         return await CouncilQA().validate(state)
+
+
+DEMO_TOPIC = re.compile(r"demo[- ]?(service|shop)|\bthe (shop|service)\b", re.I)
 
 
 class SavedPlaybookSpec(BaseModel):
@@ -62,8 +78,22 @@ class SavedPlaybook(Playbook):
         )
         return plan.model_copy(update={"source": "template", "revision": 0})
 
+    async def prepare(self, state: dict[str, Any]) -> dict[str, Any]:
+        """Give the team a *copy* of the demo shop's code when the task is about it.
+
+        Without this, "review the demo-service code" ran in an empty workspace and the
+        agents could only report that there were no files.
+        """
+        demo = services().extras.get("demo")
+        if demo is not None and DEMO_TOPIC.search(state.get("task", "")):
+            services().workspaces.copy_from(demo.live, state["mission_id"])
+        return {}
+
     async def validate(self, state: dict[str, Any]) -> Any:
         return await CouncilQA().validate(state)
+
+
+DEMO_TOPIC = re.compile(r"demo[- ]?(service|shop)|\bthe (shop|service)\b", re.I)
 
 
 def load_saved(directory: Path) -> list[SavedPlaybook]:

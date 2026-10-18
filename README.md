@@ -20,7 +20,7 @@ Prerequisites: macOS or Linux, [uv](https://docs.astral.sh/uv/), Node 22,
 
 ```bash
 make setup     # uv sync + pnpm install, creates .env
-make models    # pulls llama3.2:3b + nomic-embed-text (lite profile, ~2.3 GB)
+make models    # pulls the profile's models (lite: llama3.2:3b; balanced: + qwen2.5 3B and coder 3B)
 make dev       # backend :8000 (also launches the demo-service :8100), frontend :3000
 make prod      # same ports, optimised build without dev compiling or reloaders: fastest
 ```
@@ -43,12 +43,27 @@ Optional extras:
 | Playbook | What happens |
 |---|---|
 | **Self-Healing** (flagship) | Arm a chaos switch in the Chaos Lab and a real bug goes into the live demo-service. Hawk the Watcher opens an incident. The squad investigates in parallel, reproduces the bug with a test, and three Challengers propose patches; each patch runs in its own sandbox. After anonymous review, a judge, a dry run and **your approval** (UI or signed e-mail link), the fix lands on a git branch with hot reload. It is **verified on live traffic**, rolled back automatically if errors return, and stored in the Fix Library. |
+| **Web Page Builder** | "Build an HTML page with an AI blog", "a landing page for my bakery": Sage plans the sections, Quill and Echo write them in parallel, Forge renders a professional, script-free page from a fixed template, Aegis checks it (title, one H1, sections, 250+ words), and after **your approval** it is published at `/sites/<mission>/` with an **Open page** button and a live preview. |
 | **Ticket Solver** | Reads a ticket (local tracker or GitHub Issues), writes an acceptance test that must fail first, runs a tournament, then attaches the test report, diff and logs to the ticket after approval. |
 | **Project Builder** | Small services only (≤ 8 files: a FastAPI CRUD API or a CLI). Builds from a spec and a template, writes files in dependency waves, repairs until the tests pass, and packages a zip. |
 | **Council Q&A** | Parallel answers, anonymous peer review, debate on disagreement, and a verdict with confidence and dissent. |
 | **Dynamic** | For anything else. The Commander composes a team from the registry and you approve the team before it runs; a successful run can be saved as a YAML playbook. |
 
-## Verified on this machine (llama3.2:3b, lite profile)
+## Verified live on 2026-10-19 (16 GB M-series Mac)
+
+Every mission type, on real local models, approved through the app:
+
+| Mission | Models | Result |
+|---|---|---|
+| Web page ("build a html page and write ai blog…") | Lite | 5 sections, 1,208 words, published at `/sites/<id>/` in 55 s |
+| Web page (bakery landing page) | Balanced | published in about 60 s, no retries |
+| Question (optimistic vs pessimistic locking) | Balanced | council answer in 183 s |
+| Fix service (Bad config chaos switch) | Balanced | round 2 root-cause fix in `app/config.py` passed 10/10; applied; 98 live orders, 0 errors; 156 s |
+| Ticket T-101 | Balanced | WELCOME5 added, 10/10 tests, ticket commented and closed, 115 s |
+| Build API (books: title, author, year) | Balanced | 4/4 tests, zip downloaded, 15 s |
+| Custom team (error-handling review) | Balanced | found the real timeout and cancellation issues, 25 s |
+
+## Verified earlier (llama3.2:3b, lite profile)
 
 - **Self-heal, end to end:** null-handling bug → incident → 2 council rounds (round 1's
   patches failed 2/10 tests; the failing tests were fed back) → winning patch passed
@@ -104,7 +119,8 @@ flowchart LR
 ```
 
 Presenting it? See [docs/PRESENTATION_GUIDE.md](docs/PRESENTATION_GUIDE.md). Learning how it
-works inside? See [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md).
+works inside? See [docs/CODE_WALKTHROUGH.md](docs/CODE_WALKTHROUGH.md). What each mission
+can do and how to demo it: [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md).
 
 Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · decisions: [docs/adr/](docs/adr/) ·
 course mapping: [docs/TOPIC_COVERAGE.md](docs/TOPIC_COVERAGE.md).

@@ -69,7 +69,7 @@ async def plan(state: dict[str, Any]) -> dict[str, Any]:
         if state.get("findings"):
             parts.append("Findings so far:\n" + findings_text(state, 1500))
     template = playbook.template_plan(state).model_copy(update={"revision": revision})
-    if playbook.fixed_plan and previous is None:
+    if playbook.fixed_plan:  # spec-driven steps (file paths, sections): an LLM replan breaks them
         out = template
     else:
         out = await _ask_planner(playbook, parts, previous, template)

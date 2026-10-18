@@ -182,25 +182,17 @@ def builder_llm(break_first: bool = False) -> ScriptedLLM:
             {"path": "tests/test_api.py", "purpose": "tests", "depends_on": ["app/main.py"]},
         ],
     }
-    state = {"broken": break_first}
+    if break_first:  # a stated rule makes the model adapt models.py; its version breaks tests
+        spec["constraints"] = ["price must be at least 1000"]
+    good_models = (TEMPLATES / "app/models.py").read_text()
 
     def code(req: LLMRequest) -> str:
         text = req.messages[-1].content
-        path = (
-            text.split("Write the complete content of ")[-1].split(".py")[0] + ".py"
-            if "Write the complete content" in text
-            else ""
-        )
-        if "tests fail" in text:  # repair: the broken file is the store
-            return json.dumps(
-                {"path": "app/store.py", "content": (TEMPLATES / "app/store.py").read_text()}
-            )
-        content = (TEMPLATES / path).read_text()
-        if state["broken"] and path == "app/store.py":
-            content = content.replace(
-                "return self._items.get(item_id)", "return None"
-            )  # GET returns 404 → tests fail
-        return json.dumps({"content": content})
+        if "tests fail" in text:  # repair: restore a models.py the tests accept
+            return json.dumps({"path": "app/models.py", "content": good_models})
+        if "Adapt this Pydantic module" in text:  # compiles, keeps the names, fails the tests
+            return json.dumps({"content": good_models.replace("ge=0", "ge=1000")})
+        return json.dumps({"content": "unused: CRUD files come from the scaffold"})
 
     return ScriptedLLM(
         {

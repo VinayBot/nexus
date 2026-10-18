@@ -567,3 +567,52 @@
   animation: shimmer 2.2s linear infinite;
   pointer-events: none;
 }
+
+/* Mission result: sections arrive one after another, the outcome badge pops in. */
+@keyframes result-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes badge-pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.result-stagger > * {
+  animation: result-in 0.45s var(--ease-out) both;
+}
+.result-stagger > :nth-child(2) {
+  animation-delay: 0.08s;
+}
+.result-stagger > :nth-child(3) {
+  animation-delay: 0.16s;
+}
+.result-stagger > :nth-child(4) {
+  animation-delay: 0.24s;
+}
+.result-stagger > :nth-child(n + 5) {
+  animation-delay: 0.32s;
+}
+.result-badge {
+  animation: badge-pop 0.5s var(--ease-spring) 0.2s both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .result-stagger > *,
+  .result-badge {
+    animation: none;
+  }
+}

@@ -56,7 +56,8 @@ class PlanStep(BaseModel):
 
 class Plan(BaseModel):
     goal: str
-    steps: list[PlanStep] = Field(min_length=1, max_length=6)
+    # 8 = the Project Builder's one-step-per-file limit (MAX_FILES); LLM plans are asked for fewer
+    steps: list[PlanStep] = Field(min_length=1, max_length=8)
     rationale: str = ""
     revision: int = 0
     source: Literal["llm", "template"] = "llm"
