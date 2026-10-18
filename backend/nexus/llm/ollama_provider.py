@@ -112,6 +112,13 @@ class OllamaProvider:
             raise _classify(exc) from exc
         return [list(v) for v in resp.embeddings]
 
+    async def unload(self, model: str) -> None:
+        """Free a model's memory now instead of waiting for keep_alive to expire."""
+        try:
+            await self._client.generate(model=model, prompt="", keep_alive=0)
+        except Exception as exc:
+            raise _classify(exc) from exc
+
     async def loaded_models(self) -> list[dict[str, Any]]:
         try:
             resp = await self._client.ps()

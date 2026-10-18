@@ -96,6 +96,39 @@ def _plan(req: LLMRequest) -> str:
     )
 
 
+def _page_spec(req: LLMRequest) -> str:
+    return json.dumps(
+        {
+            "kind": "blog",
+            "title": "How AI Agents Work Together",
+            "tagline": "A short tour of planning, tools and human approval.",
+            "audience": "curious developers",
+            "accent": "indigo",
+            "sections": [
+                {"heading": "What an Agent Is", "points": "Definition and examples."},
+                {"heading": "Teams of Agents", "points": "Why several agents beat one."},
+                {"heading": "Keeping Humans in Control", "points": "Approvals and safety."},
+            ],
+        }
+    )
+
+
+def _section(req: LLMRequest) -> str:
+    heading = re.search(r"Section heading: (.+)", req.messages[-1].content)
+    topic = heading.group(1) if heading else "this topic"
+    sentence = (
+        f"{topic} is explained here in plain words for a developer who is new to agents. "
+        "Each agent has a role, a small set of tools and a clear goal, and it reports what it "
+        "did so the next agent can build on it. "
+    )
+    return json.dumps(
+        {
+            "paragraphs": [sentence * 2, sentence + "The result is checked before anyone sees it."],
+            "bullets": ["Clear roles", "Small, safe tools", "Every step is recorded"],
+        }
+    )
+
+
 def simulation_llm() -> ScriptedLLM:
     return ScriptedLLM(
         {
@@ -107,6 +140,8 @@ def simulation_llm() -> ScriptedLLM:
             ),
             "route": json.dumps({"playbook": "council_qa", "reason": "a question (simulation)"}),
             "plan": _plan,
+            "plan:page": _page_spec,
+            "write": _section,
             "replan": _plan,
             "react": _react,
             "solve": _solve,

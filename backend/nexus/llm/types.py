@@ -8,7 +8,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 Role = Literal["system", "user", "assistant", "tool"]
-ModelRole = Literal["main", "fast"]
+ModelRole = Literal["main", "fast", "code"]
 
 
 class ToolCall(BaseModel):

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from langchain_core.messages import AIMessage, HumanMessage
@@ -71,11 +72,51 @@ async def rewrite(state: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+#: Unambiguous requests are routed by rule; a 3B model once sent "build an HTML blog page"
+#: to the API builder. Checked in order; the first match wins.
+KEYWORD_ROUTES: list[tuple[str, re.Pattern[str]]] = [
+    ("ticket_solver", re.compile(r"\bT-\d+\b|\b[\w.-]+/[\w.-]+#\d+\b")),
+    (
+        "self_healing",
+        re.compile(r"\bincident\b|demo-service|\bunhealthy\b|service is (down|broken)", re.I),
+    ),
+    (
+        "web_builder",
+        re.compile(
+            r"\bhtml\b|web ?page|website|landing page|home ?page|\bblog\b|\barticle\b|"
+            r"portfolio|newsletter",
+            re.I,
+        ),
+    ),
+    (
+        "project_builder",
+        re.compile(r"\b(build|create|make|scaffold)\b.*\b(api|cli|crud|command[- ]line)\b", re.I),
+    ),
+]
+
+
+def keyword_route(task: str) -> str | None:
+    for playbook, pattern in KEYWORD_ROUTES:
+        if pattern.search(task):
+            return playbook
+    return None
+
+
 async def route(state: dict[str, Any]) -> dict[str, Any]:
-    """Mission Router: honour an explicit playbook, else classify with the fast model."""
+    """Mission Router: explicit playbook, then keyword rules, then the fast model."""
     preset = (state.get("inputs") or {}).get("playbook")
-    if preset and preset in {p.id for p in all_playbooks()}:
+    available = {p.id for p in all_playbooks()}
+    if preset and preset in available:
         return {"playbook": preset, "route_reason": "chosen by the user"}
+    matched = keyword_route(state.get("task", ""))
+    if matched in available:
+        return {
+            "playbook": matched,
+            "route_reason": "keyword rule",
+            "messages": [
+                AIMessage(content=f"Routing to {matched}: keyword rule", name="commander")
+            ],
+        }
     rewritten = RewrittenTask.model_validate(state["rewritten"])
     menu = "\n".join(f"- {p.id}: {p.description}" for p in all_playbooks())
     decision = await services().llm.structured(
@@ -85,7 +126,8 @@ async def route(state: dict[str, Any]) -> dict[str, Any]:
                 f"{menu}\nUse dynamic for anything that fits none of the others. Questions that "
                 "only need an answer go to council_qa. Incidents or a broken service go to "
                 "self_healing; requests mentioning a ticket id (T-123 or owner/repo#1) go to "
-                "ticket_solver; requests to build a new small API or CLI go to project_builder."
+                "ticket_solver; web pages, blogs and articles go to web_builder; requests to build a "
+                "new small API or CLI go to project_builder."
             ),
             ChatMessage.user(rewritten.clarified_task),
         ],
@@ -94,7 +136,6 @@ async def route(state: dict[str, Any]) -> dict[str, Any]:
         agent_id="commander",
         default=RouteDecision(playbook="council_qa", reason="router fallback"),
     )
-    available = {p.id for p in all_playbooks()}
     playbook = decision.playbook if decision.playbook in available else "council_qa"
     reason = (
         decision.reason if playbook == decision.playbook else f"{decision.playbook} unavailable"

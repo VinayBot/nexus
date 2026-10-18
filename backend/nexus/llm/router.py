@@ -1,7 +1,8 @@
 """Model Router: picks the model for each call from its purpose.
 
 Cheap, frequent work (rewrite, routing, grading, summarising, guide chat) goes to
-the *fast* model; planning, solving, coding and judging go to the *main* model.
+the *fast* model; writing code goes to the *code* model (the main model unless the
+profile has a coder); planning, solving and judging go to the *main* model.
 A fast-model call that fails validation twice is escalated to the main model.
 Every decision is emitted as an ``llm.routed`` event.
 """
@@ -21,6 +22,8 @@ FAST_PURPOSES: frozenset[str] = frozenset(
 MAIN_PURPOSES: frozenset[str] = frozenset(
     {"plan", "replan", "solve", "code", "judge", "review", "react", "reproduce", "debate", "team"}
 )
+#: Served by the profile's coder model when it has one (else the main model).
+CODE_PURPOSES: frozenset[str] = frozenset({"code", "reproduce"})
 ESCALATE_AFTER = 2
 
 
@@ -32,6 +35,8 @@ class ModelRouter:
         base = purpose.split(":", 1)[0]
         if base in FAST_PURPOSES:
             return "fast"
+        if base in CODE_PURPOSES:
+            return "code"
         return "main"
 
     def pick(
@@ -49,7 +54,11 @@ class ModelRouter:
             reason = "explicit role"
         else:
             reason = f"purpose '{purpose}' → {chosen}"
-        model = self.models.main if chosen == "main" else self.models.fast
-        r: Literal["main", "fast", "embed"] = chosen
+        model = {
+            "main": self.models.main,
+            "fast": self.models.fast,
+            "code": self.models.code or self.models.main,
+        }[chosen]
+        r: Literal["main", "fast", "code", "embed"] = chosen
         emit("llm.routed", LlmRouted(purpose=purpose, role=r, model=model, reason=reason))
         return chosen, model

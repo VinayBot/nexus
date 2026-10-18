@@ -132,8 +132,17 @@ class LLMGateway:
 
         async def attempt() -> LLMResult:
             async with self.governor.slot(request.model):
-                async with asyncio.timeout(self.timeout_s):
-                    return await self.provider.chat(request, on_token=callback)
+                try:
+                    async with asyncio.timeout(self.timeout_s):
+                        return await self.provider.chat(request, on_token=callback)
+                except TimeoutError as exc:
+                    # A model that hung for the whole timeout will not answer faster a second
+                    # later: skip transport retries and let the fallback chain take over.
+                    raise ProviderError(
+                        f"{request.model} gave no answer within {self.timeout_s:.0f}s "
+                        "(the machine may be short of memory, or asleep)",
+                        retryable=False,
+                    ) from exc
 
         try:
             with span(

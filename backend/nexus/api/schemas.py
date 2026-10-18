@@ -31,6 +31,8 @@ class ModelRoles(BaseModel):
     main: str
     fast: str
     embed: str
+    code: str | None = None
+    fallback: str | None = None
 
 
 class SystemInfo(BaseModel):

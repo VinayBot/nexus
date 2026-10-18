@@ -20,12 +20,14 @@ from sqlalchemy import select
 from nexus.core.event_types import AgentStatus, IncidentDetected, ServiceHealth
 from nexus.core.events import emit
 from nexus.core.logging import get_logger
+from nexus.db import repo
 from nexus.db.engine import Database
 from nexus.db.models import IncidentRow
 from nexus.graph.runner import MissionRunner
 from nexus.playbooks.demo_service import DemoService
 
 log = get_logger(__name__)
+BACKOFF_S = 15 * 60
 
 
 def error_digest(logs: list[dict[str, Any]], limit: int = 5) -> str:
@@ -121,9 +123,32 @@ class Watcher:
             ),
         )
         log.warning("incident.detected", incident=incident_id, signal=signal)
-        if self.auto_heal:
+        if self.auto_heal and await self.may_auto_heal():
             await self.heal(row)
         return row
+
+    async def may_auto_heal(self) -> bool:
+        """One automatic heal at a time, and a 15-minute back-off after a model outage.
+
+        Without this, a flapping service on a starved machine queued heal after heal,
+        each one failing on model timeouts.
+        """
+        active = await repo.missions_with_status(self.db, ["queued", "running", "paused"])
+        if any(m.source == "watcher" for m in active):
+            log.warning("watcher.skip_heal", reason="a heal is already active")
+            return False
+        failed = await repo.missions_with_status(self.db, ["failed"])
+        recent = [
+            m
+            for m in failed
+            if m.source == "watcher"
+            and "LLMUnavailableError" in (m.error or "")
+            and time.time() - m.updated_at < BACKOFF_S
+        ]
+        if recent:
+            log.warning("watcher.skip_heal", reason="model unavailable recently")
+            return False
+        return True
 
     async def heal(self, incident: IncidentRow) -> str:
         mission = await self.runner.create(

@@ -203,7 +203,12 @@ async def propose(payload: dict[str, Any]) -> dict[str, Any]:
         msgs = _solver_prompt(sid, payload)
         if payload["mode"] == "code":
             code = await services().llm.structured(
-                msgs, CodeOut, purpose="solve", agent_id=sid, temperature=spec.temperature
+                msgs,
+                CodeOut,
+                purpose="solve",
+                role="code",
+                agent_id=sid,
+                temperature=spec.temperature,
             )
             files = (payload.get("code_context") or {}).get("files", {})
             prop = Proposal(

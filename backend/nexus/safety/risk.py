@@ -22,6 +22,7 @@ ACTION_BASE: dict[str, float] = {
     "run_team": 0.15,
     "comment_ticket": 0.2,
     "write_project": 0.25,
+    "publish_page": 0.25,
     "send_email": 0.3,
     "apply_patch": 0.35,
 }

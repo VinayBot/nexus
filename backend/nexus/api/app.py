@@ -10,6 +10,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from nexus import __version__
 from nexus.api import (
@@ -110,6 +111,10 @@ def create_app() -> FastAPI:
     ):
         app.include_router(module.router, prefix="/api/v1")
     app.include_router(ws.router)
+    # pages published by the Web Page Builder (static, no scripts) — /sites/<mission>/
+    sites = settings.data_dir / "sites"
+    sites.mkdir(parents=True, exist_ok=True)
+    app.mount("/sites", StaticFiles(directory=sites, html=True), name="sites")
     return app
 
 

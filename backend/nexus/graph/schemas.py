@@ -147,6 +147,7 @@ class ProposedAction(BaseModel):
         "apply_patch",
         "comment_ticket",
         "write_project",
+        "publish_page",
         "send_email",
         "run_team",
     ]

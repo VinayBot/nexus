@@ -228,7 +228,7 @@ class CircuitState(Payload):
 
 class LlmRouted(Payload):
     purpose: str
-    role: Literal["main", "fast", "embed"]
+    role: Literal["main", "fast", "code", "embed"]
     model: str
     reason: str
 

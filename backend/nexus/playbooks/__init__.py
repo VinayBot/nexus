@@ -34,8 +34,16 @@ def _ensure_loaded() -> None:
     from nexus.playbooks.dynamic import Dynamic
     from nexus.playbooks.self_healing import SelfHealing
     from nexus.playbooks.ticket_solver import TicketSolver
+    from nexus.playbooks.web_builder import WebBuilder
 
-    for pb in (SelfHealing(), TicketSolver(), ProjectBuilder(), CouncilQA(), Dynamic()):
+    for pb in (
+        SelfHealing(),
+        TicketSolver(),
+        WebBuilder(),
+        ProjectBuilder(),
+        CouncilQA(),
+        Dynamic(),
+    ):
         register(pb)
     reload_saved()
 
@@ -44,7 +52,14 @@ def reload_saved() -> None:
     from nexus.core.config import get_settings
     from nexus.playbooks.dynamic import load_saved
 
-    builtin = {"self_healing", "ticket_solver", "project_builder", "council_qa", "dynamic"}
+    builtin = {
+        "self_healing",
+        "ticket_solver",
+        "web_builder",
+        "project_builder",
+        "council_qa",
+        "dynamic",
+    }
     for pb in load_saved(get_settings().data_dir / "playbooks"):
         if pb.id not in builtin:
             register(pb)

@@ -58,17 +58,28 @@ def build_services(
         loaded_models=provider.loaded_models,
     )
     breakers = BreakerRegistry()
+    from nexus.core.config import PROFILES, fallback_for
+    from nexus.llm.profiles import saved_profile
+
+    # A profile picked in Settings → Models outlives restarts (explicit per-role env wins).
+    saved = saved_profile(settings.data_dir)
+    explicit = settings.model_main or settings.model_fast or settings.model_code
+    models = PROFILES[saved] if saved and not explicit else settings.models
     llm = LLMGateway(
         provider,
-        ModelRouter(settings.models),
+        ModelRouter(models),
         governor,
         breakers,
         num_ctx=settings.num_ctx,
         timeout_s=settings.llm_timeout_s,
-        fallback_model=settings.fallback_model,
-        embed_model=settings.models.embed,
+        fallback_model=fallback_for(models),
+        embed_model=models.embed,
     )
-    return Services(settings, provider, governor, breakers, llm)
+    svc = Services(settings, provider, governor, breakers, llm)
+    svc.register(
+        "model_profile", (saved if saved and not explicit else settings.model_profile).value
+    )
+    return svc
 
 
 _services: Services | None = None

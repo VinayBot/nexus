@@ -24,6 +24,7 @@ class ModelProfile(StrEnum):
     """Pre-sized model sets. ``lite`` is the safe default on a busy 16 GB Mac."""
 
     LITE = "lite"
+    BALANCED = "balanced"
     STANDARD = "standard"
 
 
@@ -33,13 +34,45 @@ class ModelSet(BaseModel):
     main: str = Field(description="Planning, solving, coding and judging.")
     fast: str = Field(description="Rewrite, routing, grading, summarising, guide chat.")
     embed: str = Field(description="Embeddings for RAG and memory search.")
+    code: str | None = Field(default=None, description="Code writing; None = the main model.")
+    fallback: str | None = Field(default=None, description="Alternate model on failure.")
 
 
 PROFILES: dict[ModelProfile, ModelSet] = {
     ModelProfile.LITE: ModelSet(main="llama3.2:3b", fast="llama3.2:3b", embed="nomic-embed-text"),
+    # One general model for every non-code role plus a small coder: two chat models,
+    # ~6 GB resident at peak — sized for a 16 GB Mac that also runs a browser and an IDE.
+    ModelProfile.BALANCED: ModelSet(
+        main="qwen3:4b-instruct",
+        fast="qwen3:4b-instruct",
+        code="qwen2.5-coder:3b",
+        embed="nomic-embed-text",
+        fallback="llama3.2:3b",
+    ),
     ModelProfile.STANDARD: ModelSet(
         main="qwen2.5-coder:7b", fast="llama3.2:3b", embed="nomic-embed-text"
     ),
+}
+
+#: Shown in Settings → Models.
+PROFILE_INFO: dict[ModelProfile, dict[str, str | float]] = {
+    ModelProfile.LITE: {
+        "label": "Lite",
+        "description": "llama3.2 3B for every role. Lowest memory, fastest, weakest writing.",
+        "ram_gb": 3.0,
+    },
+    ModelProfile.BALANCED: {
+        "label": "Balanced",
+        "description": "Qwen3 4B for thinking and writing, Qwen2.5-Coder 3B for code. "
+        "Better plans, prose and patches; recommended for a 16 GB Mac.",
+        "ram_gb": 6.0,
+    },
+    ModelProfile.STANDARD: {
+        "label": "Standard (7B)",
+        "description": "Qwen2.5-Coder 7B main model. Strongest, but heavy for a 16 GB Mac "
+        "that is also running a browser and an IDE.",
+        "ram_gb": 7.5,
+    },
 }
 
 
@@ -68,6 +101,7 @@ class Settings(BaseSettings):
     model_main: str | None = None
     model_fast: str | None = None
     model_embed: str | None = None
+    model_code: str | None = None
     num_ctx: int = Field(default=8192, ge=1024)
 
     model_fallback: str | None = Field(
@@ -103,13 +137,13 @@ class Settings(BaseSettings):
             main=self.model_main or base.main,
             fast=self.model_fast or base.fast,
             embed=self.model_embed or base.embed,
+            code=self.model_code or base.code,
+            fallback=self.model_fallback or base.fallback,
         )
 
     @property
     def fallback_model(self) -> str | None:
-        """Explicit alternate, else the fast model when it differs from main."""
-        m = self.models
-        return self.model_fallback or (m.fast if m.fast != m.main else None)
+        return fallback_for(self.models)
 
     @property
     def sqlite_path(self) -> Path:
@@ -126,6 +160,11 @@ class Settings(BaseSettings):
     @property
     def workspaces_path(self) -> Path:
         return self.data_dir / "workspaces"
+
+
+def fallback_for(models: ModelSet) -> str | None:
+    """The profile's alternate, else the fast model when it differs from main."""
+    return models.fallback or (models.fast if models.fast != models.main else None)
 
 
 @lru_cache

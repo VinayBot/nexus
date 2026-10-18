@@ -5,13 +5,23 @@ from __future__ import annotations
 import sqlite3
 
 import httpx
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 from nexus import __version__
 from nexus.api.schemas import DependencyCheck, Liveness, ModelRoles, Readiness, SystemInfo
-from nexus.core.config import Settings, get_settings
+from nexus.core.config import ModelProfile, ModelSet, Settings, get_settings
+from nexus.core.services import services
+from nexus.llm import profiles
 
 router = APIRouter(tags=["system"])
+
+
+def active_models(settings: Settings) -> ModelSet:
+    try:
+        return services().llm.router.models
+    except RuntimeError:  # services not built (e.g. a bare health probe)
+        return settings.models
 
 
 async def check_ollama(settings: Settings) -> DependencyCheck:
@@ -25,7 +35,7 @@ async def check_ollama(settings: Settings) -> DependencyCheck:
 
     pulled = {m["name"] for m in resp.json().get("models", [])}
     pulled |= {name.removesuffix(":latest") for name in pulled}
-    wanted = set(settings.models.model_dump().values())
+    wanted = {m for m in active_models(settings).model_dump().values() if m}
     missing = sorted(wanted - pulled)
     if missing:
         return DependencyCheck(
@@ -73,9 +83,39 @@ async def system_info() -> SystemInfo:
     return SystemInfo(
         version=__version__,
         env=settings.env,
-        model_profile=settings.model_profile.value,
-        models=ModelRoles(**settings.models.model_dump()),
+        model_profile=_active_profile(settings),
+        models=ModelRoles(**active_models(settings).model_dump()),
         num_ctx=settings.num_ctx,
         llm_max_concurrency=settings.llm_max_concurrency,
         simulation=settings.llm_provider == "simulation",
     )
+
+
+def _active_profile(settings: Settings) -> str:
+    try:
+        return str(services().extras.get("model_profile", settings.model_profile.value))
+    except RuntimeError:
+        return settings.model_profile.value
+
+
+class ProfileChoice(BaseModel):
+    profile: ModelProfile
+
+
+@router.get("/models")
+async def models() -> dict[str, object]:
+    """Model profiles, which models each needs, and what Ollama has installed."""
+    return await profiles.describe(services())
+
+
+@router.put("/models")
+async def choose_profile(body: ProfileChoice) -> dict[str, object]:
+    svc = services()
+    info = await profiles.describe(svc)
+    chosen = next(p for p in info["profiles"] if p["id"] == body.profile.value)
+    if chosen["missing"]:
+        raise HTTPException(
+            409, f"install first: ollama pull {' && ollama pull '.join(chosen['missing'])}"
+        )
+    await profiles.apply(svc, body.profile)
+    return await profiles.describe(svc)
