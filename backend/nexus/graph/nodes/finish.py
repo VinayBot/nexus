@@ -122,23 +122,41 @@ async def report(state: dict[str, Any]) -> dict[str, Any]:
     verdict = state.get("verdict") or {}
     highlights = []
     if state.get("plan"):
+        steps = state["plan"]["steps"]
         highlights.append(
-            f"Plan r{state['plan'].get('revision', 0)} with {len(state['plan']['steps'])} steps"
+            f"Sage planned {len(steps)} step{'s' if len(steps) != 1 else ''}: "
+            + "; ".join(st["title"] for st in steps[:6])
         )
+    team = [m["agent_id"].title() for m in (state.get("team") or {}).get("members", [])]
+    if team:
+        highlights.append(f"The Commander assigned the work to {', '.join(team)}")
     if verdict:
         highlights.append(
-            f"Tournament winner {verdict.get('winner_label')} (confidence {verdict.get('confidence')})"
+            f"Three solvers competed; {str(verdict.get('winner', '')).title()} won "
+            f"(judge confidence {float(verdict.get('confidence') or 0):.0%})"
         )
+    if (state.get("validation") or {}).get("summary"):
+        highlights.append(f"Check: {state['validation']['summary']}")
     if state.get("risk"):
-        highlights.append(f"Risk {state['risk']['level']} → {state['risk']['route']}")
+        route = {
+            "auto": "so it ran without asking",
+            "approve": "so it asked for your approval",
+            "dry_run": "so it rehearsed first and asked for your approval",
+            "blocked": "so policy blocked it unless you overrode it",
+        }.get(state["risk"]["route"], "")
+        highlights.append(f"Risk scored {state['risk']['level']}, {route}".rstrip(", "))
     if state.get("approval"):
         a = state["approval"]
-        highlights.append(f"Human decision: {a['decision']} via {a['channel']}")
+        verb = {"approve": "approved", "reject": "rejected", "edit": "edited and approved"}.get(
+            a["decision"], "answered"
+        )
+        via = "an email link" if a["channel"] == "email" else "the app"
+        highlights.append(f"You {verb} it in {via}")
     if (state.get("execution") or {}).get("summary"):
-        highlights.append(f"Execution: {state['execution']['summary']}")
+        highlights.append(f"Done: {state['execution']['summary']}")
     if (state.get("verification") or {}).get("summary"):
-        highlights.append(f"Verification: {state['verification']['summary']}")
-    for n in state.get("failure_notes") or []:
+        highlights.append(f"Verified: {state['verification']['summary']}")
+    for n in dict.fromkeys(state.get("failure_notes") or []):
         highlights.append(f"Note: {n}")
     summary = {
         "success": "Mission completed successfully.",

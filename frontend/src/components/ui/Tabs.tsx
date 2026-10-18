@@ -39,7 +39,7 @@ export function UrlTabs({ tabs, layoutId }: { tabs: TabDef[]; layoutId: string }
               {active && (
                 <motion.span
                   layoutId={layoutId}
-                  className="absolute inset-0 rounded-md border border-[rgb(79_227_240/0.5)] bg-[rgb(79_227_240/0.12)] shadow-[0_0_18px_-6px_var(--cyan)]"
+                  className="absolute inset-0 rounded-md border border-[rgb(139_151_255/0.5)] bg-[rgb(139_151_255/0.12)] shadow-[0_0_18px_-6px_var(--cyan)]"
                   transition={{ type: "spring", stiffness: 420, damping: 34 }}
                 />
               )}

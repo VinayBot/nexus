@@ -133,7 +133,8 @@ class Watcher:
         Without this, a flapping service on a starved machine queued heal after heal,
         each one failing on model timeouts.
         """
-        active = await repo.missions_with_status(self.db, ["queued", "running", "paused"])
+        # paused heals wait for a human and use no model time, so they do not block
+        active = await repo.missions_with_status(self.db, ["queued", "running"])
         if any(m.source == "watcher" for m in active):
             log.warning("watcher.skip_heal", reason="a heal is already active")
             return False

@@ -5,13 +5,14 @@ import { LiveBridge } from "@/components/layout/LiveBridge";
 import { Toasts } from "@/components/layout/Toasts";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopBar } from "@/components/layout/TopBar";
-import { AppBackdrop } from "@/components/scenery/AppBackdrop";
+import { ApprovalPrompt } from "@/components/approvals/ApprovalPrompt";
+import { StudioBackdrop } from "@/components/layout/StudioBackdrop";
 
-/** Shell for every in-app screen: sky behind, nav on the left, top bar, scrolling content. */
+/** Shell for every in-app screen: nav on the left, top bar, scrolling content, approval pop-up. */
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-dvh">
-      <AppBackdrop />
+      <StudioBackdrop />
       <LiveBridge />
       <a
         href="#main"
@@ -30,7 +31,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <Nova />
       <TourOverlay />
       <CommandPalette />
-      <div className="scanlines perf-hide" aria-hidden />
+      <ApprovalPrompt />
     </div>
   );
 }

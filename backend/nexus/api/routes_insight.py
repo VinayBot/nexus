@@ -229,9 +229,9 @@ def _settings_view() -> dict[str, Any]:
     st = services().settings
     watcher = services().extras.get("watcher")
     return {
-        "model_profile": st.model_profile.value,
-        "models": st.models.model_dump(),
-        "fallback_model": st.fallback_model,
+        "model_profile": services().extras.get("model_profile", st.model_profile.value),
+        "models": services().llm.router.models.model_dump(),
+        "fallback_model": services().llm.fallback_model,
         "num_ctx": st.num_ctx,
         "llm_max_concurrency": services().governor.configured_limit,
         "llm_timeout_s": st.llm_timeout_s,

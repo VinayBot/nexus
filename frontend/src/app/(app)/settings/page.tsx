@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { ModelPicker } from "@/components/settings/ModelPicker";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { get, put } from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -65,33 +66,11 @@ export default function Page() {
 
   return (
     <>
-      <PageHeader
-        title="Settings"
-        description="Live knobs change the running backend immediately; model choices come from .env (NEXUS_MODEL_PROFILE / NEXUS_MODEL_*) and need a restart."
-      />
+      <PageHeader title="Settings" description="Every setting here changes the running backend immediately." />
       <div className="grid gap-3 xl:grid-cols-2">
+        <ModelPicker />
         <section className="panel p-4">
-          <h2 className="panel-title text-sm text-gold">Models (local, via Ollama)</h2>
-          {d && (
-            <>
-              <Row label="Profile" hint="lite = 3B for every role; standard = 7B coder main">
-                {d.model_profile}
-              </Row>
-              <Row label="Main model">{d.models.main}</Row>
-              <Row label="Fast model">{d.models.fast}</Row>
-              <Row label="Embeddings">{d.models.embed}</Row>
-              <Row label="Fallback chain" hint="primary → alternate → reduced context">
-                {d.fallback_model ?? "(reduced context only)"}
-              </Row>
-              <Row label="Context window">
-                {d.num_ctx.toLocaleString()} tokens · timeout {d.llm_timeout_s}s
-              </Row>
-              <Row label="Ollama">{d.ollama_base_url}</Row>
-            </>
-          )}
-        </section>
-        <section className="panel p-4">
-          <h2 className="panel-title text-sm text-gold">Live knobs</h2>
+          <h2 className="panel-title text-sm ">Live knobs</h2>
           {d && (
             <>
               <Row label="LLM concurrency" hint="Resource Governor slots (lowered automatically under memory pressure)">
@@ -150,7 +129,7 @@ export default function Page() {
           )}
         </section>
         <section className="panel p-4">
-          <h2 className="panel-title text-sm text-gold">Appearance</h2>
+          <h2 className="panel-title text-sm ">Appearance</h2>
           <Row label="Theme">
             {(["sunset", "night"] as const).map((t) => (
               <button
@@ -177,7 +156,7 @@ export default function Page() {
         </section>
         <section className="panel p-4">
           <div className="flex items-center">
-            <h2 className="panel-title text-sm text-gold">Safety policies</h2>
+            <h2 className="panel-title text-sm ">Safety policies</h2>
             {draft && (
               <button
                 type="button"
@@ -199,7 +178,7 @@ export default function Page() {
                   className="mt-0.5"
                 />
                 <div>
-                  <p className="font-mono text-gold">{p.id}</p>
+                  <p className="font-mono ">{p.id}</p>
                   <p className="text-muted">
                     {p.description}
                     {p.value != null ? ` (${String(p.value)})` : ""}

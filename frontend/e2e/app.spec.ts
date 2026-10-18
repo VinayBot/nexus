@@ -45,12 +45,12 @@ test("landing page shows live stats and enters the command center", async ({ pag
   expect(errors).toEqual([]);
 });
 
-test("sidebar groups, the More section and active state", async ({ page }) => {
+test("sidebar groups, the Advanced section and active state", async ({ page }) => {
   await page.goto("/missions");
   const nav = page.getByRole("navigation", { name: "Primary" });
-  await expect(nav.getByRole("link", { name: "Mission Control" })).toHaveAttribute("aria-current", "page");
+  await expect(nav.getByRole("link", { name: "Missions" })).toHaveAttribute("aria-current", "page");
   await expect(nav.getByRole("link", { name: "Memory" })).toHaveCount(0);
-  await nav.getByRole("button", { name: /More/ }).click();
+  await nav.getByRole("button", { name: /Advanced/ }).click();
   await nav.getByRole("link", { name: "Memory" }).click();
   await page.waitForURL(/\/memory$/);
   await expect(nav.getByRole("link", { name: "Memory" })).toHaveAttribute("aria-current", "page");

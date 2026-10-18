@@ -106,6 +106,39 @@ def apply_search_replace(content: str, search: str, replace: str) -> PatchResult
     return PatchResult(False, content, f"search block not found in the file.{hint}")
 
 
+def compiles(source: str) -> bool:
+    try:
+        compile(source, "<patch>", "exec")
+    except SyntaxError:
+        return False
+    return True
+
+
+def apply_python_patch(content: str, search: str, replace: str) -> PatchResult:
+    """``apply_search_replace``, then repair the replacement's indentation if needed.
+
+    Small models often get the indentation of a replaced block wrong (one level too
+    deep, or an ``if`` body dropped to the ``if``'s own level), so the file no longer
+    imports and every test "errors" without saying anything about the fix. When the
+    patched file does not compile, the replacement is rebased onto the original
+    line's indentation, then one level deeper, then one shallower; the first variant
+    that compiles wins. Only whitespace changes, and the strategy records it.
+    """
+    res = apply_search_replace(content, search, replace)
+    if not res.ok or compiles(res.content) or not compiles(content):
+        return res
+    first_search = next((x for x in search.strip("\n").splitlines() if x.strip()), "")
+    first_replace = next((x for x in replace.strip("\n").splitlines() if x.strip()), "")
+    base, model = _indent(first_search), _indent(first_replace)
+    for target in (base, base + "    ", base[:-4] if len(base) >= 4 else None):
+        if target is None or target == model:
+            continue
+        cand = apply_search_replace(content, search, _reindent(replace.strip("\n"), model, target))
+        if cand.ok and compiles(cand.content):
+            return PatchResult(True, cand.content, strategy=f"{res.strategy}+reindented")
+    return res
+
+
 def unified_diff(path: str, before: str, after: str) -> str:
     return "".join(
         difflib.unified_diff(

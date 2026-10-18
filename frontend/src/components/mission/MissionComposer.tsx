@@ -1,30 +1,23 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { motion } from "motion/react";
 import { FileUp, Send, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { API_URL } from "@/lib/config";
 import { post } from "@/lib/api";
 import { cn } from "@/lib/cn";
-import { usePlaybooks, useTickets, type Mission } from "@/lib/queries";
+import { MISSION_TYPES } from "@/lib/playbooks";
+import { useTickets, type Mission } from "@/lib/queries";
 
 interface Doc {
   name: string;
   text: string;
 }
 
-const EXAMPLES: Record<string, string> = {
-  "": "What is the difference between ReAct and Plan-and-Execute agents?",
-  council_qa: "When should a team prefer optimistic over pessimistic locking?",
-  self_healing: "The demo-service is unhealthy. Investigate, fix and verify it.",
-  ticket_solver: "Solve ticket T-101",
-  project_builder: "Build a small FastAPI API to manage books (title, author, year) with tests.",
-  dynamic: "Review the demo-service code for risky error handling and summarise the top 3 issues.",
-};
-
+/** Task first, then an optional mission type. An empty box runs the type's example. */
 export function MissionComposer({ onCreated }: { onCreated: (m: Mission) => void }) {
   const qc = useQueryClient();
-  const playbooks = usePlaybooks();
   const tickets = useTickets();
   const [task, setTask] = useState("");
   const [playbook, setPlaybook] = useState("");
@@ -32,14 +25,14 @@ export function MissionComposer({ onCreated }: { onCreated: (m: Mission) => void
   const [docs, setDocs] = useState<Doc[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const file = useRef<HTMLInputElement>(null);
+  const chosen = MISSION_TYPES.find((t) => t.id === playbook) ?? MISSION_TYPES[0]!;
 
   const create = useMutation({
     mutationFn: () => {
       const inputs: Record<string, unknown> = {};
       if (playbook === "ticket_solver") inputs.ticket_id = ticket;
       if (docs.length) inputs.docs = docs;
-      const text =
-        task.trim() || (playbook === "ticket_solver" ? `Solve ticket ${ticket}` : (EXAMPLES[playbook] ?? ""));
+      const text = task.trim() || (playbook === "ticket_solver" ? `Solve ticket ${ticket}` : chosen.example);
       return post<Mission>("/missions", { task: text, playbook: playbook || null, inputs } as never);
     },
     onSuccess: (m) => {
@@ -63,37 +56,76 @@ export function MissionComposer({ onCreated }: { onCreated: (m: Mission) => void
     setDocs((d) => [...d, doc]);
   }
 
-  const chosen = playbooks.data?.find((p) => p.id === playbook);
   return (
     <form
-      className="panel space-y-2.5 p-3"
+      className="panel space-y-3 p-4"
       onSubmit={(e) => {
         e.preventDefault();
         create.mutate();
       }}
     >
-      <h2 className="panel-title text-sm text-gold">New mission</h2>
-      <label className="block">
-        <span className="sr-only">Playbook</span>
-        <select
-          value={playbook}
-          onChange={(e) => setPlaybook(e.target.value)}
-          className="w-full rounded-lg border border-border bg-black/40 px-2.5 py-2 text-sm text-text"
-        >
-          <option value="">Let the Commander decide</option>
-          {playbooks.data?.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.title}
-            </option>
-          ))}
-        </select>
-      </label>
-      {chosen && <p className="text-[11px] leading-snug text-muted">{chosen.description}</p>}
+      <h2 className="panel-title text-sm">New mission</h2>
+      <textarea
+        value={task}
+        onChange={(e) => setTask(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) create.mutate();
+        }}
+        rows={4}
+        placeholder={playbook === "ticket_solver" ? `Solve ticket ${ticket}` : chosen.example}
+        className="w-full resize-none rounded-lg border border-border bg-black/25 px-3 py-2.5 text-sm text-text placeholder:text-faint"
+        aria-label="What should the agents do?"
+      />
+      <div>
+        <p className="mb-1.5 text-xs text-faint">Mission type</p>
+        <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Mission type">
+          {MISSION_TYPES.map((t) => {
+            const Icon = t.icon;
+            const on = t.id === playbook;
+            return (
+              <button
+                key={t.id || "auto"}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                onClick={() => setPlaybook(t.id)}
+                className={cn(
+                  "relative inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs",
+                  on
+                    ? "border-transparent text-white"
+                    : "border-border text-muted hover:border-white/20 hover:text-text",
+                )}
+              >
+                {on && (
+                  <motion.span
+                    layoutId="mission-type"
+                    className="absolute inset-0 rounded-full bg-[var(--indigo)]"
+                    transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                  />
+                )}
+                <Icon className="relative size-3.5" aria-hidden />
+                <span className="relative">{t.label}</span>
+              </button>
+            );
+          })}
+        </div>
+        <p className="mt-2 text-xs leading-snug text-muted">{chosen.hint}</p>
+        {!task && (
+          <button
+            type="button"
+            onClick={() => setTask(chosen.example)}
+            className="mt-1 text-left text-xs text-accent hover:underline"
+          >
+            Use example: “{chosen.example}”
+          </button>
+        )}
+      </div>
       {playbook === "ticket_solver" && (
         <select
           value={ticket}
           onChange={(e) => setTicket(e.target.value)}
-          className="w-full rounded-lg border border-border bg-black/40 px-2.5 py-2 text-sm"
+          className="w-full rounded-lg border border-border bg-black/25 px-2.5 py-2 text-sm"
+          aria-label="Ticket"
         >
           {tickets.data?.map((t) => (
             <option key={t.id} value={t.id}>
@@ -102,14 +134,6 @@ export function MissionComposer({ onCreated }: { onCreated: (m: Mission) => void
           ))}
         </select>
       )}
-      <textarea
-        value={task}
-        onChange={(e) => setTask(e.target.value)}
-        rows={4}
-        placeholder={playbook === "ticket_solver" ? `Solve ticket ${ticket}` : EXAMPLES[playbook]}
-        className="w-full resize-none rounded-lg border border-border bg-black/40 px-2.5 py-2 text-sm text-text placeholder:text-faint"
-        aria-label="Task"
-      />
       {playbook === "project_builder" && (
         <div className="space-y-1">
           <button type="button" onClick={() => file.current?.click()} className="chip cursor-pointer">
@@ -135,7 +159,6 @@ export function MissionComposer({ onCreated }: { onCreated: (m: Mission) => void
             </span>
           ))}
           {uploadError && <p className="text-xs text-danger">{uploadError}</p>}
-          <p className="text-[11px] text-faint">Scope: small services only (≤ 8 files) — local 3–8B models.</p>
         </div>
       )}
       <button
@@ -143,7 +166,7 @@ export function MissionComposer({ onCreated }: { onCreated: (m: Mission) => void
         disabled={create.isPending}
         className={cn("btn btn-primary w-full", create.isPending && "animate-pulse")}
       >
-        <Send className="size-4" /> {create.isPending ? "Deploying the squad…" : "Begin mission"}
+        <Send className="size-4" /> {create.isPending ? "Starting…" : "Start mission"}
       </button>
       {create.isError && <p className="text-xs text-danger">{String(create.error.message)}</p>}
     </form>

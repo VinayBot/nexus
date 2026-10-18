@@ -27,19 +27,23 @@ function describe(e: NexusEvent): string | null {
     case "mission.created":
       return `New mission: ${e.payload.title}`;
     case "mission.completed":
-      return `Mission ${e.payload.outcome}: ${e.payload.summary}`;
+      return e.payload.outcome === "success"
+        ? "Mission completed successfully."
+        : `Mission finished (${e.payload.outcome.replace("_", " ")}): ${e.payload.summary}`;
     case "mission.failed":
-      return `Mission failed: ${e.payload.error.slice(0, 90)}`;
+      return "A mission stopped with an error. Open it to see why and retry.";
     case "interrupt.raised":
       return `Approval needed: ${e.payload.summary}`;
     case "interrupt.resolved":
-      return `Human ${e.payload.decision}d via ${e.payload.channel}`;
+      return e.payload.decision === "approve"
+        ? "You approved the action. The agents are continuing."
+        : e.payload.decision === "reject"
+          ? "You rejected the action."
+          : "Your answer was sent to the agents.";
     case "incident.detected":
       return `Incident ${e.payload.incident_id}: ${e.payload.signal}`;
     case "chaos.toggled":
       return `Chaos ${e.payload.switch} ${e.payload.enabled ? "rung" : "silenced"}`;
-    case "email.sent":
-      return `Email ${e.payload.status}: ${e.payload.subject}`;
     default:
       return null;
   }

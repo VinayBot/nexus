@@ -10,6 +10,7 @@ import { NAV } from "@/lib/nav";
 import { cn } from "@/lib/cn";
 import { useUi } from "@/stores/ui";
 import { useActiveMission } from "@/stores/missions";
+import { useApprovals } from "@/lib/queries";
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -17,6 +18,7 @@ export function Sidebar() {
   const toggle = useUi((s) => s.toggleNav);
   const activeMission = useActiveMission((s) => s.activeId);
   const [moreOpen, setMoreOpen] = useState(false);
+  const waiting = useApprovals("pending").data?.length ?? 0;
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   return (
@@ -33,7 +35,7 @@ export function Sidebar() {
         {!collapsed && (
           <span className="flex flex-col leading-none">
             <Wordmark className="text-xl" />
-            <span className="mt-1 font-mono text-[9px] tracking-[0.25em] text-faint uppercase">Multi-agent OS</span>
+            <span className="mt-1 text-[11px] text-faint">Multi-agent workspace</span>
           </span>
         )}
       </Link>
@@ -41,12 +43,12 @@ export function Sidebar() {
       <div className="flex-1 overflow-y-auto px-2 pb-2">
         {NAV.map((group) => (
           <div key={group.title} className="mt-3">
-            {group.title === "More" ? (
+            {group.title === "Advanced" ? (
               <button
                 type="button"
                 onClick={() => setMoreOpen((o) => !o)}
                 aria-expanded={moreOpen}
-                className="flex w-full items-center justify-between rounded-lg px-3 pb-1 text-[0.65rem] font-semibold tracking-[0.18em] text-faint uppercase hover:text-text"
+                className="flex w-full items-center justify-between rounded-lg px-3 pb-1 text-xs font-medium text-faint hover:text-text"
               >
                 {collapsed ? "···" : group.title}
                 {!collapsed && (
@@ -55,15 +57,9 @@ export function Sidebar() {
                   </motion.span>
                 )}
               </button>
-            ) : (
-              !collapsed && (
-                <p className="px-3 pb-1 text-[0.65rem] font-semibold tracking-[0.18em] text-faint uppercase">
-                  {group.title}
-                </p>
-              )
-            )}
+            ) : null}
             <AnimatePresence initial={false}>
-              {(group.title !== "More" || moreOpen || group.items.some((i) => isActive(i.href))) && (
+              {(group.title !== "Advanced" || moreOpen || group.items.some((i) => isActive(i.href))) && (
                 <motion.ul
                   className="space-y-0.5 overflow-hidden"
                   initial={{ height: 0, opacity: 0 }}
@@ -89,22 +85,31 @@ export function Sidebar() {
                           {active && (
                             <motion.span
                               layoutId="nav-active"
-                              className="absolute inset-0 rounded-md border border-[rgb(79_227_240/0.35)] bg-[linear-gradient(90deg,rgb(79_227_240/0.2),rgb(79_227_240/0.03))] shadow-[0_0_24px_-8px_rgb(79_227_240/0.8)]"
+                              className="absolute inset-0 rounded-md bg-[rgb(99_102_241/0.16)]"
                               transition={{ type: "spring", stiffness: 400, damping: 36 }}
                             >
-                              <span className="absolute top-1.5 bottom-1.5 -left-px w-[3px] rounded-full bg-[var(--cyan)] shadow-[0_0_10px_var(--cyan)]" />
+                              <span className="absolute top-2 bottom-2 left-0 w-[3px] rounded-full bg-[var(--cyan)]" />
                             </motion.span>
                           )}
                           <Icon
                             className={cn(
                               "icon-pop relative size-4 shrink-0 transition-colors",
-                              active
-                                ? "text-[var(--cyan)] drop-shadow-[0_0_6px_var(--cyan)]"
-                                : "text-faint group-hover:text-accent",
+                              active ? "text-[var(--cyan)]" : "text-faint group-hover:text-accent",
                             )}
                             aria-hidden
                           />
                           {!collapsed && <span className="relative truncate">{item.label}</span>}
+                          {item.href === "/approvals" && waiting > 0 && (
+                            <span
+                              className={cn(
+                                "relative rounded-full bg-warning px-1.5 text-[10px] leading-4 font-bold text-black",
+                                collapsed ? "absolute top-1 right-1" : "ml-auto",
+                              )}
+                              aria-label={`${waiting} waiting`}
+                            >
+                              {waiting}
+                            </span>
+                          )}
                         </Link>
                       </li>
                     );

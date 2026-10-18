@@ -1,22 +1,23 @@
 /*
- * NEXUS design tokens: "Sunset Command", an aurora HUD.
- * A deep void base, sunset aurora light (ember, gold, coral) and neon tech accents
- * (cyan, violet). The palette comes first, then the semantic tokens components use.
- * Themes and sky moods only remap tokens; components never reference palette names directly.
+ * NEXUS design tokens: "Studio", a calm professional dark theme.
+ * A neutral slate base, one indigo accent for navigation and primary actions, and status
+ * colours (green, amber, red). The sunset palette remains only for the robots' mission
+ * floor scenery. Themes and sky moods only remap tokens.
  */
 :root {
   /* palette */
-  --void: #05060b;
-  --ink: #0a0c14;
-  --lacquer: #0e111c;
-  --panel-2: #141828;
+  --void: #0b0d12;
+  --ink: #0f1218;
+  --lacquer: #12151c;
+  --panel-2: #171b24;
   --ember: #ff6b3d;
   --sun-gold: #ffb547;
   --sun-core: #ffd89a;
   --coral: #ff4f6d;
   --magenta: #e040a0;
   --violet: #8b7bff;
-  --cyan: #4fe3f0;
+  --cyan: #8b97ff;
+  --indigo: #6366f1;
   --jade: #34d399;
   --amber: #ffb020;
   --danger: #ff4d5e;
@@ -29,16 +30,16 @@
 
   /* semantic */
   --bg: var(--void);
-  --surface: rgb(13 16 27 / 0.86);
-  --surface-strong: rgb(13 16 27 / 0.97);
-  --surface-hover: rgb(30 36 58 / 0.75);
-  --border: rgb(148 163 210 / 0.13);
-  --border-strong: rgb(255 181 71 / 0.5);
-  --text: #eef1f8;
-  --text-muted: #a3abc2;
-  --text-faint: #6e7791;
+  --surface: #12151c;
+  --surface-strong: #161a23;
+  --surface-hover: #1c212c;
+  --border: rgb(255 255 255 / 0.08);
+  --border-strong: rgb(139 151 255 / 0.55);
+  --text: #e8eaf0;
+  --text-muted: #a1a8b8;
+  --text-faint: #6b7385;
   --accent: var(--cyan);
-  --accent-warm: var(--sun-gold);
+  --accent-warm: #f1f3f8;
   --success: var(--jade);
   --warning: var(--amber);
   --error: var(--danger);
@@ -62,14 +63,12 @@
 
   --radius-sm: 6px;
   --radius: 8px;
-  --radius-lg: 10px;
-  /* HUD corner-bracket colour */
-  --hud: rgb(79 227 240 / 0.6);
-  --shadow-panel: 0 24px 60px -28px rgb(0 0 0 / 0.9), inset 0 1px 0 rgb(255 255 255 / 0.05);
-  --glow-cyan: 0 0 14px rgb(79 227 240 / 0.55);
+  --radius-lg: 12px;
+  --shadow-panel: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px -20px rgb(0 0 0 / 0.8);
+  --glow-cyan: 0 0 14px rgb(139 151 255 / 0.45);
   --glow-gold: 0 0 22px rgb(255 181 71 / 0.5);
   --grad-sunset: linear-gradient(110deg, #ff6b3d 0%, #ffb547 45%, #ff4f6d 100%);
-  --grad-tech: linear-gradient(110deg, #4fe3f0 0%, #8b7bff 100%);
+  --grad-tech: linear-gradient(110deg, #8b97ff 0%, #6366f1 100%);
 
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);

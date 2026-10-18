@@ -30,7 +30,10 @@ def env(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.mark.parametrize(
     ("task", "playbook"),
     [
-        ("build a html page and write ai blog in and give me link of that html page", "web_builder"),
+        (
+            "build a html page and write ai blog in and give me link of that html page",
+            "web_builder",
+        ),
         ("Write a blog post about vector databases", "web_builder"),
         ("Create a landing page for my bakery", "web_builder"),
         ("Fix ticket T-12", "ticket_solver"),
@@ -96,7 +99,7 @@ def test_router_sends_code_to_the_coder_model() -> None:
     router = ModelRouter(PROFILES[ModelProfile.BALANCED])
     assert router.pick("code")[1] == "qwen2.5-coder:3b"
     assert router.pick("solve", role="code")[1] == "qwen2.5-coder:3b"
-    assert router.pick("write")[1] == "qwen3:4b-instruct"
+    assert router.pick("write")[1] == "qwen2.5:3b"
     lite = ModelRouter(PROFILES[ModelProfile.LITE])
     assert lite.pick("code")[1] == "llama3.2:3b"  # no coder → main
 

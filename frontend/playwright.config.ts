@@ -27,6 +27,7 @@ export default defineConfig({
         NEXUS_DEMO_AUTOSTART: "false",
         NEXUS_SANDBOX_BACKEND: "local",
         NEXUS_SMTP_PORT: "9",
+        NEXUS_PUBLIC_URL: API,
         NEXUS_CORS_ORIGINS: '["http://localhost:3011","http://127.0.0.1:3011"]',
       },
     },

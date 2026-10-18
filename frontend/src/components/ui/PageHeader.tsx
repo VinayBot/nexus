@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-/** Screen title block: display-font heading, short description and optional actions. */
+/** Screen title block: a plain heading, a short description and optional actions. */
 export function PageHeader({
   title,
   description,
@@ -13,14 +13,7 @@ export function PageHeader({
   return (
     <div className="reveal mb-4 flex flex-wrap items-end justify-between gap-3 px-1">
       <div className="min-w-0">
-        <p className="kicker mb-1">
-          <span className="size-1.5 rotate-45 bg-[var(--cyan)] shadow-[0_0_8px_var(--cyan)]" />
-          NEXUS / {title}
-        </p>
-        <h1 className="font-display text-2xl font-bold tracking-wide text-text uppercase md:text-[2rem]">
-          <span className="title-gradient">{title}</span>
-        </h1>
-        <span className="header-bar mt-2 block h-[2px] w-24 rounded-full bg-[image:var(--grad-sunset)]" />
+        <h1 className="font-display text-2xl font-semibold tracking-tight text-text">{title}</h1>
         {description && <p className="mt-1 max-w-3xl text-sm text-muted">{description}</p>}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}

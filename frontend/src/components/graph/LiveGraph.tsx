@@ -96,7 +96,7 @@ const LanternNode = memo(function LanternNode({ data }: NodeProps<Node<LanternDa
         "relative min-w-[136px] rounded-md border px-3 py-2 text-center",
         "bg-[rgb(8_11_20/0.94)]",
         s === "idle" && "border-border opacity-75",
-        s === "done" && "border-[rgb(79_227_240/0.45)]",
+        s === "done" && "border-[rgb(139_151_255/0.45)]",
         active && (interrupt ? "border-danger" : "border-accent"),
         s === "error" && "border-danger",
         s === "interrupted" && "animate-alarm border-danger",

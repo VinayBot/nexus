@@ -240,3 +240,30 @@ async def test_concurrent_stat_bumps_for_a_new_agent_do_not_collide(tmp_path) ->
     assert row is not None
     assert row.steps == 8
     await db.close()
+
+
+# --- indentation repair for small-model patches ----------------------------------------
+SRC = "def f(t):\n    if t > 2:\n        raise ValueError('big')\n    return t\n"
+
+
+def test_python_patch_rebases_a_too_deep_replacement() -> None:
+    from nexus.playbooks.patching import apply_python_patch, compiles
+
+    res = apply_python_patch(SRC, "    if t > 2:", "        if t > 3:")
+    assert res.ok and compiles(res.content)
+    assert "    if t > 3:\n        raise" in res.content
+    assert res.strategy.endswith("+reindented")
+
+
+def test_python_patch_keeps_a_correct_patch_unchanged() -> None:
+    from nexus.playbooks.patching import apply_python_patch
+
+    res = apply_python_patch(SRC, "    if t > 2:", "    if t > 3:")
+    assert res.ok and "+reindented" not in res.strategy
+
+
+def test_python_patch_never_hides_a_real_syntax_error() -> None:
+    from nexus.playbooks.patching import apply_python_patch, compiles
+
+    res = apply_python_patch(SRC, "    return t", "    return f'{t")
+    assert res.ok and not compiles(res.content)  # the sandbox reports it honestly

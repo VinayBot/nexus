@@ -24,8 +24,14 @@ from nexus.graph.schemas import (
 )
 from nexus.playbooks.base import TournamentBrief, findings_text
 from nexus.playbooks.code_fix import CodeFixPlaybook, winner_of
-from nexus.playbooks.healing_prep import candidate_files, focus_line, recall_fix, reproduce
-from nexus.playbooks.patching import apply_search_replace, diff_size, unified_diff
+from nexus.playbooks.healing_prep import (
+    candidate_files,
+    focus_line,
+    named_definitions,
+    recall_fix,
+    reproduce,
+)
+from nexus.playbooks.patching import apply_python_patch, diff_size, unified_diff
 from nexus.playbooks.watcher import error_digest
 
 TOOLS = {
@@ -73,6 +79,7 @@ class SelfHealing(CodeFixPlaybook):
         prior = await recall_fix(signal, digest, files, mission_id)
         inputs.update(
             focus=focus_line(ws, digest),
+            named=named_definitions(ws, digest),
             signal=signal,
             digest=digest[:4000],
             suspects=suspects,
@@ -144,6 +151,8 @@ class SelfHealing(CodeFixPlaybook):
         focus = inputs.get("focus")
         # with a precise traceback, show only the failing file: small models get lost in more
         shown = [focus["file"]] if focus else (inputs.get("suspects") or [])
+        # ...plus the definition of anything the error message names (e.g. TAX_RATE)
+        shown += [d["file"] for d in inputs.get("named") or [] if d["file"] not in shown]
         files = {f: (ws / f).read_text() for f in shown if (ws / f).exists()}
         repro = inputs.get("repro") or {}
         failures = "\n".join((repro.get("existing") or {}).get("failures") or [])
@@ -161,7 +170,11 @@ class SelfHealing(CodeFixPlaybook):
                 f"Failing tests:\n{failures or '(none)'}\n\nFind the bug and fix it with one small edit."
             ),
             context=context,
-            code_context={"files": files, "focus": inputs.get("focus")},
+            code_context={
+                "files": files,
+                "focus": inputs.get("focus"),
+                "named": inputs.get("named") or [],
+            },
             # memory hit → one solver races the remembered fix instead of three
             solvers=["volt"] if seeds else ["blaze", "volt", "frost"],
             max_rounds=0 if seeds else 1,
@@ -186,7 +199,7 @@ class SelfHealing(CodeFixPlaybook):
     def _patched(self, state: dict[str, Any], base: str) -> tuple[str, str, str]:
         patch = (state.get("action") or {}).get("payload", {}).get("patch") or {}
         file = str(patch["file"])
-        res = apply_search_replace(base, str(patch["search"]), str(patch["replace"]))
+        res = apply_python_patch(base, str(patch["search"]), str(patch["replace"]))
         if not res.ok:
             raise ValueError(f"patch no longer applies: {res.reason}")
         return file, res.content, unified_diff(file, base, res.content)

@@ -274,7 +274,7 @@
   position: absolute;
   inset: -4px;
   border-radius: 14px;
-  border: 1.5px dashed rgb(79 227 240 / 0.7);
+  border: 1.5px dashed rgb(139 151 255 / 0.7);
   animation: core-spin 14s linear infinite;
 }
 .glow-pulse {
@@ -347,8 +347,8 @@
 /* Holographic grid surface (timelines, scopes). */
 .holo-grid {
   background-image:
-    linear-gradient(rgb(79 227 240 / 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(79 227 240 / 0.06) 1px, transparent 1px);
+    linear-gradient(rgb(139 151 255 / 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(139 151 255 / 0.06) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 .spin-slow {
@@ -403,7 +403,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent, rgb(79 227 240 / 0.14), transparent);
+  background: linear-gradient(90deg, transparent, rgb(139 151 255 / 0.14), transparent);
   animation: scan-flash 0.7s var(--ease-out) forwards;
   pointer-events: none;
 }
@@ -543,7 +543,7 @@
   inset: 0 0 auto;
   z-index: 60;
   height: 100%;
-  background: linear-gradient(180deg, rgb(79 227 240 / 0.28), rgb(79 227 240 / 0) 12%);
+  background: linear-gradient(180deg, rgb(139 151 255 / 0.28), rgb(139 151 255 / 0) 12%);
   border-top: 2px solid var(--cyan);
   box-shadow: 0 -6px 24px var(--cyan);
   animation: mission-scan 0.9s var(--ease-out) forwards;
@@ -554,7 +554,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent, rgb(79 227 240 / 0.35), transparent);
+  background: linear-gradient(90deg, transparent, rgb(139 151 255 / 0.35), transparent);
   animation: shimmer 1.4s linear infinite;
 }
 
@@ -563,7 +563,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent, rgb(79 227 240 / 0.1), transparent);
+  background: linear-gradient(90deg, transparent, rgb(139 151 255 / 0.1), transparent);
   animation: shimmer 2.2s linear infinite;
   pointer-events: none;
 }

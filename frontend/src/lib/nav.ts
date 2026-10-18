@@ -27,28 +27,28 @@ export interface NavGroup {
   items: NavItem[];
 }
 
-/** Main screens — always visible. */
+/** Main screens first; specialist views (graph, arena, time travel…) under "Advanced". */
 export const NAV: NavGroup[] = [
   {
-    title: "Command",
+    title: "Main",
     items: [
-      { href: "/missions", label: "Mission Control", icon: LayoutDashboard },
-      { href: "/graph", label: "Live Graph", icon: Workflow, needsMission: true },
-      { href: "/arena", label: "Arena", icon: Swords, needsMission: true },
+      { href: "/missions", label: "Missions", icon: LayoutDashboard },
       { href: "/approvals", label: "Approvals", icon: Stamp },
-      { href: "/timetravel", label: "Time Travel", icon: GitFork, needsMission: true },
-      { href: "/chaos", label: "Chaos Lab", icon: Zap },
       { href: "/agents", label: "Agents", icon: Bot },
       { href: "/insights", label: "Insights", icon: Activity },
+      { href: "/settings", label: "Settings", icon: Settings },
     ],
   },
   {
-    title: "More",
+    title: "Advanced",
     items: [
+      { href: "/graph", label: "Live Graph", icon: Workflow, needsMission: true },
+      { href: "/arena", label: "Arena", icon: Swords, needsMission: true },
+      { href: "/timetravel", label: "Time Travel", icon: GitFork, needsMission: true },
+      { href: "/chaos", label: "Chaos Lab", icon: Zap },
       { href: "/memory", label: "Memory", icon: Brain },
       { href: "/tools", label: "Tools", icon: Shield },
       { href: "/learn", label: "How it Works", icon: Network },
-      { href: "/settings", label: "Settings", icon: Settings },
     ],
   },
 ];

@@ -13,7 +13,7 @@ from typing import Any, ClassVar, Literal
 from nexus.core.services import services
 from nexus.graph.schemas import ValidationResult
 from nexus.playbooks.base import Playbook
-from nexus.playbooks.patching import apply_search_replace, unified_diff
+from nexus.playbooks.patching import apply_python_patch, unified_diff
 
 
 def winner_of(state: dict[str, Any]) -> dict[str, Any] | None:
@@ -64,7 +64,7 @@ class CodeFixPlaybook(Playbook):
                 "backend": "-",
             }
         original = path.read_text()
-        res = apply_search_replace(
+        res = apply_python_patch(
             original, str(patch.get("search", "")), str(patch.get("replace", ""))
         )
         if not res.ok:

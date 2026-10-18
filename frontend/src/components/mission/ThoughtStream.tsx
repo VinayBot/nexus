@@ -25,11 +25,14 @@ const STYLE: Record<ThoughtKind, { label: string; color: string }> = {
   system: { label: "System", color: "var(--text-faint)" },
 };
 
+/** "Key steps" hides graph routing and system chatter: what a person wants to follow. */
 const FILTERS: { id: string; kinds: ThoughtKind[] | null }[] = [
+  {
+    id: "Key steps",
+    kinds: ["plan", "handoff", "final", "verdict", "risk", "interrupt", "test", "retry", "guardrail", "tool"],
+  },
+  { id: "Reasoning", kinds: ["thought", "action", "observation", "final"] },
   { id: "All", kinds: null },
-  { id: "ReAct", kinds: ["thought", "action", "observation", "final"] },
-  { id: "Decisions", kinds: ["route", "plan", "verdict", "risk", "interrupt"] },
-  { id: "Reliability", kinds: ["retry", "guardrail", "memory", "test"] },
 ];
 
 /** One card. Only thoughts that just happened slide in; history renders still (no mass animation). */
@@ -38,30 +41,30 @@ const Item = memo(function Item({ t, agents, fresh }: { t: ThoughtItem; agents?:
   return (
     <li
       className={cn(
-        "thought-card relative overflow-hidden rounded-md border border-border/60 bg-black/25 px-2.5 py-2 transition-colors hover:border-[rgb(79_227_240/0.35)]",
+        "thought-card relative overflow-hidden rounded-lg border border-border bg-white/[0.02] px-3 py-2.5 transition-colors hover:border-white/15",
         fresh && "thought-in",
       )}
       style={{ "--kind": s.color } as React.CSSProperties}
     >
       <div className="flex items-center gap-2 text-[11px]">
         <span
-          className="rounded px-1.5 py-px font-semibold"
+          className="w-[76px] shrink-0 truncate rounded px-1.5 py-px text-center font-semibold"
           style={{ color: s.color, background: `color-mix(in srgb, ${s.color} 14%, transparent)` }}
         >
           {s.label}
         </span>
-        {t.agent && <span className="text-muted">{nameOf(t.agent, agents)}</span>}
+        {t.agent && <span className="truncate text-muted">{nameOf(t.agent, agents)}</span>}
         <span className="ml-auto font-mono text-[10px] text-faint">{new Date(t.ts * 1000).toLocaleTimeString()}</span>
       </div>
       <p
         className={cn(
-          "mt-1 text-[12.5px] leading-snug text-text",
+          "mt-1.5 text-[13px] leading-snug text-text",
           t.ok === false && "text-[color-mix(in_srgb,var(--error)_80%,white)]",
         )}
       >
         {t.title}
       </p>
-      {t.body && <p className="mt-0.5 line-clamp-4 font-mono text-[11px] whitespace-pre-wrap text-muted">{t.body}</p>}
+      {t.body && <p className="mt-1 line-clamp-3 text-xs leading-relaxed whitespace-pre-wrap text-muted">{t.body}</p>}
     </li>
   );
 });
@@ -75,7 +78,7 @@ export function ThoughtStream({
   agents?: AgentInfo[];
   className?: string;
 }) {
-  const [filter, setFilter] = useState("All");
+  const [filter, setFilter] = useState("Key steps");
   const [follow, setFollow] = useState(true);
   const box = useRef<HTMLDivElement>(null);
   // thoughts older than the moment this panel opened are history: render them without animation
@@ -98,14 +101,14 @@ export function ThoughtStream({
       aria-label="Thought stream"
       data-tour="thought-stream"
     >
-      <header className="flex items-center gap-2 border-b border-border/60 px-3 py-2">
-        <h2 className="panel-title text-sm text-gold">Thought Stream</h2>
+      <header className="flex items-center gap-2 border-b border-border px-4 py-2.5">
+        <h2 className="panel-title text-sm">Activity</h2>
         <span className="ml-auto truncate font-mono text-[10px] text-faint">
           <CountUp value={String(view.llm.calls)} /> LLM calls ·{" "}
           <CountUp value={String(view.llm.prompt + view.llm.completion)} /> tokens
         </span>
       </header>
-      <div className="flex gap-1 px-3 pt-2">
+      <div className="flex gap-1 px-4 pt-2.5">
         {FILTERS.map((f) => (
           <button
             key={f.id}
@@ -124,14 +127,16 @@ export function ThoughtStream({
           const el = e.currentTarget;
           setFollow(el.scrollHeight - el.scrollTop - el.clientHeight < 40);
         }}
-        className="min-h-0 flex-1 overflow-y-auto px-3 py-2"
+        className="min-h-0 flex-1 overflow-y-auto px-4 py-2.5"
       >
         {items.length === 0 ? (
           <p className="py-10 text-center text-sm text-faint">
-            Thoughts appear here as agents reason, act and observe.
+            {filter === "All" || !view.thoughts.length
+              ? "Steps appear here as the agents plan, act and check their work."
+              : "No key steps yet. Choose All to see every event."}
           </p>
         ) : (
-          <ul className="space-y-1.5">
+          <ul className="space-y-2">
             {items.map((t) => (
               <Item key={t.id} t={t} agents={agents} fresh={t.ts > openedAt} />
             ))}

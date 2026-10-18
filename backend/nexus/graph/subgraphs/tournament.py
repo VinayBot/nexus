@@ -167,6 +167,12 @@ def _solver_prompt(sid: str, state: dict[str, Any]) -> list[ChatMessage]:
             parts.append(
                 f"The exception is raised in {focus['file']} at line {focus['line']}:\n    {focus['code']}"
             )
+        for d in cc.get("named") or []:
+            parts.append(
+                f"The error message names {d['name']}, defined in {d['file']} at line "
+                f"{d['line']}:\n    {d['code']}\nThe raising line may only be the symptom: check "
+                "whether this definition is the real cause."
+            )
         parts.append(
             "Fix it with ONE edit: give the file, start_line and end_line of the lines to replace, "
             "and 'replacement' = the corrected full lines (keep the indentation, no line numbers). "

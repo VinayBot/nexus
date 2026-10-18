@@ -28,7 +28,7 @@ export function StageStrip({ view }: { view: MissionView }) {
               className={cn(
                 "relative flex items-center gap-1 overflow-hidden rounded-full border px-2 py-0.5 text-[10.5px] whitespace-nowrap transition-[color,border-color,box-shadow,background-color] duration-300",
                 active && "stage-active border-accent bg-accent/15 text-text shadow-[var(--glow-cyan)]",
-                done && !active && "border-[rgb(79_227_240/0.35)] text-accent",
+                done && !active && "border-[rgb(139_151_255/0.35)] text-accent",
                 error && "border-danger text-danger",
                 waiting && "animate-alarm border-danger text-danger",
                 !active && !done && !error && !waiting && "border-border/50 text-faint",

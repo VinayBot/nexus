@@ -41,10 +41,12 @@ class ModelSet(BaseModel):
 PROFILES: dict[ModelProfile, ModelSet] = {
     ModelProfile.LITE: ModelSet(main="llama3.2:3b", fast="llama3.2:3b", embed="nomic-embed-text"),
     # One general model for every non-code role plus a small coder: two chat models,
-    # ~6 GB resident at peak — sized for a 16 GB Mac that also runs a browser and an IDE.
+    # ~5 GB resident at peak — sized for a 16 GB Mac that also runs a browser and an IDE.
+    # (qwen3:4b was tried and dropped: it always "thinks" first, even with think=False under
+    # a JSON schema, so structured calls ran out of tokens or took minutes.)
     ModelProfile.BALANCED: ModelSet(
-        main="qwen3:4b-instruct",
-        fast="qwen3:4b-instruct",
+        main="qwen2.5:3b",
+        fast="qwen2.5:3b",
         code="qwen2.5-coder:3b",
         embed="nomic-embed-text",
         fallback="llama3.2:3b",
@@ -63,9 +65,9 @@ PROFILE_INFO: dict[ModelProfile, dict[str, str | float]] = {
     },
     ModelProfile.BALANCED: {
         "label": "Balanced",
-        "description": "Qwen3 4B for thinking and writing, Qwen2.5-Coder 3B for code. "
-        "Better plans, prose and patches; recommended for a 16 GB Mac.",
-        "ram_gb": 6.0,
+        "description": "Qwen2.5 3B for planning and writing, Qwen2.5-Coder 3B for code, "
+        "llama3.2 as fallback. Stricter JSON and better code; recommended for a 16 GB Mac.",
+        "ram_gb": 5.0,
     },
     ModelProfile.STANDARD: {
         "label": "Standard (7B)",

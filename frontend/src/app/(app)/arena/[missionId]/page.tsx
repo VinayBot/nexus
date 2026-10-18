@@ -47,7 +47,7 @@ function Scale({ tilt }: { tilt: number }) {
         <rect x={10} y={12.5} width={100} height={3} rx={1.5} fill="#ffb547" />
         <path
           d="M14,16 l-8,20 h16 Z M106,16 l-8,20 h16 Z"
-          fill="rgb(79 227 240 / 0.18)"
+          fill="rgb(139 151 255 / 0.18)"
           stroke="#4fe3f0"
           strokeWidth={1.2}
         />
@@ -138,7 +138,7 @@ export default function Page({ params }: { params: Promise<{ missionId: string }
             />
           </div>
           <div
-            className="relative mt-4 grid w-full gap-4 rounded-[50%] border border-dashed border-[rgb(79_227_240/0.35)] bg-[radial-gradient(ellipse_at_center,rgba(79,227,240,0.08),transparent_70%)] shadow-[inset_0_0_60px_-20px_rgb(79_227_240/0.4)] px-10 py-10"
+            className="relative mt-4 grid w-full gap-4 rounded-[50%] border border-dashed border-[rgb(139_151_255/0.35)] bg-[radial-gradient(ellipse_at_center,rgba(79,227,240,0.08),transparent_70%)] shadow-[inset_0_0_60px_-20px_rgb(139_151_255/0.4)] px-10 py-10"
             style={{ gridTemplateColumns: `repeat(${solvers.length}, minmax(0, 1fr))` }}
           >
             {council.rounds.some((r) => !r.converged) && !verdict && <Sparks />}
@@ -199,7 +199,7 @@ export default function Page({ params }: { params: Promise<{ missionId: string }
                     initial={{ scaleX: 0.2, opacity: 0 }}
                     animate={{ scaleX: 1, opacity: 1 }}
                     className={cn(
-                      "w-full rounded-lg border border-[rgb(79_227_240/0.3)] bg-[rgb(4_8_16/0.75)] p-2 text-left text-[11px] text-text transition-colors hover:border-[rgb(79_227_240/0.7)] hover:bg-[rgb(79_227_240/0.08)]",
+                      "w-full rounded-lg border border-[rgb(139_151_255/0.3)] bg-[rgb(4_8_16/0.75)] p-2 text-left text-[11px] text-text transition-colors hover:border-[rgb(139_151_255/0.7)] hover:bg-[rgb(139_151_255/0.08)]",
                       isWinner && "border-[var(--sun-gold)] shadow-[0_0_20px_-4px_var(--sun-gold)]",
                       isRunnerUp && "border-[#8b7bff] shadow-[0_0_14px_-4px_#8b7bff]",
                     )}

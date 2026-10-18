@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field
 
 from nexus.core.services import services
 from nexus.llm.types import ChatMessage
-from nexus.playbooks.patching import apply_search_replace
+from nexus.playbooks.patching import apply_python_patch
 from nexus.safety.guardrails import fence
 
 FRAME = re.compile(r'File "[^"]*?/(app/[\w/]+\.py)", line (\d+)')
@@ -45,6 +45,33 @@ def focus_line(root: Path, digest: str) -> dict[str, Any] | None:
             if 1 <= n <= len(lines):
                 return {"file": file, "line": n, "code": lines[n - 1].strip()}
     return None
+
+
+ERROR_LINE = re.compile(r"^\s*(?:[\w.]+(?:Error|Exception)):\s*(.+)$", re.M)
+NAMED = re.compile(r"\b([A-Z][A-Z0-9_]{2,}|[a-z]+_[a-z0-9_]+)\b")
+
+
+def named_definitions(root: Path, digest: str) -> list[dict[str, Any]]:
+    """Definitions of identifiers the exception *message* names (e.g. "check TAX_RATE").
+
+    The raising line is often only the symptom; when the message names a setting or
+    function, its definition is the likelier cause, so solvers must be able to see it.
+    """
+    names = {n for msg in ERROR_LINE.findall(digest) for n in NAMED.findall(msg)}
+    out: list[dict[str, Any]] = []
+    for path in sorted(root.glob("app/*.py")):
+        for n, line in enumerate(path.read_text(errors="ignore").splitlines(), 1):
+            m = re.match(r"^\s*(?:def\s+)?([A-Za-z_]\w*)\s*(?:=|\()", line)
+            if m and m.group(1) in names and not line.lstrip().startswith(("if", "return")):
+                out.append(
+                    {
+                        "name": m.group(1),
+                        "file": str(path.relative_to(root)),
+                        "line": n,
+                        "code": line.strip(),
+                    }
+                )
+    return out[:3]
 
 
 def candidate_files(root: Path, *texts: str) -> list[str]:
@@ -151,7 +178,7 @@ async def recall_fix(
         file, search, replace = meta.get("file"), meta.get("search"), meta.get("replace")
         if hit["score"] < 0.6 or not (file and search and replace is not None) or file not in files:
             continue
-        patched = apply_search_replace(files[file], str(search), str(replace))
+        patched = apply_python_patch(files[file], str(search), str(replace))
         if not patched.ok:
             continue
         run = await services().sandbox.run_tests(

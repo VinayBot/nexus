@@ -192,6 +192,9 @@ class MissionRunner:
 
     async def _settle(self, mission_id: str) -> None:
         snapshot = await self.graph.aget_state(self.config(mission_id))
+        routed = (snapshot.values or {}).get("playbook")
+        if routed:  # auto-routed missions only learn their playbook inside the graph
+            await repo.update_mission(self.db, mission_id, playbook=routed)
         if snapshot.interrupts:
             await repo.update_mission(self.db, mission_id, status="paused")
             for intr in snapshot.interrupts:

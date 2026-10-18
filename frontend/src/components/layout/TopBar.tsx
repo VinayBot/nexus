@@ -9,6 +9,7 @@ import { cn } from "@/lib/cn";
 import { useUi } from "@/stores/ui";
 import { useLive } from "@/stores/live";
 import { useTour } from "@/stores/tour";
+import { ApprovalsWaiting } from "@/components/approvals/ApprovalPrompt";
 import { SystemPower } from "./SystemPower";
 import { MissionSwitcher } from "./MissionSwitcher";
 
@@ -162,6 +163,7 @@ export function TopBar() {
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <MissionSwitcher />
       </div>
+      <ApprovalsWaiting />
       <SimulationBadge />
       <SystemPower />
       <SystemStatus />
@@ -174,7 +176,6 @@ export function TopBar() {
         ▶ Present
       </button>
       <QuickSettings />
-      <span aria-hidden className="flow-line pointer-events-none absolute inset-x-8 -bottom-px h-px opacity-80" />
     </header>
   );
 }
