@@ -89,3 +89,30 @@ test("approvals tabs, model picker, and advanced navigation", async ({ page }) =
   }
   expect(errors).toEqual([]);
 });
+
+test("settings: accent colour, model switch and email results", async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.goto("/settings");
+
+  await page.getByRole("radio", { name: "Teal" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-accent", "teal");
+  await page.getByRole("radio", { name: "Ember" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-accent", "ember");
+
+  const balanced = page.getByTestId("profile-balanced");
+  await balanced.getByRole("button", { name: "Switch to Balanced" }).click();
+  await expect(balanced.getByText("Active")).toBeVisible();
+  const lite = page.getByTestId("profile-lite");
+  await lite.getByRole("button", { name: "Switch to Lite" }).click();
+  await expect(lite.getByText("Active")).toBeVisible();
+
+  const email = page.getByRole("region", { name: "Email results" });
+  await email.getByLabel("Result email address").fill("someone@example.com");
+  await email.getByRole("button", { name: "Save" }).click();
+  await expect(email.getByRole("button", { name: "Save" })).toBeDisabled();
+  await email.getByRole("button", { name: "Send test email" }).click();
+  await expect(email.getByText(/kept in the outbox|Sent\./)).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel("Result email address")).toHaveValue("someone@example.com");
+  expect(errors).toEqual([]);
+});

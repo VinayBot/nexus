@@ -73,7 +73,7 @@ export function ReportCard({ mission }: { mission: Mission }) {
       </header>
 
       {(r.preview_url || r.download) && (
-        <div className="flex flex-wrap items-center gap-2 border-b border-border bg-[rgb(99_102_241/0.06)] px-4 py-2.5">
+        <div className="flex flex-wrap items-center gap-2 border-b border-border bg-[rgb(var(--accent-rgb)/0.06)] px-4 py-2.5">
           {r.preview_url && (
             <>
               <Globe className="size-4 text-accent" />

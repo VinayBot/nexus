@@ -89,8 +89,13 @@ async def runtime(
         svc.register("timetravel", TimeTravel(runner))
         tokens = TokenService(settings.secret_key, db)
         svc.register("tokens", tokens)
-        mailer = svc.extras.get("mailer") or Mailer(db, settings.smtp_host, settings.smtp_port)
+        mailer = svc.extras.get("mailer") or Mailer.from_settings(db, settings)
         svc.register("email_approvals", EmailApprovals(settings, approvals, mailer, tokens))
+        from nexus.hitl.result_email import ResultNotifier
+
+        notifier = ResultNotifier(settings, mailer, db)
+        runner.finished_hooks.append(notifier.on_finished)
+        svc.register("notifier", notifier)
         if settings.secret_key == "dev-only-change-me":
             log.warning("security.default_secret", hint="set NEXUS_SECRET_KEY in .env")
 

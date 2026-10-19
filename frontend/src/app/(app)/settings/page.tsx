@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { EmailResults } from "@/components/settings/EmailResults";
 import { ModelPicker } from "@/components/settings/ModelPicker";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { get, put } from "@/lib/api";
@@ -69,6 +70,7 @@ export default function Page() {
       <PageHeader title="Settings" description="Every setting here changes the running backend immediately." />
       <div className="grid gap-3 xl:grid-cols-2">
         <ModelPicker />
+        <EmailResults />
         <section className="panel p-4">
           <h2 className="panel-title text-sm ">Live knobs</h2>
           {d && (
@@ -130,17 +132,31 @@ export default function Page() {
         </section>
         <section className="panel p-4">
           <h2 className="panel-title text-sm ">Appearance</h2>
-          <Row label="Theme">
-            {(["sunset", "night"] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => ui.setTheme(t)}
-                className={cn("chip mr-1 cursor-pointer capitalize", ui.theme === t && "border-accent text-accent")}
-              >
-                {t}
-              </button>
-            ))}
+          <Row label="Accent colour" hint="Buttons, navigation and highlights">
+            <div className="flex gap-2" role="radiogroup" aria-label="Accent colour">
+              {(
+                [
+                  ["ember", "Ember", "#f2673a"],
+                  ["teal", "Teal", "#0d9488"],
+                  ["violet", "Violet", "#8b5cf6"],
+                ] as const
+              ).map(([id, label, colour]) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="radio"
+                  aria-checked={ui.accent === id}
+                  onClick={() => ui.setAccent(id)}
+                  className={cn(
+                    "flex items-center gap-2 rounded-full border px-3 py-1 text-xs",
+                    ui.accent === id ? "border-white/40 text-text" : "border-border text-muted hover:text-text",
+                  )}
+                >
+                  <span className="size-3.5 rounded-full" style={{ background: colour }} aria-hidden />
+                  {label}
+                </button>
+              ))}
+            </div>
           </Row>
           <Row label="Performance mode" hint="No particles, paused ambient animation">
             <input

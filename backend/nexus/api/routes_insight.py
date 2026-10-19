@@ -270,6 +270,56 @@ async def put_settings(body: SettingsPatch) -> dict[str, Any]:
     return _settings_view()
 
 
+# --- result emails ---------------------------------------------------------------------
+class NotifyPrefs(BaseModel):
+    to: str | None = None
+    enabled: bool = True
+
+
+@router.get("/notify")
+async def notify_status() -> dict[str, Any]:
+    return dict(services().notifier.status())
+
+
+@router.put("/notify")
+async def notify_save(body: NotifyPrefs) -> dict[str, Any]:
+    try:
+        services().notifier.save(to=(body.to or "").strip() or None, enabled=body.enabled)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    return dict(services().notifier.status())
+
+
+class SmtpAccount(BaseModel):
+    provider: Literal["gmail", "outlook"] = "gmail"
+    username: str
+    app_password: str
+
+
+@router.put("/notify/smtp")
+async def notify_connect(body: SmtpAccount) -> dict[str, Any]:
+    try:
+        services().notifier.connect(body.provider, body.username.strip(), body.app_password)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    return dict(services().notifier.status())
+
+
+@router.delete("/notify/smtp")
+async def notify_disconnect() -> dict[str, Any]:
+    services().notifier.disconnect()
+    return dict(services().notifier.status())
+
+
+@router.post("/notify/test")
+async def notify_test() -> dict[str, str]:
+    try:
+        status = await services().notifier.send_test()
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    return {"status": status}
+
+
 # --- curriculum evidence -------------------------------------------------------------------
 @router.get("/curriculum/evidence")
 async def evidence() -> dict[str, int]:

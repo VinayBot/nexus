@@ -112,6 +112,15 @@ class OllamaProvider:
             raise _classify(exc) from exc
         return [list(v) for v in resp.embeddings]
 
+    async def pull(self, model: str, progress: Any = None) -> None:
+        """Download a model, reporting (status, completed_bytes, total_bytes)."""
+        try:
+            async for part in await self._client.pull(model, stream=True):
+                if progress is not None:
+                    progress(part.status or "", part.completed or 0, part.total or 0)
+        except Exception as exc:
+            raise _classify(exc) from exc
+
     async def unload(self, model: str) -> None:
         """Free a model's memory now instead of waiting for keep_alive to expire."""
         try:

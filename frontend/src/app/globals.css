@@ -49,7 +49,7 @@ body {
 }
 
 ::selection {
-  background: rgb(139 151 255 / 0.35);
+  background: rgb(var(--accent-soft-rgb) / 0.35);
 }
 
 * {
@@ -66,8 +66,8 @@ body {
 }
 :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea):focus-visible {
   outline: none;
-  border-color: rgb(139 151 255 / 0.7);
-  box-shadow: 0 0 0 3px rgb(139 151 255 / 0.18);
+  border-color: rgb(var(--accent-soft-rgb) / 0.7);
+  box-shadow: 0 0 0 3px rgb(var(--accent-soft-rgb) / 0.18);
 }
 :where(input[type="checkbox"], input[type="radio"], input[type="range"]) {
   accent-color: var(--cyan);
@@ -139,7 +139,7 @@ body {
   :is(button, a).chip:hover {
     color: var(--text);
     border-color: var(--border-strong);
-    background: rgb(139 151 255 / 0.1);
+    background: rgb(var(--accent-soft-rgb) / 0.1);
   }
 
   /* Buttons: shared shape, lift on hover, press on click, a light sweep and a ripple. */
@@ -203,24 +203,24 @@ body {
   }
   .btn-primary {
     color: #fff;
-    background: var(--indigo);
+    background: var(--accent-strong);
     box-shadow:
-      0 8px 20px -10px rgb(99 102 241 / 0.9),
+      0 8px 20px -10px rgb(var(--accent-rgb) / 0.9),
       inset 0 1px 0 rgb(255 255 255 / 0.18);
   }
   .btn-primary:not(:disabled):hover {
-    background: #5458ee;
+    background: var(--accent-hover);
     box-shadow:
-      0 12px 26px -10px rgb(99 102 241 / 1),
+      0 12px 26px -10px rgb(var(--accent-rgb) / 1),
       inset 0 1px 0 rgb(255 255 255 / 0.2);
   }
   .btn-secondary {
-    color: #c3c9ff;
-    background: rgb(99 102 241 / 0.12);
-    border-color: rgb(139 151 255 / 0.35);
+    color: var(--accent-text);
+    background: rgb(var(--accent-rgb) / 0.12);
+    border-color: rgb(var(--accent-soft-rgb) / 0.35);
   }
   .btn-secondary:not(:disabled):hover {
-    background: rgb(99 102 241 / 0.2);
+    background: rgb(var(--accent-rgb) / 0.2);
   }
   .btn-success {
     color: #fff;

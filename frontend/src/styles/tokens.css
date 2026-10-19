@@ -1,23 +1,28 @@
 /*
  * NEXUS design tokens: "Studio", a calm professional dark theme.
- * A neutral slate base, one indigo accent for navigation and primary actions, and status
- * colours (green, amber, red). The sunset palette remains only for the robots' mission
+ * A warm charcoal base, one accent (default Ember coral; Teal and Violet presets via
+ * `data-accent`) for navigation and primary actions, and status colours (green, amber, red). The sunset palette remains only for the robots' mission
  * floor scenery. Themes and sky moods only remap tokens.
  */
 :root {
   /* palette */
-  --void: #0b0d12;
-  --ink: #0f1218;
-  --lacquer: #12151c;
-  --panel-2: #171b24;
+  --void: #0e0f12;
+  --ink: #121418;
+  --lacquer: #15171c;
+  --panel-2: #1a1c22;
   --ember: #ff6b3d;
   --sun-gold: #ffb547;
   --sun-core: #ffd89a;
   --coral: #ff4f6d;
   --magenta: #e040a0;
   --violet: #8b7bff;
-  --cyan: #8b97ff;
-  --indigo: #6366f1;
+  /* accent: channels so any alpha works, e.g. rgb(var(--accent-rgb) / 0.15) */
+  --accent-rgb: 242 103 58;
+  --accent-soft-rgb: 255 150 112;
+  --accent-strong: rgb(var(--accent-rgb));
+  --accent-hover: #dc5226;
+  --accent-text: #ffc4ad;
+  --cyan: rgb(var(--accent-soft-rgb));
   --jade: #34d399;
   --amber: #ffb020;
   --danger: #ff4d5e;
@@ -30,11 +35,11 @@
 
   /* semantic */
   --bg: var(--void);
-  --surface: #12151c;
-  --surface-strong: #161a23;
-  --surface-hover: #1c212c;
+  --surface: #15171c;
+  --surface-strong: #1a1c22;
+  --surface-hover: #22252c;
   --border: rgb(255 255 255 / 0.08);
-  --border-strong: rgb(139 151 255 / 0.55);
+  --border-strong: rgb(var(--accent-soft-rgb) / 0.55);
   --text: #e8eaf0;
   --text-muted: #a1a8b8;
   --text-faint: #6b7385;
@@ -65,10 +70,10 @@
   --radius: 8px;
   --radius-lg: 12px;
   --shadow-panel: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px -20px rgb(0 0 0 / 0.8);
-  --glow-cyan: 0 0 14px rgb(139 151 255 / 0.45);
+  --glow-cyan: 0 0 14px rgb(var(--accent-soft-rgb) / 0.45);
   --glow-gold: 0 0 22px rgb(255 181 71 / 0.5);
   --grad-sunset: linear-gradient(110deg, #ff6b3d 0%, #ffb547 45%, #ff4f6d 100%);
-  --grad-tech: linear-gradient(110deg, #8b97ff 0%, #6366f1 100%);
+  --grad-tech: linear-gradient(110deg, rgb(var(--accent-soft-rgb)) 0%, var(--accent-strong) 100%);
 
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -117,4 +122,18 @@
   --border-strong: rgb(142 162 255 / 0.55);
   --accent-warm: #c7d2ff;
   --cloud-speed: 140s;
+}
+
+/* Accent presets (Settings → Appearance). Ember is the default above. */
+[data-accent="teal"] {
+  --accent-rgb: 13 148 136;
+  --accent-soft-rgb: 94 234 212;
+  --accent-hover: #0b7f75;
+  --accent-text: #b5f5ea;
+}
+[data-accent="violet"] {
+  --accent-rgb: 139 92 246;
+  --accent-soft-rgb: 196 181 253;
+  --accent-hover: #7646e8;
+  --accent-text: #e4dcff;
 }

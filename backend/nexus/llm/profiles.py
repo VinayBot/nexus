@@ -8,6 +8,7 @@ never holds two profiles in memory at once.
 
 from __future__ import annotations
 
+import asyncio
 import json
 from typing import Any
 
@@ -58,6 +59,7 @@ async def describe(svc: Any) -> dict[str, Any]:
             }
         )
     return {
+        "install": svc.extras.get("model_install"),
         "active": svc.extras.get("model_profile", svc.settings.model_profile.value),
         "models": svc.llm.router.models.model_dump(),
         "installed": installed,
@@ -80,3 +82,43 @@ async def apply(svc: Any, profile: ModelProfile, *, persist: bool = True) -> Non
                 await unload(model)
             except Exception as exc:  # unloading is best effort
                 log.warning("models.unload_failed", model=model, error=str(exc))
+
+
+def start_install(svc: Any, profile: ModelProfile, missing: list[str]) -> dict[str, Any]:
+    """Download a profile's missing models in the background, then switch to it.
+
+    Progress lives in ``svc.extras["model_install"]`` and is read by ``describe``.
+    """
+    current = svc.extras.get("model_install")
+    if current and current.get("state") == "downloading":
+        raise RuntimeError(f"already installing {current['profile']}")
+    pull = getattr(svc.provider, "pull", None)
+    if pull is None:
+        raise RuntimeError("this model provider cannot download models")
+    state: dict[str, Any] = {
+        "profile": profile.value,
+        "state": "downloading",
+        "model": missing[0],
+        "completed": 0,
+        "total": 0,
+        "error": None,
+    }
+    svc.register("model_install", state)
+
+    def progress(status: str, completed: int, total: int) -> None:
+        state.update(status=status, completed=completed, total=total)
+
+    async def run() -> None:
+        try:
+            for model in missing:
+                state.update(model=model, completed=0, total=0)
+                await pull(model, progress)
+            await apply(svc, profile)
+            state["state"] = "done"
+        except Exception as exc:
+            state.update(state="failed", error=str(exc)[:300])
+            log.warning("models.install_failed", profile=profile.value, error=str(exc))
+
+    task = asyncio.create_task(run(), name=f"install:{profile.value}")
+    svc.register("model_install_task", task)  # keep a reference so it is not collected
+    return state

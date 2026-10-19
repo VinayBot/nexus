@@ -43,6 +43,13 @@ class Toggle(BaseModel):
     enabled: bool
 
 
+# declared before /chaos/{switch_id}, which would otherwise capture "reset"
+@router.post("/chaos/reset")
+async def reset() -> dict[str, str]:
+    await services().demo.reset()
+    return {"status": "baseline restored"}
+
+
 @router.post("/chaos/{switch_id}")
 async def toggle(switch_id: str, body: Toggle) -> dict[str, Any]:
     if switch_id not in SWITCHES:
@@ -56,12 +63,6 @@ async def toggle(switch_id: str, body: Toggle) -> dict[str, Any]:
         detail={"switch": switch_id, "enabled": body.enabled},
     )
     return {"enabled": enabled}
-
-
-@router.post("/chaos/reset")
-async def reset() -> dict[str, str]:
-    await services().demo.reset()
-    return {"status": "baseline restored"}
 
 
 class AutoHeal(BaseModel):

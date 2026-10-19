@@ -22,7 +22,7 @@ export function Timeline({ view }: { view: MissionView }) {
             <Link
               href={`/timetravel/${view.missionId}?checkpoint=${c.id}`}
               title={`step ${c.step} → ${c.next.join(", ") || "end"}`}
-              className="grid size-[18px] place-items-center rounded-[3px] border border-[rgb(139_151_255/0.6)] bg-[rgb(139_151_255/0.12)] font-mono text-[8px] text-[var(--cyan)] shadow-[0_0_8px_-2px_var(--cyan)] transition-transform hover:scale-125 hover:bg-[rgb(139_151_255/0.3)]"
+              className="grid size-[18px] place-items-center rounded-[3px] border border-[rgb(var(--accent-soft-rgb)/0.6)] bg-[rgb(var(--accent-soft-rgb)/0.12)] font-mono text-[8px] text-[var(--cyan)] shadow-[0_0_8px_-2px_var(--cyan)] transition-transform hover:scale-125 hover:bg-[rgb(var(--accent-soft-rgb)/0.3)]"
             >
               {c.step >= 0 ? c.step : "·"}
             </Link>

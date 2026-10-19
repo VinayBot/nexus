@@ -40,7 +40,7 @@ def main() -> None:
         workspaces=WorkspaceManager(settings.workspaces_path),
         sandbox=SandboxRunner(prefer=settings.sandbox_backend, image=settings.sandbox_image),
         memory=memory,
-        mailer=Mailer(db, settings.smtp_host, settings.smtp_port),
+        mailer=Mailer.from_settings(db, settings),
     )
     BUILDERS[name](deps).run("stdio")
 

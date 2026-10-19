@@ -85,7 +85,7 @@ export function Sidebar() {
                           {active && (
                             <motion.span
                               layoutId="nav-active"
-                              className="absolute inset-0 rounded-md bg-[rgb(99_102_241/0.16)]"
+                              className="absolute inset-0 rounded-md bg-[rgb(var(--accent-rgb)/0.16)]"
                               transition={{ type: "spring", stiffness: 400, damping: 36 }}
                             >
                               <span className="absolute top-2 bottom-2 left-0 w-[3px] rounded-full bg-[var(--cyan)]" />

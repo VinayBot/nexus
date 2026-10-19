@@ -63,6 +63,8 @@ class MissionRunner:
         self._shutting_down = False
         self.interrupt_hooks: list[InterruptHook] = []
         self.completion_hooks: list[Callable[[str, dict[str, Any]], Awaitable[None]]] = []
+        #: Called (synchronously, must not block) when a mission completes or fails.
+        self.finished_hooks: list[Callable[[str], None]] = []
 
     # -- config ---------------------------------------------------------------------
     @staticmethod
@@ -183,6 +185,7 @@ class MissionRunner:
             )
             await repo.update_mission(self.db, mission_id, status="failed", error=err)
             emit("mission.failed", MissionFailed(error=err[:1000], node=node))
+            self._finished(mission_id)
         finally:
             root.__exit__(None, None, None)
             usage = meter.usage(mission_id)
@@ -215,6 +218,14 @@ class MissionRunner:
         )
         for hook in self.completion_hooks:
             await hook(mission_id, values)
+        self._finished(mission_id)
+
+    def _finished(self, mission_id: str) -> None:
+        for hook in self.finished_hooks:
+            try:
+                hook(mission_id)
+            except Exception as exc:
+                log.warning("mission.finished_hook_failed", error=str(exc))
 
     async def resume(self, mission_id: str, decision: dict[str, Any]) -> None:
         row = await repo.get_mission(self.db, mission_id)

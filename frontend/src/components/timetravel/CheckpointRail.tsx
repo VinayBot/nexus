@@ -66,7 +66,7 @@ export function CheckpointRail({
         initial={{ clipPath: "inset(0 100% 0 0)" }}
         animate={{ clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 1.1, ease: "easeOut" }}
-        className="holo-grid overflow-x-auto rounded-lg border border-[rgb(139_151_255/0.2)] bg-[rgb(4_8_16/0.7)] text-text"
+        className="holo-grid overflow-x-auto rounded-lg border border-[rgb(var(--accent-soft-rgb)/0.2)] bg-[rgb(4_8_16/0.7)] text-text"
       >
         <svg width={layout.width} height={layout.height} className="block">
           {branches.map((b, i) => (
@@ -88,7 +88,7 @@ export function CheckpointRail({
                 x2={layout.width - 10}
                 y1={36 + i * LANE_H}
                 y2={36 + i * LANE_H}
-                stroke="rgb(139 151 255 / 0.25)"
+                stroke="rgb(var(--accent-soft-rgb) / 0.25)"
                 strokeDasharray="2 6"
               />
             </g>

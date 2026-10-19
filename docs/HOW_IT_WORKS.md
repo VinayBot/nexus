@@ -16,13 +16,21 @@ do it**, and **how to demo it**. The code-level walkthrough moved to
    http://localhost:3000.
 2. Check the top bar shows **Online** (green). If it says Degraded, Ollama is not running or
    a model is missing. Settings → Models lists the exact `ollama pull` command.
-3. Pick models in **Settings → Models**:
+3. Pick models in **Settings → Models** (click a card's button to switch):
    - **Lite** (llama3.2 3B for everything, ~3 GB). Fastest; the safest choice when the Mac is busy.
    - **Balanced** (Qwen2.5 3B for planning and writing, Qwen2.5-Coder 3B for code, ~5 GB).
      Better writing and better code fixes. Recommended for demos.
-   - **Standard (7B)** is not installed on purpose: it is too heavy for a 16 GB Mac that is
-     also running a browser and an IDE.
-4. Close heavy apps. If the Mac is short of memory, NEXUS slows down rather than crashing
+   - **Standard (7B)**: click **Install and switch**. After you confirm, NEXUS downloads
+     `qwen2.5-coder:7b` (about 4.7 GB) with a progress bar and switches when it is done. It is
+     the strongest, but heavy for a 16 GB Mac that is also running a browser and an IDE; you
+     can switch back at any time.
+4. **Email results** (Settings → Email results): every finished or failed mission is emailed
+   to your address with the full result (You asked → outcome → links → output → steps), and
+   approval requests go there too. To receive them in Gmail, click **Connect Gmail**, create
+   an App Password at myaccount.google.com/apppasswords (needs 2-Step Verification), paste it
+   and press **Send test email**. Until then the emails wait in the local outbox.
+5. **Accent colour** (Settings → Appearance): Ember (default), Teal or Violet.
+6. Close heavy apps. If the Mac is short of memory, NEXUS slows down rather than crashing
    (the Resource Governor queues model calls), but a demo feels better with free RAM.
 
 ---
@@ -42,6 +50,8 @@ do it**, and **how to demo it**. The code-level walkthrough moved to
 
 - **Left: New mission.** Type the task, optionally pick a mission type, press **Start
   mission** (or Cmd+Enter). An empty box runs the type's example. "Use example" fills it in.
+  Clear requests (a web page, a ticket id, "build an API") start straight away; the agents
+  only stop to ask you a question when a request is genuinely unclear.
 - **Middle:** the mission's status, its progress through the stages, then (when it applies)
   **your decision**, the **result**, and the robots working live. The Graph tab shows the
   same mission as a LangGraph diagram.

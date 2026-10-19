@@ -10,6 +10,7 @@ import { Interactions } from "./Interactions";
 /** Mirrors UI preferences onto <html> data attributes that the CSS tokens key off. */
 function DocumentAttributes() {
   const theme = useUi((s) => s.theme);
+  const accent = useUi((s) => s.accent);
   const sky = useUi((s) => s.skyMood);
   const perf = useUi((s) => s.performanceMode);
   useEffect(() => {
@@ -19,9 +20,10 @@ function DocumentAttributes() {
   useEffect(() => {
     const el = document.documentElement;
     el.dataset.theme = theme;
+    el.dataset.accent = accent;
     el.dataset.sky = sky;
     el.dataset.perf = perf ? "on" : "off";
-  }, [theme, sky, perf]);
+  }, [theme, accent, sky, perf]);
   return null;
 }
 

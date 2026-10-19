@@ -110,9 +110,11 @@ async def route(state: dict[str, Any]) -> dict[str, Any]:
         return {"playbook": preset, "route_reason": "chosen by the user"}
     matched = keyword_route(state.get("task", ""))
     if matched in available:
+        # a request clear enough to route by rule is clear enough to start: no clarify pause
         return {
             "playbook": matched,
             "route_reason": "keyword rule",
+            "rewritten": {**(state.get("rewritten") or {}), "is_vague": False},
             "messages": [
                 AIMessage(content=f"Routing to {matched}: keyword rule", name="commander")
             ],

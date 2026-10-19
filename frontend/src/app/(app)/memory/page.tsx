@@ -240,7 +240,7 @@ export default function Page() {
                 >
                   {name} · {n}
                 </button>
-                <div className="mt-1 flex h-16 items-end gap-0.5 border-b-2 border-[rgb(139_151_255/0.5)] px-1 shadow-[0_2px_10px_-2px_rgb(139_151_255/0.6)]">
+                <div className="mt-1 flex h-16 items-end gap-0.5 border-b-2 border-[rgb(var(--accent-soft-rgb)/0.5)] px-1 shadow-[0_2px_10px_-2px_rgb(var(--accent-soft-rgb)/0.6)]">
                   {(shelf === name
                     ? (items.data ?? [])
                     : Array.from({ length: Math.min(n, 30) }, (_, i) => ({
@@ -271,7 +271,7 @@ export default function Page() {
             ))}
           </div>
           {book && (
-            <div className="holo-grid mt-3 rounded-lg border border-[rgb(139_151_255/0.3)] bg-[rgb(4_8_16/0.7)] p-3 text-text">
+            <div className="holo-grid mt-3 rounded-lg border border-[rgb(var(--accent-soft-rgb)/0.3)] bg-[rgb(4_8_16/0.7)] p-3 text-text">
               <div className="flex">
                 <p className="font-display text-sm text-accent">{book.title}</p>
                 <button type="button" className="btn btn-ghost btn-sm ml-auto" onClick={() => setBook(null)}>

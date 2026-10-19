@@ -50,7 +50,7 @@ export function MissionList({ activeId, onSelect }: { activeId: string | null; o
                 aria-current={m.id === activeId}
                 className={cn(
                   "relative w-full overflow-hidden rounded-md border border-transparent px-2.5 py-2 text-left transition-[background-color,border-color,transform] duration-200 hover:translate-x-0.5 hover:bg-surface-hover",
-                  m.id === activeId && "bg-[rgb(99_102_241/0.12)] shadow-[inset_2px_0_0_var(--cyan)]",
+                  m.id === activeId && "bg-[rgb(var(--accent-rgb)/0.12)] shadow-[inset_2px_0_0_var(--cyan)]",
                   m.status === "running" && "running-sheen",
                 )}
               >

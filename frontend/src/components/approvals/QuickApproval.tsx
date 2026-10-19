@@ -113,7 +113,7 @@ export function QuickApproval({ approval, onDone }: { approval: Approval; onDone
   return (
     <div className="space-y-3" aria-label={KIND_LABEL[approval.kind]}>
       <div className="flex items-start gap-3">
-        <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-lg bg-[rgb(99_102_241/0.15)] text-accent">
+        <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-lg bg-[rgb(var(--accent-rgb)/0.15)] text-accent">
           {question ? <FileText className="size-4.5" /> : <ShieldAlert className="size-4.5" />}
         </span>
         <div className="min-w-0 flex-1">

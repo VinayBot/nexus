@@ -30,7 +30,7 @@ const LiveGraph = dynamic(() => import("@/components/graph/LiveGraph").then((m) 
 });
 
 const STATUS_STYLE: Record<string, string> = {
-  running: "bg-[rgb(99_102_241/0.18)] text-accent",
+  running: "bg-[rgb(var(--accent-rgb)/0.18)] text-accent",
   paused: "bg-warning/15 text-warning",
   completed: "bg-success/15 text-success",
   failed: "bg-danger/15 text-danger",

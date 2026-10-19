@@ -13,7 +13,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
@@ -119,6 +119,13 @@ class Settings(BaseSettings):
     secret_key: str = "dev-only-change-me"
     smtp_host: str = "127.0.0.1"
     smtp_port: int = 1025
+    #: Real delivery (e.g. Gmail: smtp.gmail.com, 587, your address, a 16-character App Password).
+    smtp_username: str | None = None
+    smtp_password: SecretStr | None = None
+    smtp_starttls: bool = False
+    #: Where mission results are emailed (also editable in Settings → Email results).
+    result_email: str | None = None
+    email_results: bool = True
     owner_email: str = "owner@nexus.local"
     sandbox_backend: Literal["docker", "local"] = "docker"
     sandbox_image: str = "nexus-sandbox:latest"

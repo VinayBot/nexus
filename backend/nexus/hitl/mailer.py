@@ -11,6 +11,7 @@ from email.message import EmailMessage
 
 import aiosmtplib
 
+from nexus.core.config import Settings
 from nexus.core.event_types import EmailSent
 from nexus.core.events import emit
 from nexus.core.logging import get_logger
@@ -23,13 +24,43 @@ log = get_logger(__name__)
 
 class Mailer:
     def __init__(
-        self, db: Database, host: str, port: int, sender: str = "nexus@nexus.local"
+        self,
+        db: Database,
+        host: str,
+        port: int,
+        sender: str = "nexus@nexus.local",
+        *,
+        username: str | None = None,
+        password: str | None = None,
+        starttls: bool = False,
     ) -> None:
         self.db = db
         self.host = host
         self.port = port
         self.sender = sender
+        self.username = username
+        self.password = password
+        self.starttls = starttls
         self._reachable_until = 0.0
+
+    @classmethod
+    def from_settings(cls, db: Database, settings: Settings) -> Mailer:
+        """Mailpit in dev; a real provider when SMTP credentials are set in .env."""
+        user = settings.smtp_username
+        return cls(
+            db,
+            settings.smtp_host,
+            settings.smtp_port,
+            # providers such as Gmail only send "From" the signed-in account
+            sender=f"NEXUS <{user}>" if user else "nexus@nexus.local",
+            username=user,
+            password=settings.smtp_password.get_secret_value() if settings.smtp_password else None,
+            starttls=settings.smtp_starttls,
+        )
+
+    @property
+    def real_delivery(self) -> bool:
+        return bool(self.username and self.password)
 
     async def reachable(self) -> bool:
         """Fast TCP probe (aiosmtplib waits its full timeout even on a refused port)."""
@@ -69,7 +100,15 @@ class Mailer:
         try:
             if not await self.reachable():
                 raise ConnectionError(f"SMTP {self.host}:{self.port} unreachable")
-            await aiosmtplib.send(msg, hostname=self.host, port=self.port, timeout=5)
+            await aiosmtplib.send(
+                msg,
+                hostname=self.host,
+                port=self.port,
+                timeout=15 if self.real_delivery else 5,
+                username=self.username,
+                password=self.password,
+                start_tls=self.starttls or None,
+            )
         except Exception as exc:
             status = "outbox"
             log.warning("mail.smtp_unavailable", error=str(exc), to=to)

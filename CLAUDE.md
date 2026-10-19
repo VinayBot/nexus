@@ -42,14 +42,17 @@ Compose CLI is `docker-compose` on this machine; the Makefile detects it.
   the next tournament round. Don't regress these.
 - Files stay under ~400 lines; split instead. Pydantic models for every agent I/O.
 - Untrusted text (tickets, docs, logs, tool output) is always wrapped by `safety.guardrails.fence()`.
-- Theme "Studio": slate base, one indigo accent (`--indigo`/`--cyan` token) for nav and primary
-  actions, status colours only for status. Plain sentence-case headings, no HUD brackets/scanlines.
+- Theme "Studio": warm charcoal base, one accent from channel tokens (`--accent-rgb`,
+  `--accent-soft-rgb`, `--accent-strong`; use `rgb(var(--accent-rgb)/0.15)`, never a literal colour)
+  for nav and primary actions; presets Ember (default), Teal, Violet via `data-accent`, status colours only for status. Plain sentence-case headings, no HUD brackets/scanlines.
   The sunset palette is only for the robots' mission floor and the landing page. Keep animations
   (lift, sweep, springs). Only floating elements (`.glass`) use backdrop blur.
 - Approvals: `ApprovalPrompt` pops a dialog on any screen for approvals raised this session; the
   top-bar "N waiting" button reopens it; `QuickApproval` is reused inline in Mission Control.
 - Results read: You asked → outcome sentence → output (page/zip/answer) → How the team did it.
   Report highlights are plain English (`graph/nodes/finish.py`).
+- Result emails: `hitl/result_email.py` (runner `finished_hooks`), address + switch in
+  `data/notify.json`, Gmail App Password in `data/smtp.json` (0600, gitignored, never returned).
 - Logs are quiet by default (`NEXUS_LOG_LEVEL=WARNING`, no uvicorn access log); set INFO to debug.
 - Approval email links: GET shows a confirm page, POST decides (link prefetchers must not approve).
 - Commit at the end of each phase; tick `docs/PLAN.md`.

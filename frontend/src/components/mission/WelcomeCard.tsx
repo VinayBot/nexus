@@ -47,7 +47,7 @@ export function WelcomeCard() {
             transition={{ delay: 0.08 * i }}
             className="rounded-xl border border-border bg-white/[0.02] p-4"
           >
-            <span className="grid size-7 place-items-center rounded-full bg-[rgb(99_102_241/0.18)] text-xs font-bold text-accent">
+            <span className="grid size-7 place-items-center rounded-full bg-[rgb(var(--accent-rgb)/0.18)] text-xs font-bold text-accent">
               {i + 1}
             </span>
             <p className="mt-2 text-sm font-semibold text-text">{title}</p>
@@ -68,7 +68,7 @@ export function WelcomeCard() {
               transition={{ delay: 0.25 + 0.06 * i }}
               disabled={start.isPending}
               onClick={() => start.mutate(t)}
-              className="group flex items-start gap-3 rounded-xl border border-border p-3 text-left hover:border-[rgb(139_151_255/0.5)] hover:bg-[rgb(99_102_241/0.06)]"
+              className="group flex items-start gap-3 rounded-xl border border-border p-3 text-left hover:border-[rgb(var(--accent-soft-rgb)/0.5)] hover:bg-[rgb(var(--accent-rgb)/0.06)]"
             >
               <Icon className="mt-0.5 size-4 shrink-0 text-accent" />
               <span className="min-w-0 flex-1">

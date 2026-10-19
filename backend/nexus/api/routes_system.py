@@ -114,8 +114,22 @@ async def choose_profile(body: ProfileChoice) -> dict[str, object]:
     info = await profiles.describe(svc)
     chosen = next(p for p in info["profiles"] if p["id"] == body.profile.value)
     if chosen["missing"]:
-        raise HTTPException(
-            409, f"install first: ollama pull {' && ollama pull '.join(chosen['missing'])}"
-        )
+        raise HTTPException(409, "not installed yet: use Install and switch")
     await profiles.apply(svc, body.profile)
+    return await profiles.describe(svc)
+
+
+@router.post("/models/install")
+async def install_profile(body: ProfileChoice) -> dict[str, object]:
+    """Download the profile's missing models in the background, then switch to it."""
+    svc = services()
+    info = await profiles.describe(svc)
+    chosen = next(p for p in info["profiles"] if p["id"] == body.profile.value)
+    try:
+        if chosen["missing"]:
+            profiles.start_install(svc, body.profile, list(chosen["missing"]))
+        else:
+            await profiles.apply(svc, body.profile)
+    except RuntimeError as exc:
+        raise HTTPException(409, str(exc)) from exc
     return await profiles.describe(svc)

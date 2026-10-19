@@ -72,7 +72,6 @@ export function MissionComposer({ onCreated }: { onCreated: (m: Mission) => void
           if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) create.mutate();
         }}
         rows={4}
-        placeholder={playbook === "ticket_solver" ? `Solve ticket ${ticket}` : chosen.example}
         className="w-full resize-none rounded-lg border border-border bg-black/25 px-3 py-2.5 text-sm text-text placeholder:text-faint"
         aria-label="What should the agents do?"
       />
@@ -99,7 +98,7 @@ export function MissionComposer({ onCreated }: { onCreated: (m: Mission) => void
                 {on && (
                   <motion.span
                     layoutId="mission-type"
-                    className="absolute inset-0 rounded-full bg-[var(--indigo)]"
+                    className="absolute inset-0 rounded-full bg-[var(--accent-strong)]"
                     transition={{ type: "spring", stiffness: 420, damping: 34 }}
                   />
                 )}

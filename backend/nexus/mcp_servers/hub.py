@@ -290,7 +290,7 @@ async def start_mcp_hub(svc: Any) -> AsyncIterator[McpHub]:
         image=settings.sandbox_image,
         network=svc.policies.sandbox_network(),
     )
-    mailer = Mailer(svc.db, settings.smtp_host, settings.smtp_port)
+    mailer = Mailer.from_settings(svc.db, settings)
     deps = McpDeps(
         settings=settings,
         db=svc.db,
