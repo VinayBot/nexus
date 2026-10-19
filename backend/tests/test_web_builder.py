@@ -149,18 +149,48 @@ async def test_finished_mission_emails_the_result(monkeypatch: pytest.MonkeyPatc
             svc.notifier.save(to="not-an-address", enabled=True)
 
 
-async def test_connect_gmail_saves_private_credentials_and_never_returns_them() -> None:
+async def test_connect_gmail_checks_then_saves_private_credentials() -> None:
     async with runtime(get_settings(), provider=ScriptedLLM(), recover=False) as svc:
         n = svc.notifier
-        n.connect("gmail", "me@gmail.com", "abcd efgh ijkl mnop")
+        path = svc.settings.data_dir / "smtp.json"
+        logins: list[str] = []
+
+        async def accept(host: str, port: int, user: str, pw: str) -> None:
+            logins.append(pw)
+
+        async def refuse(host: str, port: int, user: str, pw: str) -> None:
+            raise ValueError("Gmail refused the sign-in.")
+
+        # a normal Google password is refused before any network call, and never saved
+        with pytest.raises(ValueError, match="not a Gmail App Password"):
+            await n.connect("gmail", "me@gmail.com", "MyPass@19word!")
+        n._login_check = refuse  # type: ignore[method-assign]
+        with pytest.raises(ValueError, match="refused"):
+            await n.connect("gmail", "me@gmail.com", "abcd efgh ijkl mnop")
+        assert not path.exists()
+
+        n._login_check = accept  # type: ignore[method-assign]
+        await n.connect("gmail", "me@gmail.com", "abcd efgh ijkl mnop")
+        assert logins == ["abcdefghijklmnop"]
         st = n.status()
         assert st["delivery"] == "smtp" and st["account"] == "me@gmail.com"
         assert "abcdefghijklmnop" not in json.dumps(st)
-        path = svc.settings.data_dir / "smtp.json"
         assert path.stat().st_mode & 0o777 == 0o600
         assert n.mailer.host == "smtp.gmail.com" and n.mailer.port == 587
         n.disconnect()
         assert n.status()["delivery"] == "mailpit" and not path.exists()
+
+
+def test_smtp_errors_are_explained() -> None:
+    import aiosmtplib
+
+    from nexus.hitl.mailer import explain_smtp_error
+
+    auth = explain_smtp_error(aiosmtplib.SMTPAuthenticationError(535, "bad"), "smtp.gmail.com")
+    assert "App Password" in auth
+    eof = explain_smtp_error(aiosmtplib.SMTPServerDisconnected("EOF"), "smtp.gmail.com")
+    assert "App Password" in eof
+    assert "Could not reach" in explain_smtp_error(ConnectionError("refused"), "127.0.0.1")
 
 
 class _Downloader(ScriptedLLM):

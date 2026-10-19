@@ -22,6 +22,21 @@ from nexus.safety.guardrails import redact
 log = get_logger(__name__)
 
 
+def explain_smtp_error(exc: BaseException, host: str) -> str:
+    """Turn an SMTP failure into what to do about it."""
+    text = str(exc)
+    if isinstance(exc, aiosmtplib.SMTPAuthenticationError) or (
+        isinstance(exc, aiosmtplib.SMTPServerDisconnected) and "gmail" in host
+    ):
+        return (
+            "Gmail refused the sign-in. Use a 16-letter App Password "
+            "(myaccount.google.com/apppasswords), not your normal Google password."
+        )
+    if isinstance(exc, ConnectionError | OSError | aiosmtplib.SMTPConnectError):
+        return f"Could not reach the mail server {host} ({text[:120]})."
+    return f"The mail server rejected the message: {text[:200]}"
+
+
 class Mailer:
     def __init__(
         self,
@@ -42,6 +57,8 @@ class Mailer:
         self.password = password
         self.starttls = starttls
         self._reachable_until = 0.0
+        #: Why the last send failed, in words a person can act on (None after a success).
+        self.last_error: str | None = None
 
     @classmethod
     def from_settings(cls, db: Database, settings: Settings) -> Mailer:
@@ -111,7 +128,10 @@ class Mailer:
             )
         except Exception as exc:
             status = "outbox"
+            self.last_error = explain_smtp_error(exc, self.host)
             log.warning("mail.smtp_unavailable", error=str(exc), to=to)
+        else:
+            self.last_error = None
         async with self.db.session() as s:
             s.add(
                 OutboxRow(

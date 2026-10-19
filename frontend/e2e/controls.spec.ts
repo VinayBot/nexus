@@ -112,7 +112,7 @@ test("settings: accent colour, model switch and email results", async ({ page })
   await email.getByRole("button", { name: "Save" }).click();
   await expect(email.getByRole("button", { name: "Save" })).toBeDisabled();
   await email.getByRole("button", { name: "Send test email" }).click();
-  await expect(email.getByText(/kept in the outbox|Sent\./)).toBeVisible();
+  await expect(email.getByText(/Could not reach the mail server|Sent\./)).toBeVisible();
   await page.reload();
   await expect(page.getByLabel("Result email address")).toHaveValue("someone@example.com");
   expect(errors).toEqual([]);

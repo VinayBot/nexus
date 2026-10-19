@@ -13,6 +13,7 @@ interface NotifyStatus {
   smtp: string;
   account: string | null;
   provider: string | null;
+  last_error: string | null;
 }
 
 /** Settings → Email results: where each mission's result is emailed, and how. */
@@ -43,7 +44,9 @@ export function EmailResults() {
     },
   });
   const disconnect = useMutation({ mutationFn: () => del<NotifyStatus>("/notify/smtp"), onSuccess: onSaved });
-  const test = useMutation({ mutationFn: () => post<{ status: string }>("/notify/test") });
+  const test = useMutation({
+    mutationFn: () => post<{ status: string; error: string | null }>("/notify/test"),
+  });
   const error = save.error ?? connect.error ?? disconnect.error ?? test.error;
 
   return (
@@ -114,10 +117,10 @@ export function EmailResults() {
                 <Send className="size-3.5" /> {test.isPending ? "Sending…" : "Send test email"}
               </button>
               {test.data && (
-                <span className={cn("text-xs", test.data.status === "sent" ? "text-success" : "text-warning")}>
+                <span className={cn("text-xs", test.data.status === "sent" ? "text-success" : "text-danger")}>
                   {test.data.status === "sent"
                     ? `Sent. Check ${s.to}.`
-                    : "Could not reach the mail server; kept in the outbox."}
+                    : (test.data.error ?? "Not sent; kept in the outbox.")}
                 </span>
               )}
             </div>
@@ -147,7 +150,11 @@ export function EmailResults() {
                       myaccount.google.com/apppasswords <ExternalLink className="inline size-3" />
                     </a>
                   </li>
-                  <li>Paste the 16-letter password below. It is stored only on this Mac.</li>
+                  <li>
+                    Paste the 16-letter App Password below.{" "}
+                    <strong className="text-warning">Never your normal Google password.</strong> NEXUS checks it with
+                    Gmail first and stores it only on this Mac.
+                  </li>
                 </ol>
                 <div className="mt-2 grid gap-2">
                   <input
@@ -171,7 +178,7 @@ export function EmailResults() {
                     disabled={!account || password.replace(/\s/g, "").length < 8 || connect.isPending}
                     onClick={() => connect.mutate()}
                   >
-                    Connect
+                    {connect.isPending ? "Checking with Gmail…" : "Connect"}
                   </button>
                 </div>
               </>

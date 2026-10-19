@@ -299,7 +299,7 @@ class SmtpAccount(BaseModel):
 @router.put("/notify/smtp")
 async def notify_connect(body: SmtpAccount) -> dict[str, Any]:
     try:
-        services().notifier.connect(body.provider, body.username.strip(), body.app_password)
+        await services().notifier.connect(body.provider, body.username.strip(), body.app_password)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
     return dict(services().notifier.status())
@@ -312,12 +312,11 @@ async def notify_disconnect() -> dict[str, Any]:
 
 
 @router.post("/notify/test")
-async def notify_test() -> dict[str, str]:
+async def notify_test() -> dict[str, str | None]:
     try:
-        status = await services().notifier.send_test()
+        return dict(await services().notifier.send_test())
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
-    return {"status": status}
 
 
 # --- curriculum evidence -------------------------------------------------------------------

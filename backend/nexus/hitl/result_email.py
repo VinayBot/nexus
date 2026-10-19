@@ -10,6 +10,7 @@ change them at runtime; ``NEXUS_RESULT_EMAIL`` seeds the default.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import html
 import json
 import re
@@ -26,6 +27,7 @@ FILE = "notify.json"
 SMTP_FILE = "smtp.json"  # data/ is gitignored; written owner-read-only
 PROVIDERS = {"gmail": ("smtp.gmail.com", 587), "outlook": ("smtp.office365.com", 587)}
 EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+APP_PASSWORD = re.compile(r"[a-z]{16}")
 
 OUTCOME = {
     "success": ("Completed", "#16a34a"),
@@ -113,21 +115,42 @@ class ResultNotifier:
             m.sender = f"NEXUS <{m.username}>" if m.username else "nexus@nexus.local"
         m._reachable_until = 0.0  # re-probe the new server
 
-    def connect(self, provider: str, username: str, password: str) -> None:
+    async def connect(self, provider: str, username: str, password: str) -> None:
+        """Check the credentials with the provider first; save them only if they work."""
         if provider not in PROVIDERS:
             raise ValueError(f"unknown provider {provider!r}")
         if not EMAIL.match(username):
             raise ValueError(f"not an email address: {username!r}")
         password = password.replace(" ", "")
-        if len(password) < 8:
-            raise ValueError("paste the app password (Gmail: 16 letters)")
+        if provider == "gmail" and not APP_PASSWORD.fullmatch(password):
+            raise ValueError(
+                "That is not a Gmail App Password. App Passwords are 16 lowercase letters "
+                "(shown as four groups of four). Create one at "
+                "myaccount.google.com/apppasswords. Never paste your normal Google password."
+            )
         host, port = PROVIDERS[provider]
+        await self._login_check(host, port, username, password)
         data = {"provider": provider, "host": host, "port": port, "username": username,
                 "password": password}  # fmt: skip
         path = self.settings.data_dir / SMTP_FILE
         path.write_text(json.dumps(data))
         path.chmod(0o600)
         self._apply_smtp(data)
+
+    async def _login_check(self, host: str, port: int, username: str, password: str) -> None:
+        import aiosmtplib
+
+        from nexus.hitl.mailer import explain_smtp_error
+
+        smtp = aiosmtplib.SMTP(hostname=host, port=port, timeout=15, start_tls=True)
+        try:
+            await smtp.connect()
+            await smtp.login(username, password)
+        except Exception as exc:
+            raise ValueError(explain_smtp_error(exc, host)) from exc
+        finally:
+            with contextlib.suppress(Exception):
+                await smtp.quit()
 
     def disconnect(self) -> None:
         (self.settings.data_dir / SMTP_FILE).unlink(missing_ok=True)
@@ -158,6 +181,7 @@ class ResultNotifier:
             "delivery": "smtp" if self.mailer.real_delivery else "mailpit",
             "smtp": f"{self.mailer.host}:{self.mailer.port}",
             "account": self.mailer.username,
+            "last_error": self.mailer.last_error,
             "provider": saved.get("provider"),
         }
 
@@ -185,7 +209,7 @@ class ResultNotifier:
             log.warning("result_email.failed", mission_id=mission_id, error=str(exc))
             return None
 
-    async def send_test(self) -> str:
+    async def send_test(self) -> dict[str, str | None]:
         to = self.prefs().get("to")
         if not to:
             raise ValueError("set an address first")
@@ -195,7 +219,7 @@ class ResultNotifier:
             "<p>This is a test from NEXUS. Mission results will arrive like this.</p>",
             text="This is a test from NEXUS. Mission results will arrive like this.",
         )
-        return status
+        return {"status": status, "error": None if status == "sent" else self.mailer.last_error}
 
     def compose(self, row: Any) -> tuple[str, str, str]:
         report: dict[str, Any] = row.report or {}
