@@ -173,8 +173,8 @@ class ResultNotifier:
         if not (prefs.get("enabled") and prefs.get("to")):
             return None
         row = await repo.get_mission(self.db, mission_id)
-        if row is None:
-            return None
+        if row is None or (row.report or {}).get("emailed_to"):
+            return None  # the mission already emailed its own result (e.g. a new ticket)
         try:
             subject, body, text = self.compose(row)
             _, status = await self.mailer.send(

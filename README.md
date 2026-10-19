@@ -44,6 +44,7 @@ Optional extras:
 |---|---|
 | **Self-Healing** (flagship) | Arm a chaos switch in the Chaos Lab and a real bug goes into the live demo-service. Hawk the Watcher opens an incident. The squad investigates in parallel, reproduces the bug with a test, and three Challengers propose patches; each patch runs in its own sandbox. After anonymous review, a judge, a dry run and **your approval** (UI or signed e-mail link), the fix lands on a git branch with hot reload. It is **verified on live traffic**, rolled back automatically if errors return, and stored in the Fix Library. |
 | **Web Page Builder** | "Build an HTML page with an AI blog", "a landing page for my bakery": Sage plans the sections, Quill and Echo write them in parallel, Forge renders a professional, script-free page from a fixed template, Aegis checks it (title, one H1, sections, 250+ words), and after **your approval** it is published at `/sites/<mission>/` with an **Open page** button and a live preview. |
+| **Create Ticket** | Echo reads the code and error logs the request points at, Quill writes a structured bug report (steps to reproduce, expected/actual, suspected file, severity), Swift files it as the next T-number and emails it to you; "Solve this ticket now" hands it to the Ticket Solver. |
 | **Ticket Solver** | Reads a ticket (local tracker or GitHub Issues), writes an acceptance test that must fail first, runs a tournament, then attaches the test report, diff and logs to the ticket after approval. |
 | **Project Builder** | Small services only (≤ 8 files: a FastAPI CRUD API or a CLI). Builds from a spec and a template, writes files in dependency waves, repairs until the tests pass, and packages a zip. |
 | **Council Q&A** | Parallel answers, anonymous peer review, debate on disagreement, and a verdict with confidence and dissent. |
@@ -59,6 +60,7 @@ Every mission type, on real local models, approved through the app:
 | Web page (bakery landing page) | Balanced | published in about 60 s, no retries |
 | Question (optimistic vs pessimistic locking) | Balanced | council answer in 183 s |
 | Fix service (Bad config chaos switch) | Balanced | round 2 root-cause fix in `app/config.py` passed 10/10; applied; 98 live orders, 0 errors; 156 s |
+| New ticket ("cretae ticket for fixing bug in pipeline and also share email") | Balanced | T-105 written from `app/pipeline.py` and the logs, filed and emailed, 9 s |
 | Ticket T-101 | Balanced | WELCOME5 added, 10/10 tests, ticket commented and closed, 115 s |
 | Build API (books: title, author, year) | Balanced | 4/4 tests, zip downloaded, 15 s |
 | Custom team (error-handling review) | Balanced | found the real timeout and cancellation issues, 25 s |

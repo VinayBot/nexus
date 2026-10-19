@@ -8,6 +8,7 @@ import { useState } from "react";
 import { API_URL } from "@/lib/config";
 import { cn } from "@/lib/cn";
 import type { Mission } from "@/lib/queries";
+import { TicketBar } from "./TicketBar";
 
 interface Report {
   title?: string;
@@ -21,6 +22,8 @@ interface Report {
   preview_url?: string | null;
   files?: string[] | null;
   diff?: string | null;
+  ticket_id?: string | null;
+  emailed_to?: string | null;
 }
 
 /** What the outcome means, in one plain sentence per mission type. */
@@ -30,6 +33,8 @@ function plainOutcome(r: Report, playbook: string | null): string {
   if (r.download) return "Your project was built, tested and packaged. Download it below.";
   if (playbook === "self_healing") return "The bug was fixed, verified on live traffic and saved to the Fix Library.";
   if (playbook === "ticket_solver") return "The ticket was solved and a comment with the fix was posted.";
+  if (r.ticket_id)
+    return `The ticket was written from the code and logs and filed as ${r.ticket_id}${r.emailed_to ? ", then emailed to you" : ""}.`;
   return "Here is the team's answer.";
 }
 
@@ -71,6 +76,8 @@ export function ReportCard({ mission }: { mission: Mission }) {
         </span>
         <p className="min-w-0 flex-1 text-sm text-muted">{plainOutcome(r, mission.playbook)}</p>
       </header>
+
+      {r.ticket_id && <TicketBar ticketId={r.ticket_id} emailedTo={r.emailed_to} />}
 
       {(r.preview_url || r.download) && (
         <div className="flex flex-wrap items-center gap-2 border-b border-border bg-[rgb(var(--accent-rgb)/0.06)] px-4 py-2.5">

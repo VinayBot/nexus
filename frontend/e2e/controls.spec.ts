@@ -19,7 +19,8 @@ test("composer: every mission type shows its hint and fills its example", async 
     ["Question", /judge picks the best/],
     ["Fix service", /demo shop/],
     ["Build API", /FastAPI service/],
-    ["Ticket", /Reads a ticket/],
+    ["New ticket", /writes a clear bug report/],
+    ["Solve ticket", /Reads a ticket/],
     ["Custom team", /designs a team/],
     ["Auto", /picks the right team/],
   ] as const) {
@@ -27,7 +28,7 @@ test("composer: every mission type shows its hint and fills its example", async 
     await expect(page.getByRole("radio", { name: type })).toHaveAttribute("aria-checked", "true");
     await expect(page.getByText(hint)).toBeVisible();
   }
-  await page.getByRole("radio", { name: "Ticket" }).click();
+  await page.getByRole("radio", { name: "Solve ticket" }).click();
   await expect(page.getByLabel("Ticket", { exact: true })).toBeVisible();
   await page.getByRole("radio", { name: "Question" }).click();
   await page.getByRole("button", { name: /Use example/ }).click();

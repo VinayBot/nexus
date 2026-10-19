@@ -67,3 +67,23 @@ test("a blog request builds an HTML page you can open after approving it inline"
   const html = await (await request.get(href!)).text();
   expect(html).toContain("<h1>How AI Agents Work Together</h1>");
 });
+
+test("creating a ticket files it, shows it, and hands it to the solver", async ({ page, request }) => {
+  await page.goto("/missions");
+  await page
+    .getByLabel("What should the agents do?")
+    .fill("cretae ticket for fixing bug in pipeline and also share email");
+  await page.getByRole("button", { name: "Start mission" }).click();
+  await page.waitForURL(/\/missions\?m=/);
+  const id = new URL(page.url()).searchParams.get("m")!;
+  const done = await waitForMission(request, id, ["completed", "failed"]);
+  expect(done.playbook).toBe("ticket_creator");
+  expect(done.outcome).toBe("success");
+
+  const result = page.getByTestId("mission-result");
+  await expect(result.getByText(/Ticket\s+T-\d+\s+created/)).toBeVisible();
+  await expect(result.getByRole("heading", { name: /Order pipeline rejects valid orders/ })).toBeVisible();
+  await result.getByRole("button", { name: "Solve this ticket now" }).click();
+  await page.waitForURL((u) => u.searchParams.get("m") !== id);
+  await expect(page.getByRole("heading", { name: /Solve ticket T-\d+/ })).toBeVisible();
+});

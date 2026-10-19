@@ -40,7 +40,7 @@ class Dynamic(Playbook):
         agents could only report that there were no files.
         """
         demo = services().extras.get("demo")
-        if demo is not None and DEMO_TOPIC.search(state.get("task", "")):
+        if demo is not None and demo.live.is_dir() and DEMO_TOPIC.search(state.get("task", "")):
             services().workspaces.copy_from(demo.live, state["mission_id"])
         return {}
 
@@ -85,7 +85,7 @@ class SavedPlaybook(Playbook):
         agents could only report that there were no files.
         """
         demo = services().extras.get("demo")
-        if demo is not None and DEMO_TOPIC.search(state.get("task", "")):
+        if demo is not None and demo.live.is_dir() and DEMO_TOPIC.search(state.get("task", "")):
             services().workspaces.copy_from(demo.live, state["mission_id"])
         return {}
 

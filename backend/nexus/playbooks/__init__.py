@@ -33,12 +33,14 @@ def _ensure_loaded() -> None:
     from nexus.playbooks.council_qa import CouncilQA
     from nexus.playbooks.dynamic import Dynamic
     from nexus.playbooks.self_healing import SelfHealing
+    from nexus.playbooks.ticket_creator import TicketCreator
     from nexus.playbooks.ticket_solver import TicketSolver
     from nexus.playbooks.web_builder import WebBuilder
 
     for pb in (
         SelfHealing(),
         TicketSolver(),
+        TicketCreator(),
         WebBuilder(),
         ProjectBuilder(),
         CouncilQA(),
@@ -55,6 +57,7 @@ def reload_saved() -> None:
     builtin = {
         "self_healing",
         "ticket_solver",
+        "ticket_creator",
         "web_builder",
         "project_builder",
         "council_qa",

@@ -20,6 +20,7 @@ from nexus.safety.policies import PolicyEngine, Route, stricter
 ACTION_BASE: dict[str, float] = {
     "deliver_answer": 0.0,
     "run_team": 0.15,
+    "create_ticket": 0.15,
     "comment_ticket": 0.2,
     "write_project": 0.25,
     "publish_page": 0.25,

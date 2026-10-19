@@ -45,6 +45,7 @@ export function LiveBridge() {
         }
         if (e.type.startsWith("mission.") || e.type === "interrupt.resolved") {
           void qc.invalidateQueries({ queryKey: ["missions"] });
+          if (e.type === "mission.completed") void qc.invalidateQueries({ queryKey: ["tickets"] });
         }
         // resolved approvals are refreshed by the card itself after its stamp/tear animation
         if (e.type === "interrupt.raised") void qc.invalidateQueries({ queryKey: ["approvals"] });

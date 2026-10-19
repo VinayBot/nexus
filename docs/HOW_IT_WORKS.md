@@ -69,7 +69,7 @@ do it**, and **how to demo it**. The code-level walkthrough moved to
 
 ---
 
-## 3. The six mission types
+## 3. The seven mission types
 
 Every mission goes through the same pipeline: **understand → plan → assign a team → work
 in parallel → check → risk gate → (your approval) → act → verify → remember → report.**
@@ -223,7 +223,29 @@ fields, CRUD endpoints, 4/4 tests passing, zip downloaded, in 15 s.
 **Web page**: requests that mention HTML, a page, a website or a blog are routed there
 automatically.
 
-### 3.5 Ticket: solve a ticket from the tracker
+### 3.5 New ticket: write and file a bug report
+
+**What it can do.** It turns a short request into a proper ticket, files it in the tracker
+and emails it to you. Examples: "Create a ticket for the bug in the order pipeline and email
+it to me", "open an issue about slow inventory".
+
+**How the agents do it.**
+1. **Echo** reads the code the request names (from a copy of the demo shop) and the recent error logs.
+2. **Quill** writes a structured ticket: title, summary, steps to reproduce, expected vs
+   actual, suspected file, severity and labels. It sticks to what the evidence shows.
+3. Automatic check: a real title, a real summary, and at least one step.
+4. Filing a ticket in the local tracker is LOW risk, so it runs without stopping. **Swift**
+   creates it as the next number (T-105, T-106, …).
+5. If you asked for it to be shared or emailed, the ticket is emailed to your address
+   (Settings → Email results).
+
+**Result:** "Ticket T-105 created · Emailed to you", the full ticket, and a **Solve this
+ticket now** button that starts a *Solve ticket* mission for it.
+
+*Verified live:* "cretae ticket for fixing bug in pipeline and also share email" → T-105
+about the `run_batch` page-size check in `app/pipeline.py`, filed and emailed in 9 s.
+
+### 3.6 Solve ticket: fix a ticket from the tracker
 
 **What it can do.** It reads a ticket, changes the code to satisfy it, proves it with an
 acceptance test, and comments on the ticket. Built-in tickets: **T-101** add a WELCOME5
@@ -234,13 +256,13 @@ discount code · **T-102** bulk discount · **T-103** free-shipping threshold 40
 acceptance test from it. Then the three-solver tournament runs exactly as in self-healing,
 each patch tested in the sandbox. Posting a comment needs your approval.
 
-**Demo.** Choose **Ticket**, pick T-101, start it, approve, and see the comment on the
+**Demo.** Choose **Solve ticket**, pick T-101, start it, approve, and see the comment on the
 ticket with the diff.
 
 *Verified live (Balanced):* T-101 in 115 s. Blaze's patch added WELCOME5 and passed 10/10;
 after approval, the test report, diff and sandbox output were attached to the ticket and it was closed.
 
-### 3.6 Custom team: anything else
+### 3.7 Custom team: anything else
 
 **What it can do.** Any multi-step task that fits none of the above. Example: "Review the
 demo-service code for risky error handling and summarise the top 3 issues."
@@ -261,7 +283,8 @@ timeout in `app/inventory.py`, the cancelled batch in `app/pipeline.py`) in 25 s
 ### And "Auto"
 
 With **Auto**, the Commander picks the type for you. Obvious requests are routed by
-keyword, so they can't be misrouted: HTML/page/blog → Web page; "ticket T-101" → Ticket;
+keyword, so they can't be misrouted: HTML/page/blog → Web page; "create a ticket" → New
+ticket; "ticket T-101" → Solve ticket;
 "incident"/"unhealthy" → Fix service; "build an API/CLI" → Build API. Everything else is
 classified by the model, and plain questions go to Question.
 

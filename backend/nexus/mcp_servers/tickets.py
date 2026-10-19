@@ -39,7 +39,9 @@ def _row(t: TicketRow) -> dict[str, Any]:
 
 
 def build(deps: McpDeps) -> MCPServer:
-    mcp = MCPServer("tickets", instructions="Read tickets, comment on them and attach evidence.")
+    mcp = MCPServer(
+        "tickets", instructions="Read and create tickets, comment on them and attach evidence."
+    )
     token = deps.settings.github_token
 
     async def gh(method: str, path: str, **kw: Any) -> Any:
@@ -121,6 +123,19 @@ def build(deps: McpDeps) -> MCPServer:
                 {"name": name, "content": content, "ts": time.time()},
             ]
         return f"attached {name} ({len(content)} chars) to {ticket_id}"
+
+    @mcp.tool(description="Create a new ticket in the local tracker; returns its id.")
+    async def create(
+        title: Annotated[str, Field(min_length=3, max_length=200)],
+        body: Annotated[str, Field(max_length=20_000)],
+        labels: Annotated[list[str], Field(description="e.g. ['bug']")] = [],  # noqa: B006
+    ) -> str:
+        async with deps.db.session() as s:
+            ids = (await s.execute(select(TicketRow.id))).scalars().all()
+            nums = [int(i[2:]) for i in ids if re.fullmatch(r"T-\d+", i)]
+            ticket_id = f"T-{max(nums, default=100) + 1}"
+            s.add(TicketRow(id=ticket_id, title=title, body=body, labels=labels[:6]))
+        return ticket_id
 
     @mcp.tool(description="Set a local ticket's status (open/closed).")
     async def set_status(

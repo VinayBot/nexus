@@ -1,4 +1,14 @@
-import { Bot, Code2, FileText, Globe, MessageCircleQuestion, Sparkles, Wrench, type LucideIcon } from "lucide-react";
+import {
+  Bot,
+  Code2,
+  FilePlus2,
+  FileText,
+  Globe,
+  MessageCircleQuestion,
+  Sparkles,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
 
 export interface MissionType {
   /** Playbook id; "" lets the Commander route it. */
@@ -47,8 +57,15 @@ export const MISSION_TYPES: MissionType[] = [
     icon: Code2,
   },
   {
+    id: "ticket_creator",
+    label: "New ticket",
+    hint: "Looks at the code and error logs, writes a clear bug report, files it in the tracker and emails it to you.",
+    example: "Create a ticket for the bug in the order pipeline and email it to me.",
+    icon: FilePlus2,
+  },
+  {
     id: "ticket_solver",
-    label: "Ticket",
+    label: "Solve ticket",
     hint: "Reads a ticket, writes the fix with tests, and comments on the ticket after your approval.",
     example: "Solve ticket T-101",
     icon: FileText,
@@ -67,7 +84,8 @@ const NAMES: Record<string, string> = {
   council_qa: "Question",
   self_healing: "Fix service",
   project_builder: "Build API",
-  ticket_solver: "Ticket",
+  ticket_creator: "New ticket",
+  ticket_solver: "Solve ticket",
   dynamic: "Custom team",
 };
 

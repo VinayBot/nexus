@@ -74,8 +74,17 @@ async def rewrite(state: dict[str, Any]) -> dict[str, Any]:
 
 #: Unambiguous requests are routed by rule; a 3B model once sent "build an HTML blog page"
 #: to the API builder. Checked in order; the first match wins.
+TICKET_ID = re.compile(r"\bT-\d+\b|\b[\w.-]+/[\w.-]+#\d+\b")
 KEYWORD_ROUTES: list[tuple[str, re.Pattern[str]]] = [
-    ("ticket_solver", re.compile(r"\bT-\d+\b|\b[\w.-]+/[\w.-]+#\d+\b")),
+    (
+        "ticket_creator",
+        re.compile(
+            r"\b(create|cretae|creat|open|file|raise|log|make|write|add|new)\b"
+            r"(?:\s+[\w-]+){0,3}?\s+(ticket|issue|bug report)s?\b",
+            re.I,
+        ),
+    ),
+    ("ticket_solver", TICKET_ID),
     (
         "self_healing",
         re.compile(r"\bincident\b|demo-service|\bunhealthy\b|service is (down|broken)", re.I),
@@ -128,7 +137,8 @@ async def route(state: dict[str, Any]) -> dict[str, Any]:
                 f"{menu}\nUse dynamic for anything that fits none of the others. Questions that "
                 "only need an answer go to council_qa. Incidents or a broken service go to "
                 "self_healing; requests mentioning a ticket id (T-123 or owner/repo#1) go to "
-                "ticket_solver; web pages, blogs and articles go to web_builder; requests to build a "
+                "ticket_solver; requests to create or file a new ticket go to ticket_creator; web pages, "
+                "blogs and articles go to web_builder; requests to build a "
                 "new small API or CLI go to project_builder."
             ),
             ChatMessage.user(rewritten.clarified_task),
@@ -139,6 +149,9 @@ async def route(state: dict[str, Any]) -> dict[str, Any]:
         default=RouteDecision(playbook="council_qa", reason="router fallback"),
     )
     playbook = decision.playbook if decision.playbook in available else "council_qa"
+    has_id = TICKET_ID.search(state.get("task", "")) or (state.get("inputs") or {}).get("ticket_id")
+    if playbook == "ticket_solver" and not has_id and "ticket_creator" in available:
+        playbook = "ticket_creator"  # nothing to solve without an id: write a new ticket instead
     reason = (
         decision.reason if playbook == decision.playbook else f"{decision.playbook} unavailable"
     )

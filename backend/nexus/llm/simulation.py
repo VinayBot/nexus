@@ -129,6 +129,22 @@ def _section(req: LLMRequest) -> str:
     )
 
 
+def _ticket(req: LLMRequest) -> str:
+    return json.dumps(
+        {
+            "title": "Order pipeline rejects valid orders",
+            "summary": "The order pipeline raises an error for some valid orders, so they are "
+            "never processed and customers do not get a confirmation (simulation).",
+            "steps": ["Place a guest order", "Watch the pipeline logs"],
+            "expected": "The order is processed.",
+            "actual": "The pipeline raises an error and drops the order.",
+            "suspected_file": "app/pipeline.py",
+            "severity": "high",
+            "labels": ["bug", "pipeline"],
+        }
+    )
+
+
 def simulation_llm() -> ScriptedLLM:
     return ScriptedLLM(
         {
@@ -142,6 +158,7 @@ def simulation_llm() -> ScriptedLLM:
             "plan": _plan,
             "plan:page": _page_spec,
             "write": _section,
+            "ticket": _ticket,
             "replan": _plan,
             "react": _react,
             "solve": _solve,
