@@ -41,7 +41,7 @@ function DataOrb({ to, onDone }: { to: { x: number; y: number }; onDone: () => v
         transition={{ duration: 1.1, ease: "easeInOut" }}
         onAnimationComplete={onDone}
       >
-        <div className="relative size-3.5 -translate-x-1/2 rounded-full bg-white shadow-[0_0_10px_3px_var(--cyan),0_0_26px_8px_rgba(79,227,240,0.5)]">
+        <div className="relative size-3.5 -translate-x-1/2 rounded-full bg-white shadow-[0_0_10px_3px_var(--cyan),0_0_26px_8px_rgb(var(--accent-soft-rgb) / 0.5)]">
           <span className="absolute -inset-1.5 animate-spin rounded-full border border-dashed border-accent/80" />
         </div>
       </motion.div>
@@ -139,7 +139,7 @@ export function MissionFloor({
     <div
       ref={box}
       className={cn(
-        "relative overflow-hidden rounded-[var(--radius-lg)] border border-[rgb(79_227_240/0.25)] bg-[#070910] shadow-[0_0_40px_-20px_rgb(79_227_240/0.6)]",
+        "relative overflow-hidden rounded-[var(--radius-lg)] border border-[rgb(var(--accent-soft-rgb)/0.25)] bg-[#070910] shadow-[0_0_40px_-20px_rgb(var(--accent-rgb)/0.6)]",
         className,
       )}
     >

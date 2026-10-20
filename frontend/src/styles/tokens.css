@@ -1,7 +1,8 @@
 /*
  * NEXUS design tokens: "Studio", a calm professional dark theme.
- * A warm charcoal base, one accent (default Ember coral; Teal and Violet presets via
- * `data-accent`) for navigation and primary actions, and status colours (green, amber, red). The sunset palette remains only for the robots' mission
+ * A dark charcoal base and one accent theme (default Violet; Emerald, Teal, Rose and Ember
+ * presets via `data-accent`). The accent theme also colours the scenery: the robots' sky,
+ * the aurora and the embers. Status colours (green, amber, red) never change. The sunset palette remains only for the robots' mission
  * floor scenery. Themes and sky moods only remap tokens.
  */
 :root {
@@ -10,18 +11,23 @@
   --ink: #121418;
   --lacquer: #15171c;
   --panel-2: #1a1c22;
-  --ember: #ff6b3d;
-  --sun-gold: #ffb547;
-  --sun-core: #ffd89a;
-  --coral: #ff4f6d;
+  /* scenery palette (follows the accent theme) */
+  --ember-rgb: 139 92 246;
+  --gold-rgb: 196 181 253;
+  --sun-core-rgb: 237 233 254;
+  --coral-rgb: 236 72 153;
+  --ember: rgb(var(--ember-rgb));
+  --sun-gold: rgb(var(--gold-rgb));
+  --sun-core: rgb(var(--sun-core-rgb));
+  --coral: rgb(var(--coral-rgb));
   --magenta: #e040a0;
   --violet: #8b7bff;
   /* accent: channels so any alpha works, e.g. rgb(var(--accent-rgb) / 0.15) */
-  --accent-rgb: 242 103 58;
-  --accent-soft-rgb: 255 150 112;
+  --accent-rgb: 124 92 255;
+  --accent-soft-rgb: 180 165 255;
   --accent-strong: rgb(var(--accent-rgb));
-  --accent-hover: #dc5226;
-  --accent-text: #ffc4ad;
+  --accent-hover: #6a48f0;
+  --accent-text: #ddd5ff;
   --cyan: rgb(var(--accent-soft-rgb));
   --jade: #34d399;
   --amber: #ffb020;
@@ -29,9 +35,9 @@
   --shell: #eef1f6;
   --visor: #0b0e15;
   /* legacy names still used by scenery */
-  --sky-deep: #3b0a0a;
-  --sky-crimson: #8e1b17;
-  --sky-vermilion: #c8341f;
+  --sky-deep: #1a0b33;
+  --sky-crimson: #3b1a6e;
+  --sky-vermilion: #6d3fc0;
 
   /* semantic */
   --bg: var(--void);
@@ -51,18 +57,18 @@
   --focus-ring: var(--cyan);
 
   /* aurora light behind the app; sky moods override these */
-  --aura-1: rgb(255 107 61 / 0.42);
-  --aura-2: rgb(224 64 160 / 0.26);
-  --aura-3: rgb(79 227 240 / 0.16);
-  --horizon: rgb(255 140 60 / 0.55);
+  --aura-1: rgb(var(--ember-rgb) / 0.4);
+  --aura-2: rgb(var(--coral-rgb) / 0.22);
+  --aura-3: rgb(var(--gold-rgb) / 0.14);
+  --horizon: rgb(var(--ember-rgb) / 0.55);
 
-  /* sunset sky (the command deck window and the landing page) */
-  --sky-top: #2a0a14;
-  --sky-mid: #7a1a26;
-  --sky-low: #d2452a;
-  --sky-horizon: #ff8a3d;
-  --sun-color: #ffb547;
-  --sun-glow: #ffe0a8;
+  /* dusk sky (the robots' mission floor and the landing page) */
+  --sky-top: #0c0720;
+  --sky-mid: #231148;
+  --sky-low: #4c1d95;
+  --sky-horizon: #a78bfa;
+  --sun-color: #c4b5fd;
+  --sun-glow: #f5f3ff;
   --silhouette: #07060c;
   --cloud-speed: 90s;
 
@@ -71,12 +77,78 @@
   --radius-lg: 12px;
   --shadow-panel: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px -20px rgb(0 0 0 / 0.8);
   --glow-cyan: 0 0 14px rgb(var(--accent-soft-rgb) / 0.45);
-  --glow-gold: 0 0 22px rgb(255 181 71 / 0.5);
-  --grad-sunset: linear-gradient(110deg, #ff6b3d 0%, #ffb547 45%, #ff4f6d 100%);
+  --glow-gold: 0 0 22px rgb(var(--gold-rgb) / 0.5);
+  --grad-sunset: linear-gradient(110deg, var(--ember) 0%, var(--sun-gold) 45%, var(--coral) 100%);
   --grad-tech: linear-gradient(110deg, rgb(var(--accent-soft-rgb)) 0%, var(--accent-strong) 100%);
 
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Accent themes (Settings → Appearance). Violet is the default above. */
+[data-accent="emerald"] {
+  --accent-rgb: 16 185 129;
+  --accent-soft-rgb: 110 231 183;
+  --accent-hover: #0d9b6c;
+  --accent-text: #c6f6e2;
+  --ember-rgb: 16 185 129;
+  --gold-rgb: 110 231 183;
+  --sun-core-rgb: 209 250 229;
+  --coral-rgb: 45 212 191;
+  --sky-top: #03110c;
+  --sky-mid: #07291f;
+  --sky-low: #0f5c45;
+  --sky-horizon: #34d399;
+  --sun-color: #a7f3d0;
+  --sun-glow: #ecfdf5;
+}
+[data-accent="teal"] {
+  --accent-rgb: 13 148 136;
+  --accent-soft-rgb: 94 234 212;
+  --accent-hover: #0b7f75;
+  --accent-text: #b5f5ea;
+  --ember-rgb: 20 184 166;
+  --gold-rgb: 94 234 212;
+  --sun-core-rgb: 204 251 241;
+  --coral-rgb: 56 189 248;
+  --sky-top: #031214;
+  --sky-mid: #072b2e;
+  --sky-low: #115e59;
+  --sky-horizon: #2dd4bf;
+  --sun-color: #99f6e4;
+  --sun-glow: #f0fdfa;
+}
+[data-accent="rose"] {
+  --accent-rgb: 225 29 112;
+  --accent-soft-rgb: 249 140 182;
+  --accent-hover: #c2185e;
+  --accent-text: #ffd0e2;
+  --ember-rgb: 236 72 153;
+  --gold-rgb: 249 168 212;
+  --sun-core-rgb: 252 231 243;
+  --coral-rgb: 244 63 94;
+  --sky-top: #1a0610;
+  --sky-mid: #3f0d27;
+  --sky-low: #831843;
+  --sky-horizon: #f472b6;
+  --sun-color: #fbcfe8;
+  --sun-glow: #fdf2f8;
+}
+[data-accent="ember"] {
+  --accent-rgb: 242 103 58;
+  --accent-soft-rgb: 255 150 112;
+  --accent-hover: #dc5226;
+  --accent-text: #ffc4ad;
+  --ember-rgb: 255 107 61;
+  --gold-rgb: 255 181 71;
+  --sun-core-rgb: 255 216 154;
+  --coral-rgb: 255 79 109;
+  --sky-top: #2a0a14;
+  --sky-mid: #7a1a26;
+  --sky-low: #d2452a;
+  --sky-horizon: #ff8a3d;
+  --sun-color: #ffb547;
+  --sun-glow: #ffe0a8;
 }
 
 /* sky moods reflect system state */
@@ -122,18 +194,4 @@
   --border-strong: rgb(142 162 255 / 0.55);
   --accent-warm: #c7d2ff;
   --cloud-speed: 140s;
-}
-
-/* Accent presets (Settings → Appearance). Ember is the default above. */
-[data-accent="teal"] {
-  --accent-rgb: 13 148 136;
-  --accent-soft-rgb: 94 234 212;
-  --accent-hover: #0b7f75;
-  --accent-text: #b5f5ea;
-}
-[data-accent="violet"] {
-  --accent-rgb: 139 92 246;
-  --accent-soft-rgb: 196 181 253;
-  --accent-hover: #7646e8;
-  --accent-text: #e4dcff;
 }

@@ -35,16 +35,16 @@ function Scale({ tilt }: { tilt: number }) {
     <svg
       viewBox="0 0 120 70"
       className="w-40 overflow-visible"
-      style={{ filter: "drop-shadow(0 0 6px rgb(255 181 71 / 0.6))" }}
+      style={{ filter: "drop-shadow(0 0 6px rgb(var(--gold-rgb) / 0.6))" }}
     >
-      <rect x={58.5} y={14} width={3} height={50} fill="#ffb547" opacity={0.8} />
+      <rect x={58.5} y={14} width={3} height={50} fill="var(--sun-gold)" opacity={0.8} />
       <ellipse cx={60} cy={65} rx={22} ry={3.5} fill="none" stroke="#4fe3f0" strokeWidth={1.2} />
       <motion.g
         animate={{ rotate: tilt }}
         transition={{ type: "spring", stiffness: 50, damping: 8 }}
         style={{ transformOrigin: "60px 14px" }}
       >
-        <rect x={10} y={12.5} width={100} height={3} rx={1.5} fill="#ffb547" />
+        <rect x={10} y={12.5} width={100} height={3} rx={1.5} fill="var(--sun-gold)" />
         <path
           d="M14,16 l-8,20 h16 Z M106,16 l-8,20 h16 Z"
           fill="rgb(var(--accent-soft-rgb) / 0.18)"
@@ -52,7 +52,7 @@ function Scale({ tilt }: { tilt: number }) {
           strokeWidth={1.2}
         />
       </motion.g>
-      <circle cx={60} cy={14} r={4} fill="#ff4f6d" style={{ filter: "drop-shadow(0 0 6px #ff4f6d)" }} />
+      <circle cx={60} cy={14} r={4} fill="var(--coral)" style={{ filter: "drop-shadow(0 0 6px var(--coral))" }} />
     </svg>
   );
 }

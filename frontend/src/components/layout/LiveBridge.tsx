@@ -43,7 +43,7 @@ export function LiveBridge() {
             }
             break;
         }
-        if (e.type.startsWith("mission.") || e.type === "interrupt.resolved") {
+        if (e.type.startsWith("mission.") || e.type === "interrupt.resolved" || e.type === "email.sent") {
           void qc.invalidateQueries({ queryKey: ["missions"] });
           if (e.type === "mission.completed") void qc.invalidateQueries({ queryKey: ["tickets"] });
         }

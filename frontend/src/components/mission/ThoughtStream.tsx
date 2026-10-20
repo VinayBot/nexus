@@ -13,7 +13,7 @@ const STYLE: Record<ThoughtKind, { label: string; color: string }> = {
   final: { label: "Final", color: "var(--success)" },
   retry: { label: "Retry", color: "var(--warning)" },
   route: { label: "Route", color: "var(--text-muted)" },
-  plan: { label: "Plan", color: "#ffd89a" },
+  plan: { label: "Plan", color: "var(--sun-core)" },
   handoff: { label: "Handoff", color: "var(--sun-gold)" },
   tool: { label: "Tool", color: "var(--cyan)" },
   memory: { label: "Memory", color: "#b8a7ff" },

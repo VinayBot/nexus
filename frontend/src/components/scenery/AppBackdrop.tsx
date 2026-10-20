@@ -58,7 +58,7 @@ export const AppBackdrop = memo(function AppBackdrop() {
             className="perf-hide absolute inset-x-0 -top-16 bottom-0 [animation:grid-roll_3.5s_linear_infinite]"
             style={{
               backgroundImage:
-                "linear-gradient(rgb(255 140 60 / 0.35) 1px, transparent 1px), linear-gradient(90deg, rgb(255 140 60 / 0.35) 1px, transparent 1px)",
+                "linear-gradient(rgb(var(--ember-rgb) / 0.35) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--ember-rgb) / 0.35) 1px, transparent 1px)",
               backgroundSize: "64px 64px",
             }}
           />

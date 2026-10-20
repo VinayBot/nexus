@@ -143,7 +143,12 @@ class Mailer:
                 )
         except Exception as exc:
             status = "outbox"
-            self.last_error = explain_smtp_error(exc, self.host)
+            self.last_error = (
+                explain_smtp_error(exc, self.host)
+                if self.real_delivery or self.host not in {"127.0.0.1", "localhost"}
+                else "Not signed in with Google yet. Sign in under Settings → Email results; "
+                "this email waits in the outbox and can be sent from there."
+            )
             log.warning("mail.smtp_unavailable", error=str(exc), to=to)
         else:
             self.last_error = None

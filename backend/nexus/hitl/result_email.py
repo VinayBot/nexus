@@ -13,6 +13,7 @@ import asyncio
 import contextlib
 import json
 import re
+import time
 from typing import Any
 
 from nexus.core.config import Settings
@@ -194,10 +195,50 @@ class ResultNotifier:
                     address, subject, body, mission_id=mission_id, text=text
                 )
                 status = one if one != "sent" else status
+            await repo.update_mission(
+                self.db,
+                mission_id,
+                report={
+                    **(row.report or {}),
+                    "email": {"to": to, "status": status, "error": self.mailer.last_error},
+                },
+            )
             return status
         except Exception as exc:  # a notification must never break anything
             log.warning("result_email.failed", mission_id=mission_id, error=str(exc))
             return None
+
+    async def pending(self) -> list[Any]:
+        """Emails still waiting in the outbox from the last three days."""
+        from sqlalchemy import select
+
+        from nexus.db.models import OutboxRow
+
+        async with self.db.session() as s:
+            rows = await s.execute(
+                select(OutboxRow)
+                .where(OutboxRow.status == "outbox", OutboxRow.ts > time.time() - 3 * 86400)
+                .order_by(OutboxRow.ts)
+            )
+            return list(rows.scalars())
+
+    async def resend_pending(self) -> dict[str, int]:
+        """After signing in: send everything that waited. Old rows become 'resent'."""
+        from nexus.db.models import OutboxRow
+
+        sent = failed = 0
+        for row in await self.pending():
+            _, status = await self.mailer.send(
+                row.to, row.subject, row.html, mission_id=row.mission_id
+            )
+            async with self.db.session() as s:
+                old = await s.get(OutboxRow, row.id)
+                if old is not None and status == "sent":
+                    old.status = "resent"
+            sent, failed = (sent + 1, failed) if status == "sent" else (sent, failed + 1)
+            if status != "sent":
+                break  # the server is still unreachable: keep the rest waiting
+        return {"sent": sent, "failed": failed}
 
     async def send_test(self) -> dict[str, str | None]:
         to = parse_recipients(str(self.prefs().get("to") or ""))

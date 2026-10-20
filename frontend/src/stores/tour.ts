@@ -9,79 +9,91 @@ export interface TourStep {
   body: string;
 }
 
-/** The main tour mirrors docs/DEMO_SCRIPT.md. */
+/** The main tour: one stop per screen, in the order of docs/HOW_IT_WORKS.md. */
 export const MAIN_TOUR: TourStep[] = [
   {
     route: "/missions",
-    element: "mission-floor",
-    title: "The Mission Floor",
-    body: "Every robot here moves only when the backend emits a real event: data orbs fly on handoffs, beams on MCP tool calls, light bars on sandbox tests.",
+    element: "new-mission",
+    title: "Start a mission",
+    body: "Type what you want and press Start. Pick a type (web page, question, new ticket…) or leave Auto. Add “…and email the result to name@example.com” to get it by email.",
   },
   {
     route: "/missions",
     element: "thought-stream",
-    title: "Thought Stream",
-    body: "The live ReAct trace — Thought, Action (MCP tool), Observation — plus routing, retries, verdicts and guardrails.",
+    title: "Activity",
+    body: "Every step the agents take, live: the plan, who got which job, tool calls, checks and the risk score. “Key steps” hides the low-level routing.",
+  },
+  {
+    route: "/missions",
+    element: "mission-floor",
+    title: "Agents at work",
+    body: "The robots move only when the backend reports real work: data orbs fly on handoffs, beams on tool calls, light bars on tests. “Graph” shows the same mission as a LangGraph.",
   },
   {
     route: "/missions",
     element: "system-power",
-    title: "System Power",
-    body: "The Resource Governor: RAM, loaded local models, queue depth and tokens/sec. Under memory pressure it lowers concurrency instead of failing.",
-  },
-  {
-    route: "/learn?tab=curriculum",
-    element: "curriculum",
-    title: "Curriculum Map",
-    body: "Every Day 16–20 concept, where it lives in code, and a live count of the real events proving it ran.",
-  },
-  {
-    route: "/chaos",
-    element: "chaos-switches",
-    title: "Chaos Lab",
-    body: "Arm a chaos switch to inject a real bug into the live demo-service. Hawk notices within seconds and opens an incident.",
-  },
-  {
-    route: "/graph/{mission}",
-    element: "live-graph",
-    title: "Live Graph",
-    body: "The compiled LangGraph itself: glowing nodes are running, light flows along the branch just taken, ×N counts cycle iterations.",
-  },
-  {
-    route: "/arena/{mission}",
-    element: "arena",
-    title: "Arena",
-    body: "Three Challengers propose independently, patches are proven in sandboxes, masks drop for anonymous review, and Arbiter weighs evidence first.",
+    title: "System power",
+    body: "Free memory, the loaded local models and tokens per second. Under memory pressure NEXUS slows down instead of crashing.",
   },
   {
     route: "/approvals",
     element: "approvals-list",
     title: "Approvals",
-    body: "Risky actions pause the graph with interrupt(). Approve here or from the signed email link — either resumes it with Command(resume=…).",
+    body: "Risky actions pause and wait for you. Decide here, in the pop-up on any screen, or from an email link. Every decision is logged.",
+  },
+  {
+    route: "/graph/{mission}",
+    element: "live-graph",
+    title: "Live graph",
+    body: "The real agent graph: glowing nodes are running, light flows along the branch just taken, and ×N counts loops.",
+  },
+  {
+    route: "/arena/{mission}",
+    element: "arena",
+    title: "Arena",
+    body: "For questions and fixes, three agents answer independently, review each other anonymously, and a judge picks the best with evidence.",
   },
   {
     route: "/timetravel/{mission}",
     element: "fork-button",
-    title: "Time Travel",
-    body: "Every super-step is a SQLite checkpoint. Re-run from any of them, fork with a state patch, or choose the tournament runner-up.",
+    title: "Time travel",
+    body: "Every step is saved. Re-run from any point, fork with a change, or try the runner-up answer.",
+  },
+  {
+    route: "/chaos",
+    element: "chaos-switches",
+    title: "Chaos Lab",
+    body: "Switch on a bug in the demo shop. Hawk notices within seconds and the team fixes it, tests it and asks you before applying.",
   },
   {
     route: "/memory",
     element: "vessels",
     title: "Memory",
-    body: "Context windows pruned by sliding window or rolling summary, and the long-term library — including the Fix Library that makes repeat incidents fast.",
+    body: "What the agents remember: past missions, documents and the Fix Library that makes a repeated bug fast to fix.",
   },
   {
     route: "/tools",
     element: "tools-grid",
     title: "Tools",
-    body: "Seven MCP servers with per-agent allowlists, a path jail, and a system-only email server so nothing is sent without approval.",
+    body: "The seven tool servers the agents can use, each agent with its own allowlist. Files are locked to the mission's own folder.",
   },
   {
     route: "/insights",
     element: "traces",
-    title: "Observatory",
-    body: "OpenTelemetry traces per mission, token usage by purpose, retries absorbed, circuit breakers and routing decisions.",
+    title: "Insights",
+    body: "Traces, token use, retries and honest benchmark results for every mission.",
+  },
+  {
+    route: "/settings",
+    element: "models",
+    title: "Models",
+    body: "Switch between Lite, Balanced and Standard local models with one click. Old models are unloaded to free memory.",
+  },
+  {
+    route: "/settings",
+    element: "email-results",
+    title: "Email results",
+    body: "Sign in with Google once; results are then emailed from your account whenever a prompt asks for it.",
   },
 ];
 

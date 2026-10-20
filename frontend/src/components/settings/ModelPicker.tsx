@@ -65,7 +65,7 @@ export function ModelPicker() {
   const error = choose.error ?? install.error;
 
   return (
-    <section className="panel p-4 xl:col-span-2" aria-label="Models">
+    <section className="panel p-4 xl:col-span-2" aria-label="Models" data-tour="models">
       <div className="flex flex-wrap items-center gap-2">
         <Cpu className="size-4 text-accent" />
         <h2 className="panel-title text-sm">Models</h2>

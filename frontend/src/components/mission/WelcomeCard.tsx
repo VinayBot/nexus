@@ -68,7 +68,7 @@ export function WelcomeCard() {
               transition={{ delay: 0.25 + 0.06 * i }}
               disabled={start.isPending}
               onClick={() => start.mutate(t)}
-              className="group flex items-start gap-3 rounded-xl border border-border p-3 text-left hover:border-[rgb(var(--accent-soft-rgb)/0.5)] hover:bg-[rgb(var(--accent-rgb)/0.06)]"
+              className="group lift flex items-start gap-3 rounded-xl border border-border p-3 text-left hover:border-[rgb(var(--accent-soft-rgb)/0.5)] hover:bg-[rgb(var(--accent-rgb)/0.06)]"
             >
               <Icon className="mt-0.5 size-4 shrink-0 text-accent" />
               <span className="min-w-0 flex-1">

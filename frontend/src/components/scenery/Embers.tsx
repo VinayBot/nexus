@@ -33,6 +33,7 @@ export function Embers({ max = 40, glints = 0.25, className }: EmbersProps) {
     if (!canvas) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const ctx = canvas.getContext("2d");
+    const palette = { core: "255 208 138", edge: "242 102 42", glint: "196 181 253" };
     if (!ctx) return;
 
     let w = 0;
@@ -65,6 +66,16 @@ export function Embers({ max = 40, glints = 0.25, className }: EmbersProps) {
     const io = new IntersectionObserver(([e]) => (visible = e?.isIntersecting ?? true));
     io.observe(canvas);
 
+    // ember colours follow the accent theme (canvas cannot read CSS variables directly)
+    const readPalette = () => {
+      const cs = getComputedStyle(document.documentElement);
+      palette.core = cs.getPropertyValue("--sun-core-rgb").trim() || palette.core;
+      palette.edge = cs.getPropertyValue("--ember-rgb").trim() || palette.edge;
+      palette.glint = cs.getPropertyValue("--gold-rgb").trim() || palette.glint;
+    };
+    readPalette();
+    const paletteTimer = setInterval(readPalette, 1000);
+
     let raf = 0;
     const tick = () => {
       raf = requestAnimationFrame(tick);
@@ -80,14 +91,14 @@ export function Embers({ max = 40, glints = 0.25, className }: EmbersProps) {
         if (p.glint) {
           // a small streak with a bright head, like data rising off the city
           const a = 0.7 * p.life * (0.6 + 0.4 * Math.sin(p.spin * 6));
-          ctx.fillStyle = `rgba(79, 227, 240, ${a * 0.35})`;
+          ctx.fillStyle = `rgb(${palette.glint} / ${a * 0.35})`;
           ctx.fillRect(p.x - 0.5, p.y, 1, p.r * 7);
-          ctx.fillStyle = `rgba(190, 250, 255, ${a})`;
+          ctx.fillStyle = `rgb(${palette.core} / ${a})`;
           ctx.fillRect(p.x - 1, p.y - 1, 2, 2);
         } else {
           const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 3);
-          g.addColorStop(0, `rgba(255, 208, 138, ${0.9 * p.life})`);
-          g.addColorStop(1, "rgba(242, 102, 42, 0)");
+          g.addColorStop(0, `rgb(${palette.core} / ${0.9 * p.life})`);
+          g.addColorStop(1, `rgb(${palette.edge} / 0)`);
           ctx.fillStyle = g;
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.r * 3, 0, Math.PI * 2);
@@ -97,6 +108,7 @@ export function Embers({ max = 40, glints = 0.25, className }: EmbersProps) {
     };
     raf = requestAnimationFrame(tick);
     return () => {
+      clearInterval(paletteTimer);
       cancelAnimationFrame(raf);
       ro.disconnect();
       io.disconnect();

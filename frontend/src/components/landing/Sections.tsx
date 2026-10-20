@@ -19,7 +19,7 @@ const FEATURES: { icon: LucideIcon; t: string; d: string; tint: string }[] = [
     icon: Swords,
     t: "Evidence-grounded tournaments",
     d: "Three solvers propose fixes, each patch is proven in its own sandbox, and an anonymous council judges.",
-    tint: "#ff6b3d",
+    tint: "var(--ember)",
   },
   {
     icon: ShieldCheck,
@@ -37,13 +37,13 @@ const FEATURES: { icon: LucideIcon; t: string; d: string; tint: string }[] = [
     icon: HeartPulse,
     t: "Self-healing",
     d: "Trigger an incident: Hawk spots it, the squad reproduces and fixes it, verifies on live traffic and rolls back if needed.",
-    tint: "#ff4f6d",
+    tint: "var(--coral)",
   },
   {
     icon: Cpu,
     t: "All on this laptop",
     d: "Local open models through Ollama. A Resource Governor keeps a 16 GB Mac responsive.",
-    tint: "#ffb547",
+    tint: "var(--sun-gold)",
   },
 ];
 

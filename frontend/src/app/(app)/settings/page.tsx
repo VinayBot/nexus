@@ -133,12 +133,14 @@ export default function Page() {
         <section className="panel p-4">
           <h2 className="panel-title text-sm ">Appearance</h2>
           <Row label="Accent colour" hint="Buttons, navigation and highlights">
-            <div className="flex gap-2" role="radiogroup" aria-label="Accent colour">
+            <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Accent colour">
               {(
                 [
-                  ["ember", "Ember", "#f2673a"],
+                  ["violet", "Violet", "#7c5cff"],
+                  ["emerald", "Emerald", "#10b981"],
                   ["teal", "Teal", "#0d9488"],
-                  ["violet", "Violet", "#8b5cf6"],
+                  ["rose", "Rose", "#e11d70"],
+                  ["ember", "Ember", "#f2673a"],
                 ] as const
               ).map(([id, label, colour]) => (
                 <button

@@ -8,9 +8,9 @@ export function LogoMark({ size = 36 }: { size?: number }) {
     <svg viewBox="-24 -24 48 48" width={size} height={size} aria-hidden className="shrink-0 overflow-visible">
       <defs>
         <linearGradient id="logo-grad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#ffd89a" />
-          <stop offset="0.5" stopColor="#ff6b3d" />
-          <stop offset="1" stopColor="#ff4f6d" />
+          <stop offset="0" stopColor="var(--sun-core)" />
+          <stop offset="0.5" stopColor="var(--ember)" />
+          <stop offset="1" stopColor="var(--coral)" />
         </linearGradient>
       </defs>
       <path
@@ -21,7 +21,7 @@ export function LogoMark({ size = 36 }: { size?: number }) {
       <path d="M0,-12 L10.4,-6 L10.4,6 L0,12 L-10.4,6 L-10.4,-6 Z" fill="#0b0d16" />
       <path
         d="M-5,6 V-6 L5,6 V-6"
-        stroke="#ffd89a"
+        stroke="var(--sun-core)"
         strokeWidth={2.2}
         fill="none"
         strokeLinecap="round"

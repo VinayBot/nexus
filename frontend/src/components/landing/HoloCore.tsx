@@ -10,8 +10,8 @@ export function HoloCore({ className }: { className?: string }) {
     <svg viewBox="-300 -300 600 600" className={className} aria-hidden>
       <defs>
         <radialGradient id="core-glow">
-          <stop offset="0" stopColor="#ff8a3d" stopOpacity="0.35" />
-          <stop offset="0.45" stopColor="#ff4f6d" stopOpacity="0.12" />
+          <stop offset="0" stopColor="var(--ember)" stopOpacity="0.35" />
+          <stop offset="0.45" stopColor="var(--coral)" stopOpacity="0.12" />
           <stop offset="1" stopColor="#05060b" stopOpacity="0" />
         </radialGradient>
       </defs>
@@ -32,8 +32,20 @@ export function HoloCore({ className }: { className?: string }) {
         ))}
       </motion.g>
       <motion.g animate={{ rotate: -360 }} transition={{ repeat: Infinity, duration: 60, ease: "linear" }}>
-        <circle r={210} fill="none" stroke="rgb(255 181 71 / 0.35)" strokeWidth={1.5} strokeDasharray="140 40 20 40" />
-        <circle cx={0} cy={-210} r={4} fill="#ffb547" style={{ filter: "drop-shadow(0 0 6px #ffb547)" }} />
+        <circle
+          r={210}
+          fill="none"
+          stroke="rgb(var(--gold-rgb) / 0.35)"
+          strokeWidth={1.5}
+          strokeDasharray="140 40 20 40"
+        />
+        <circle
+          cx={0}
+          cy={-210}
+          r={4}
+          fill="var(--sun-gold)"
+          style={{ filter: "drop-shadow(0 0 6px var(--sun-gold))" }}
+        />
       </motion.g>
       <motion.g animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 36, ease: "linear" }}>
         <circle r={170} fill="none" stroke="rgb(139 123 255 / 0.3)" strokeWidth={1} strokeDasharray="4 6" />
@@ -42,7 +54,7 @@ export function HoloCore({ className }: { className?: string }) {
       <motion.circle
         r={130}
         fill="none"
-        stroke="rgb(255 107 61 / 0.25)"
+        stroke="rgb(var(--ember-rgb) / 0.25)"
         strokeWidth={1}
         animate={{ r: [126, 136, 126], opacity: [0.5, 1, 0.5] }}
         transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}

@@ -48,10 +48,10 @@ const ICON: Record<string, { icon: LucideIcon; tint: string }> = {
   workspace: { icon: FolderGit2, tint: "#4fe3f0" },
   sandbox: { icon: Box, tint: "#34d399" },
   knowledge: { icon: Database, tint: "#8b7bff" },
-  tickets: { icon: Ticket, tint: "#ffb547" },
-  notify: { icon: Mail, tint: "#ff4f6d" },
+  tickets: { icon: Ticket, tint: "var(--sun-gold)" },
+  notify: { icon: Mail, tint: "var(--coral)" },
   observability: { icon: Activity, tint: "#4fe3f0" },
-  demo: { icon: FlaskConical, tint: "#ff6b3d" },
+  demo: { icon: FlaskConical, tint: "var(--ember)" },
 };
 
 function defaults(tool: Tool): string {

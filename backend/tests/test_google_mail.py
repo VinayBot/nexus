@@ -116,3 +116,18 @@ async def _send(svc: Any) -> tuple[str, str]:
         "anyone@example.com", "[NEXUS] hi", "<p>hi</p>", text="hi"
     )
     return result
+
+
+async def test_waiting_emails_are_sent_after_sign_in(fake_google: FakeGoogle) -> None:
+    async with runtime(get_settings(), provider=ScriptedLLM(), recover=False) as svc:
+        n = svc.notifier
+        _, first = await n.mailer.send("boss@example.com", "[NEXUS] Completed: x", "<p>x</p>")
+        assert first == "outbox" and "Not signed in with Google" in (n.mailer.last_error or "")
+        assert len(await n.pending()) == 1
+        g = svc.google_mail
+        g.save_client(CLIENT_ID, "secret-value-123")
+        state = parse_qs(urlparse(g.auth_url()).query)["state"][0]
+        await g.finish("code-1", state)
+        assert await n.resend_pending() == {"sent": 1, "failed": 0}
+        assert await n.pending() == []
+        assert message_from_bytes(fake_google.sent[-1])["To"] == "boss@example.com"

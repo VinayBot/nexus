@@ -48,7 +48,8 @@ function Vessel({ name, used, budget, pruned }: { name: string; used: number; bu
           animate={{ height: `${pct * 100}%` }}
           transition={{ type: "spring", stiffness: 60, damping: 14 }}
           style={{
-            background: pct > 0.85 ? "linear-gradient(0deg,#c8341f,#f2662a)" : "linear-gradient(0deg,#1b6f8a,#4fe3f0)",
+            background:
+              pct > 0.85 ? "linear-gradient(0deg,#c8341f,var(--ember))" : "linear-gradient(0deg,#1b6f8a,#4fe3f0)",
           }}
         />
         <div

@@ -143,7 +143,7 @@ export default function Gate() {
                 <motion.span
                   key={i}
                   aria-hidden
-                  className="inline-block bg-gradient-to-b from-[#fff4dd] via-[#ffc66b] to-[#ff6b3d] bg-clip-text text-transparent drop-shadow-[0_0_28px_rgba(255,140,60,0.55)]"
+                  className="inline-block bg-gradient-to-b from-[#fff4dd] via-[#ffc66b] to-[var(--ember)] bg-clip-text text-transparent drop-shadow-[0_0_28px_rgba(255,140,60,0.55)]"
                   initial={{ opacity: 0, y: 60, rotateX: -90, filter: "blur(12px)" }}
                   animate={{ opacity: 1, y: 0, rotateX: 0, filter: "blur(0px)" }}
                   transition={{ delay: 0.25 + i * 0.09, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}

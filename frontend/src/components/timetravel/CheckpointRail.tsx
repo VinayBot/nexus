@@ -33,8 +33,8 @@ const STEP_W = 46;
 /** Node colour by kind: fork violet, interrupt coral, verdict gold, plain checkpoint cyan. */
 function nodeColor(c: { source?: string | null; interrupted?: boolean; has_verdict?: boolean }): string {
   if (c.source === "update") return "#8b7bff";
-  if (c.interrupted) return "#ff4f6d";
-  if (c.has_verdict) return "#ffb547";
+  if (c.interrupted) return "var(--coral)";
+  if (c.has_verdict) return "var(--sun-gold)";
   return "#4fe3f0";
 }
 
@@ -131,7 +131,7 @@ export function CheckpointRail({
                   <circle
                     r={17}
                     fill="none"
-                    stroke="#ffb547"
+                    stroke="var(--sun-gold)"
                     strokeWidth={1.5}
                     strokeDasharray="4 3"
                     className="spin-slow"
@@ -140,9 +140,9 @@ export function CheckpointRail({
                 <path
                   d="M0,-12 L10.4,-6 L10.4,6 L0,12 L-10.4,6 L-10.4,-6 Z"
                   fill={`${nodeColor(c)}33`}
-                  stroke={sel ? "#ffb547" : nodeColor(c)}
+                  stroke={sel ? "var(--sun-gold)" : nodeColor(c)}
                   strokeWidth={sel ? 2.2 : 1.4}
-                  style={{ filter: `drop-shadow(0 0 ${sel ? 8 : 4}px ${sel ? "#ffb547" : nodeColor(c)})` }}
+                  style={{ filter: `drop-shadow(0 0 ${sel ? 8 : 4}px ${sel ? "var(--sun-gold)" : nodeColor(c)})` }}
                 />
                 <text textAnchor="middle" dy={3.5} fontSize={9} fill="#eef1f8" fontWeight={700}>
                   {c.step ?? "·"}
@@ -160,10 +160,10 @@ export function CheckpointRail({
           <span className="size-2 rounded-sm bg-[#4fe3f0]" /> checkpoint
         </span>
         <span className="chip">
-          <span className="size-2 rounded-sm bg-[#ffb547]" /> has verdict
+          <span className="size-2 rounded-sm bg-[var(--sun-gold)]" /> has verdict
         </span>
         <span className="chip">
-          <span className="size-2 rounded-sm bg-[#ff4f6d]" /> interrupt
+          <span className="size-2 rounded-sm bg-[var(--coral)]" /> interrupt
         </span>
         <span className="chip">
           <span className="size-2 rounded-sm bg-[#8b7bff]" /> fork (update_state)

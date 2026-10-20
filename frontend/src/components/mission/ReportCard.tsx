@@ -3,7 +3,7 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { motion } from "motion/react";
-import { CheckCircle2, ChevronDown, Download, ExternalLink, Globe, XCircle, AlertTriangle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronDown, Download, ExternalLink, Globe, Mail, XCircle } from "lucide-react";
 import { useState } from "react";
 import { API_URL } from "@/lib/config";
 import { cn } from "@/lib/cn";
@@ -24,6 +24,7 @@ interface Report {
   diff?: string | null;
   ticket_id?: string | null;
   emailed_to?: string | null;
+  email?: { to: string[]; status: string; error: string | null } | null;
 }
 
 /** What the outcome means, in one plain sentence per mission type. */
@@ -78,6 +79,20 @@ export function ReportCard({ mission }: { mission: Mission }) {
       </header>
 
       {r.ticket_id && <TicketBar ticketId={r.ticket_id} emailedTo={r.emailed_to} />}
+      {r.email && (
+        <p
+          className={cn(
+            "flex items-center gap-1.5 border-b border-border px-4 py-2 text-xs",
+            r.email.status === "sent" ? "text-success" : "text-warning",
+          )}
+          data-testid="email-status"
+        >
+          <Mail className="size-3.5" />
+          {r.email.status === "sent"
+            ? `Result emailed to ${r.email.to.join(", ")}`
+            : `Email to ${r.email.to.join(", ")} is waiting in the outbox${r.email.error ? `: ${r.email.error}` : ""}`}
+        </p>
+      )}
 
       {(r.preview_url || r.download) && (
         <div className="flex flex-wrap items-center gap-2 border-b border-border bg-[rgb(var(--accent-rgb)/0.06)] px-4 py-2.5">

@@ -8,6 +8,7 @@ import { API_URL } from "@/lib/config";
 import { post } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { MISSION_TYPES } from "@/lib/playbooks";
+import { EmailIntentHint } from "./EmailIntentHint";
 import { useTickets, type Mission } from "@/lib/queries";
 
 interface Doc {
@@ -58,6 +59,7 @@ export function MissionComposer({ onCreated }: { onCreated: (m: Mission) => void
 
   return (
     <form
+      data-tour="new-mission"
       className="panel space-y-3 p-4"
       onSubmit={(e) => {
         e.preventDefault();
@@ -65,16 +67,19 @@ export function MissionComposer({ onCreated }: { onCreated: (m: Mission) => void
       }}
     >
       <h2 className="panel-title text-sm">New mission</h2>
-      <textarea
-        value={task}
-        onChange={(e) => setTask(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) create.mutate();
-        }}
-        rows={4}
-        className="w-full resize-none rounded-lg border border-border bg-black/25 px-3 py-2.5 text-sm text-text placeholder:text-faint"
-        aria-label="What should the agents do?"
-      />
+      <div className="focus-glow">
+        <textarea
+          value={task}
+          onChange={(e) => setTask(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) create.mutate();
+          }}
+          rows={4}
+          className="w-full resize-none rounded-lg border border-border bg-black/25 px-3 py-2.5 text-sm text-text placeholder:text-faint"
+          aria-label="What should the agents do?"
+        />
+      </div>
+      <EmailIntentHint task={task} />
       <div>
         <p className="mb-1.5 text-xs text-faint">Mission type</p>
         <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Mission type">

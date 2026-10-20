@@ -12,6 +12,7 @@ import { MissionComposer } from "@/components/mission/MissionComposer";
 import { MissionList } from "@/components/mission/MissionList";
 import { ReportCard } from "@/components/mission/ReportCard";
 import { StageStrip } from "@/components/mission/StageStrip";
+import { STAGES } from "@/components/mission/layout";
 import { ThoughtStream } from "@/components/mission/ThoughtStream";
 import { Timeline } from "@/components/mission/Timeline";
 import { WelcomeCard } from "@/components/mission/WelcomeCard";
@@ -39,6 +40,13 @@ const STATUS_STYLE: Record<string, string> = {
   replay: "bg-[#b8a7ff]/15 text-[#b8a7ff]",
 };
 const STATUS_LABEL: Record<string, string> = { paused: "waiting for you" };
+
+/** Share of the main stages finished: drives the header progress bar. */
+function progressOf(view: { nodes: Record<string, { status?: string } | undefined> }, status: string): number {
+  if (status === "completed") return 100;
+  const done = STAGES.filter((st) => view.nodes[st.id]?.status === "done").length;
+  return Math.max(status === "running" ? 4 : 0, Math.round((done / STAGES.length) * 100));
+}
 
 /** Turns a failure into something a person can act on. */
 function explainError(error: string): string {
@@ -189,8 +197,18 @@ function MissionControl() {
               </div>
             </div>
 
-            <div className="panel px-2">
+            <div className="panel px-2 pt-1">
               <StageStrip view={view} />
+              <div className="progress-track mx-1 mb-1.5" aria-hidden>
+                <div
+                  className={cn(
+                    "progress-fill",
+                    status === "running" && "is-running",
+                    status === "completed" && "is-done",
+                  )}
+                  style={{ width: `${progressOf(view, status)}%` }}
+                />
+              </div>
             </div>
 
             {replayOn && (

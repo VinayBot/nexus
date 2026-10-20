@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useActiveMission } from "@/stores/missions";
 import { useTour } from "@/stores/tour";
 
@@ -13,14 +13,25 @@ function useRect(id: string | null): DOMRect | null {
       setRect(null);
       return;
     }
-    let raf = 0;
+    // one poll loop per target; it must stop when the target changes, or loops pile up
+    let stopped = false;
+    let scrolled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     const tick = () => {
+      if (stopped) return;
       const el = document.querySelector(`[data-tour="${id}"]`);
+      if (el && !scrolled) {
+        scrolled = true; // bring it into view once, then let the user scroll freely
+        el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }
       setRect(el ? el.getBoundingClientRect() : null);
-      raf = requestAnimationFrame(() => setTimeout(tick, 250));
+      timer = setTimeout(tick, 300);
     };
     tick();
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      stopped = true;
+      if (timer) clearTimeout(timer);
+    };
   }, [id]);
   return rect;
 }
@@ -36,9 +47,19 @@ export function TourOverlay() {
   const target = step?.element ?? spotlight;
   const rect = useRect(target);
 
+  // navigate once per step; never fight the user (or loop) when they click elsewhere
+  const pushed = useRef<string | null>(null);
   useEffect(() => {
-    if (route && pathname !== route.replace(/\/$/, "")) router.push(route.endsWith("/") ? route.slice(0, -1) : route);
-  }, [route, pathname, router]);
+    if (!active || !route) {
+      pushed.current = null;
+      return;
+    }
+    const target = route.endsWith("/") ? route.slice(0, -1) : route;
+    const key = `${index}:${target}`;
+    if (pushed.current === key) return;
+    pushed.current = key;
+    if (pathname !== target.split("?")[0]) router.push(target);
+  }, [active, index, route, pathname, router]);
   useEffect(() => {
     if (!active || !autoplay) return;
     const t = setTimeout(next, 8000);
@@ -74,13 +95,14 @@ export function TourOverlay() {
           }}
         />
       )}
-      <AnimatePresence>
+      {/* mode="wait": the old card leaves before the next arrives (never two at once) */}
+      <AnimatePresence mode="wait">
         {step && (
           <motion.div
             key={index}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
+            exit={{ opacity: 0, y: -6, transition: { duration: 0.12 } }}
             className="panel pointer-events-auto absolute bottom-8 left-1/2 w-[min(560px,92vw)] -translate-x-1/2 p-4"
             role="dialog"
             aria-label="Guided tour"

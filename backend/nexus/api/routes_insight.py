@@ -279,7 +279,14 @@ class NotifyPrefs(BaseModel):
 
 @router.get("/notify")
 async def notify_status() -> dict[str, Any]:
-    return dict(services().notifier.status())
+    n = services().notifier
+    return {**n.status(), "waiting": len(await n.pending())}
+
+
+@router.post("/notify/resend")
+async def notify_resend() -> dict[str, int]:
+    result: dict[str, int] = await services().notifier.resend_pending()
+    return result
 
 
 @router.put("/notify")
@@ -357,6 +364,28 @@ async def google_callback(
 async def google_disconnect() -> dict[str, Any]:
     await services().google_mail.disconnect()
     return dict(services().notifier.status())
+
+
+class IntentRequest(BaseModel):
+    task: str = Field(max_length=5000)
+
+
+@router.post("/notify/intent")
+async def notify_intent(body: IntentRequest) -> dict[str, Any]:
+    """Live preview for the composer: will this prompt email its result, and to whom?"""
+    from nexus.hitl.email_intent import email_request
+
+    req = email_request(body.task)
+    n = services().notifier
+    to = n.recipients(
+        {"email_requested": req.requested, "email_to": req.to, "email_self": req.to_self}
+    )
+    return {
+        "requested": req.requested,
+        "to": to,
+        "needs_address": req.requested and not to,
+        "delivery": n.status()["delivery"],
+    }
 
 
 @router.post("/notify/test")

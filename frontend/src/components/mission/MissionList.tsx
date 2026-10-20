@@ -18,9 +18,9 @@ export function StatusDot({ status }: { status: Mission["status"] }) {
     <span
       className={cn(
         "inline-block size-2 shrink-0 rounded-full",
-        (status === "running" || status === "paused") && "animate-glow",
+        (status === "running" || status === "paused") && "dot-live",
       )}
-      style={{ background: STATUS_COLOR[status], boxShadow: `0 0 8px ${STATUS_COLOR[status]}` }}
+      style={{ background: STATUS_COLOR[status], ["--ripple" as string]: STATUS_COLOR[status] }}
       aria-hidden
     />
   );

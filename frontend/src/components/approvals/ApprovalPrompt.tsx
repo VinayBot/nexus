@@ -90,7 +90,7 @@ export function ApprovalPrompt() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 12, scale: 0.98 }}
               transition={{ type: "spring", stiffness: 380, damping: 32 }}
-              className="panel w-full max-w-xl p-5"
+              className="panel breathe w-full max-w-xl p-5"
             >
               <div className="mb-3 flex items-center gap-2">
                 <span className="relative flex size-2">

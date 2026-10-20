@@ -24,12 +24,22 @@ do it**, and **how to demo it**. The code-level walkthrough moved to
      `qwen2.5-coder:7b` (about 4.7 GB) with a progress bar and switches when it is done. It is
      the strongest, but heavy for a 16 GB Mac that is also running a browser and an IDE; you
      can switch back at any time.
-4. **Email results** (Settings → Email results): every finished or failed mission is emailed
-   to your address with the full result (You asked → outcome → links → output → steps), and
-   approval requests go there too. To receive them in Gmail, click **Connect Gmail**, create
-   an App Password at myaccount.google.com/apppasswords (needs 2-Step Verification), paste it
-   and press **Send test email**. Until then the emails wait in the local outbox.
-5. **Accent colour** (Settings → Appearance): Ember (default), Teal or Violet.
+4. **Email results** (Settings → Email results). Results are emailed **only when the prompt
+   asks**: "…and send the output to boss@example.com", "…email me the answer", "…and also
+   share email". Several addresses work. As you type, the box under the task shows who will get
+   it. The result always appears in the app too, and the result card shows whether the email
+   went out.
+   - **Sending account:** click **Sign in with Google** and sign in on Google's own page.
+     NEXUS gets one permission, *send email as you*: it cannot read your inbox and never sees
+     your password. Google needs the app registered once first (free, about 5 minutes); the
+     steps and links are in Settings.
+   - **Approval requests** of a mission that asked for email go to *your* email ("Your email"
+     in Settings), never to the target address, because their links approve or reject actions.
+   - Emails sent before you signed in wait in the outbox; **Send N waiting emails** sends them.
+   - Each email starts with a **Summary** (mission type, outcome and time, the key result,
+     a two-sentence "in short"), then what you asked, the full output and the steps.
+5. **Accent colour** (Settings → Appearance): Violet (default), Emerald, Teal, Rose or Ember.
+   The robots' sky, the aurora and the embers follow the colour you pick.
 6. Close heavy apps. If the Mac is short of memory, NEXUS slows down rather than crashing
    (the Resource Governor queues model calls), but a demo feels better with free RAM.
 
@@ -308,7 +318,7 @@ classified by the model, and plain questions go to Question.
 
 Also: **Nova** (the round robot, bottom right) answers questions about the app and can
 navigate for you ("show me the tools"). **Present** in the top bar starts an auto-advancing
-guided tour. **Cmd+K** opens the command palette.
+guided tour of 14 stops (→/← keys, Esc to exit; you can click around while it runs). **Cmd+K** opens the command palette.
 
 ---
 

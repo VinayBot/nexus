@@ -99,13 +99,13 @@
   0%,
   100% {
     box-shadow:
-      0 0 0 0 rgb(255 181 71 / 0),
-      0 10px 28px -10px rgb(255 107 61 / 0.8);
+      0 0 0 0 rgb(var(--gold-rgb) / 0),
+      0 10px 28px -10px rgb(var(--ember-rgb) / 0.8);
   }
   50% {
     box-shadow:
-      0 0 32px 2px rgb(255 181 71 / 0.45),
-      0 10px 28px -10px rgb(255 107 61 / 0.9);
+      0 0 32px 2px rgb(var(--gold-rgb) / 0.45),
+      0 10px 28px -10px rgb(var(--ember-rgb) / 0.9);
   }
 }
 @keyframes aurora-a {
@@ -265,7 +265,7 @@
   border-color: var(--border-strong);
   box-shadow:
     var(--shadow-panel),
-    0 18px 40px -18px rgb(255 140 60 / 0.55);
+    0 18px 40px -18px rgb(var(--ember-rgb) / 0.55);
 }
 
 /* Spinning dashed ring behind the logo mark. */
@@ -341,7 +341,7 @@
 .header-bar {
   transform-origin: left;
   animation: bar-grow 0.8s 0.15s var(--ease-out) both;
-  box-shadow: 0 0 12px rgb(255 140 60 / 0.6);
+  box-shadow: 0 0 12px rgb(var(--ember-rgb) / 0.6);
 }
 
 /* Holographic grid surface (timelines, scopes). */
@@ -613,6 +613,152 @@
 @media (prefers-reduced-motion: reduce) {
   .result-stagger > *,
   .result-badge {
+    animation: none;
+  }
+}
+
+/* ---- Mission progress bar: fills with completed stages, shimmers while running ---- */
+.progress-track {
+  position: relative;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.06);
+}
+.progress-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent-strong), rgb(var(--accent-soft-rgb)));
+  transition: width 0.8s var(--ease-out);
+}
+.progress-fill.is-running::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.55), transparent);
+  animation: shimmer 1.4s linear infinite;
+}
+.progress-fill.is-done {
+  background: var(--success);
+}
+
+/* ---- Task box: a slowly turning accent border while you type ---- */
+@property --spin {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes spin-angle {
+  to {
+    --spin: 360deg;
+  }
+}
+.focus-glow {
+  position: relative;
+  border-radius: 10px;
+}
+.focus-glow::before {
+  content: "";
+  position: absolute;
+  inset: -1.5px;
+  border-radius: 11px;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--spin),
+    transparent 0deg,
+    var(--accent-strong) 90deg,
+    rgb(var(--accent-soft-rgb)) 140deg,
+    transparent 220deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s var(--ease-out);
+  pointer-events: none;
+}
+.focus-glow:focus-within::before {
+  opacity: 1;
+  animation: spin-angle 3s linear infinite;
+}
+
+/* ---- Outcome badge: one ring burst when the result arrives ---- */
+@keyframes ring-burst {
+  from {
+    box-shadow: 0 0 0 0 currentColor;
+    opacity: 0.7;
+  }
+  to {
+    box-shadow: 0 0 0 14px currentColor;
+    opacity: 0;
+  }
+}
+.result-badge {
+  position: relative;
+}
+.result-badge::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  animation: ring-burst 0.9s var(--ease-out) 0.45s 2 both;
+  pointer-events: none;
+}
+
+/* ---- Running / waiting missions: a soft ripple around the status dot ---- */
+@keyframes dot-ripple {
+  from {
+    box-shadow: 0 0 0 0 var(--ripple, var(--cyan));
+  }
+  to {
+    box-shadow: 0 0 0 7px transparent;
+  }
+}
+.dot-live {
+  animation: dot-ripple 1.6s var(--ease-out) infinite;
+}
+
+/* ---- Approval dialog: a calm breathing glow so it is noticed without flashing ---- */
+@keyframes breathe {
+  0%,
+  100% {
+    box-shadow:
+      var(--shadow-panel),
+      0 0 0 1px rgb(var(--accent-rgb) / 0.25),
+      0 0 30px -8px rgb(var(--accent-rgb) / 0.35);
+  }
+  50% {
+    box-shadow:
+      var(--shadow-panel),
+      0 0 0 1px rgb(var(--accent-rgb) / 0.55),
+      0 0 46px -6px rgb(var(--accent-rgb) / 0.6);
+  }
+}
+.breathe {
+  animation: breathe 2.8s ease-in-out infinite;
+}
+
+/* ---- Cards that invite a click lift a little ---- */
+.lift {
+  transition:
+    transform 0.25s var(--ease-out),
+    box-shadow 0.25s var(--ease-out),
+    border-color 0.25s var(--ease-out);
+}
+.lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px -18px rgb(var(--accent-rgb) / 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-fill.is-running::after,
+  .focus-glow:focus-within::before,
+  .result-badge::after,
+  .dot-live,
+  .breathe {
     animation: none;
   }
 }
