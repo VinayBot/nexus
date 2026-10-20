@@ -206,3 +206,39 @@ async def test_fork_with_state_patch_reruns_from_checkpoint() -> None:
         assert state["limits"]["react"] == 1
         assert state["outcome"] == "success"
         assert all(f["iterations"] <= 1 for f in state["findings"][-2:])
+
+
+async def test_approving_while_the_pause_is_still_sending_email_resumes() -> None:
+    """Regression: a decision during the slow approval-email hook left the mission stuck."""
+    async with rt() as svc:
+        release = asyncio.Event()
+
+        async def slow_email(row: ApprovalRow) -> None:
+            await release.wait()  # like a slow SMTP server
+
+        svc.approvals.on_new.append(slow_email)
+        row = await svc.runner.create("What is a reducer?", playbook="risky_qa")
+        for _ in range(300):  # wait until the approval row exists (mission shows paused)
+            pending = await svc.approvals.list(mission_id=row.id)
+            if pending:
+                break
+            await asyncio.sleep(0.05)
+        assert svc.runner.is_running(row.id)  # the pausing task is still sending email
+        decide = asyncio.create_task(
+            svc.approvals.decide(pending[0].id, ApprovalDecision(decision="approve"))
+        )
+        await asyncio.sleep(0.2)
+        release.set()  # the email finishes; the decision must then go through
+        await asyncio.wait_for(decide, timeout=30)
+        await finish(svc, row.id)
+        m = await repo.get_mission(svc.db, row.id)
+        assert m is not None and m.status == "completed" and RiskyQA.executed
+
+
+async def test_cancelling_a_paused_mission_closes_its_approvals() -> None:
+    async with rt() as svc:
+        row = await svc.runner.create("What is a reducer?", playbook="risky_qa")
+        await finish(svc, row.id)
+        assert await svc.approvals.list(mission_id=row.id)
+        await svc.runner.cancel(row.id)
+        assert await svc.approvals.list(mission_id=row.id) == []

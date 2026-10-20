@@ -244,6 +244,11 @@ class MissionRunner:
         row = await repo.get_mission(self.db, mission_id)
         if row is None or row.status != "paused":
             raise MissionNotPausedError(f"mission {mission_id} is not waiting for input")
+        # The pause is recorded before its hooks finish (e.g. sending the approval email),
+        # so a fast decision can arrive while that task is still wrapping up: wait for it.
+        if self.is_running(mission_id):
+            with contextlib.suppress(TimeoutError):
+                await asyncio.wait_for(asyncio.shield(self._tasks[mission_id]), timeout=30)
         self.start(mission_id, Command(resume=decision), resumed=True)
 
     async def cancel(self, mission_id: str) -> bool:
@@ -252,11 +257,26 @@ class MissionRunner:
             row = await repo.get_mission(self.db, mission_id)
             if row and row.status in {"paused", "queued"}:
                 await repo.update_mission(self.db, mission_id, status="cancelled")
+                await self._close_approvals(mission_id)
                 return True
             return False
         task.cancel()
         await self.wait(mission_id)
+        await self._close_approvals(mission_id)
         return True
+
+    async def _close_approvals(self, mission_id: str) -> None:
+        """A cancelled mission's open approvals can no longer be decided."""
+        from sqlalchemy import update
+
+        from nexus.db.models import ApprovalRow
+
+        async with self.db.session() as s:
+            await s.execute(
+                update(ApprovalRow)
+                .where(ApprovalRow.mission_id == mission_id, ApprovalRow.status == "pending")
+                .values(status="cancelled", decided_at=time.time())
+            )
 
     async def recover(self) -> list[str]:
         """Resume missions that were running when the process stopped."""

@@ -114,5 +114,13 @@ class ApprovalService:
             ),
             mission_id=mission_id,
         )
-        await self.runner.resume(mission_id, decision.model_dump())
+        try:
+            await self.runner.resume(mission_id, decision.model_dump())
+        except Exception as exc:
+            # never leave an approval "decided" for a mission that did not resume
+            async with self.db.session() as s:
+                fresh = await s.get(ApprovalRow, approval_id)
+                if fresh is not None:
+                    fresh.status, fresh.decision, fresh.decided_at = "pending", None, None
+            raise ApprovalError(f"could not resume the mission: {exc}") from exc
         return row

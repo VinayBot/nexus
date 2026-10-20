@@ -58,8 +58,21 @@ export const useMissions = (limit = 30) =>
     refetchInterval: 15_000,
   });
 
+/**
+ * One mission. Live events refresh it, but a mission can finish before the event
+ * socket is ready (fast missions, reconnects): until it is finished, poll as a backstop
+ * so the page never stays on "running" without showing the result.
+ */
 export const useMission = (id: string | null | undefined) =>
-  useQuery({ queryKey: ["missions", "one", id], queryFn: () => get<Mission>(`/missions/${id}`), enabled: Boolean(id) });
+  useQuery({
+    queryKey: ["missions", "one", id],
+    queryFn: () => get<Mission>(`/missions/${id}`),
+    enabled: Boolean(id),
+    refetchInterval: (q) => {
+      const status = q.state.data?.status;
+      return status === "completed" || status === "failed" || status === "cancelled" ? false : 3_000;
+    },
+  });
 
 export const usePlaybooks = () =>
   useQuery({ queryKey: ["playbooks"], queryFn: () => get<PlaybookInfo[]>("/playbooks"), staleTime: 60_000 });

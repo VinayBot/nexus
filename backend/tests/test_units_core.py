@@ -322,3 +322,32 @@ def test_email_request_parsing() -> None:
     for topic in ("Write an article about email marketing", "Explain how to send an email with Python",
                   "contact a@b.com for questions about the API"):  # fmt: skip
         assert not e(topic).requested
+
+
+async def test_watcher_ignores_the_error_burst_after_the_mac_wakes() -> None:
+    from typing import Any, ClassVar
+
+    from nexus.playbooks.watcher import Watcher
+
+    class Demo:
+        async def health(self) -> dict[str, Any]:
+            return {"status": "degraded", "error_rate": 0.05}
+
+    class Probe(Watcher):
+        raised: ClassVar[list[float]] = []
+
+        async def open_incident(self) -> None:
+            return None
+
+        async def raise_incident(self, status: str, h: dict[str, Any]) -> Any:
+            self.raised.append(self._last_tick)
+
+    w = Probe(Demo(), None, None, auto_heal=False)  # type: ignore[arg-type]
+    await w.tick(now=1000.0)  # bad poll 1 (no wake yet)
+    await w.tick(now=1300.0)  # 5-minute gap: the machine slept -> grace, streak reset
+    for t in (1302.0, 1304.0, 1310.0, 1318.0):
+        await w.tick(now=t)
+    assert w.raised == []  # the stall's timeouts never open an incident
+    await w.tick(now=1322.0)
+    await w.tick(now=1324.0)  # errors persist after the window rolled: a real bug
+    assert w.raised == [1324.0]

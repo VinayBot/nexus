@@ -29,6 +29,9 @@ SMTP_FILE = "smtp.json"  # data/ is gitignored; written owner-read-only
 PROVIDERS = {"gmail": ("smtp.gmail.com", 587), "outlook": ("smtp.office365.com", 587)}
 EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 APP_PASSWORD = re.compile(r"[a-z]{16}")
+TEST_DOMAINS = re.compile(
+    r"@(?:[\w-]+\.)*(?:local|test|invalid|localhost|example\.(?:com|org|net))$", re.I
+)
 
 
 def parse_recipients(text: str) -> list[str]:
@@ -208,26 +211,73 @@ class ResultNotifier:
             log.warning("result_email.failed", mission_id=mission_id, error=str(exc))
             return None
 
-    async def pending(self) -> list[Any]:
-        """Emails still waiting in the outbox from the last three days."""
+    async def pending(self, *, expire: bool = False) -> list[Any]:
+        """Emails still worth sending: recent, to real addresses, not superseded.
+
+        Skipped: test emails, reserved test domains (.local, example.com…), approval
+        emails whose approval was already decided (their links are dead) and older
+        duplicates. With ``expire=True`` the skipped rows are marked 'expired'.
+        """
         from sqlalchemy import select
 
-        from nexus.db.models import OutboxRow
+        from nexus.db.models import ApprovalRow, MissionRow, OutboxRow
 
         async with self.db.session() as s:
-            rows = await s.execute(
-                select(OutboxRow)
-                .where(OutboxRow.status == "outbox", OutboxRow.ts > time.time() - 3 * 86400)
-                .order_by(OutboxRow.ts)
+            rows = list(
+                (
+                    await s.execute(
+                        select(OutboxRow)
+                        .where(OutboxRow.status == "outbox", OutboxRow.ts > time.time() - 86400)
+                        .order_by(OutboxRow.ts.desc())
+                    )
+                ).scalars()
             )
-            return list(rows.scalars())
+            open_missions = set(
+                (
+                    await s.execute(
+                        select(ApprovalRow.mission_id).where(ApprovalRow.status == "pending")
+                    )
+                ).scalars()
+            )
+            asked = {
+                m.id
+                for m in (
+                    await s.execute(
+                        select(MissionRow).where(
+                            MissionRow.id.in_({r.mission_id for r in rows if r.mission_id})
+                        )
+                    )
+                ).scalars()
+                if (m.inputs or {}).get("email_requested")
+            }
+            keep: list[Any] = []
+            seen: set[tuple[str, str]] = set()
+            for r in rows:
+                stale = (
+                    r.subject.startswith("[NEXUS] Test email")
+                    or TEST_DOMAINS.search(r.to)
+                    or (
+                        r.subject.startswith("[NEXUS] Approval needed")
+                        and r.mission_id not in open_missions
+                    )
+                    or (r.to, r.subject) in seen
+                    # queued while "email every mission" was on, not asked for by the prompt
+                    or (r.mission_id is not None and r.mission_id not in asked)
+                )
+                seen.add((r.to, r.subject))
+                if stale:
+                    if expire:
+                        r.status = "expired"
+                else:
+                    keep.append(r)
+        return list(reversed(keep))
 
     async def resend_pending(self) -> dict[str, int]:
         """After signing in: send everything that waited. Old rows become 'resent'."""
         from nexus.db.models import OutboxRow
 
         sent = failed = 0
-        for row in await self.pending():
+        for row in await self.pending(expire=True):
             _, status = await self.mailer.send(
                 row.to, row.subject, row.html, mission_id=row.mission_id
             )

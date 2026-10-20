@@ -65,6 +65,21 @@ Every mission type, on real local models, approved through the app:
 | Build API (books: title, author, year) | Balanced | 4/4 tests, zip downloaded, 15 s |
 | Custom team (error-handling review) | Balanced | found the real timeout and cancellation issues, 25 s |
 
+### Email and approvals, verified live on 2026-10-20 (real SMTP into a local inbox)
+
+| Prompt | Emails delivered |
+|---|---|
+| Web page "…send the output to boss@company.com" | approval to the owner, **approved from the email link**, result to boss |
+| Question "…Email me the answer." | team approval + answer to the owner |
+| "Create a ticket… send it to dev@company.com" | ticket T-106 to dev (LOW risk, no approval) |
+| Build API "…send the result to a@company.com and b@company.com" | approval to the owner, result to both |
+| Custom team, no email in the prompt | none |
+| Solve ticket T-102 "…email me the result" | approval + result to the owner |
+
+Google's real endpoints were exercised with a dummy client (they answer "OAuth client was not
+found", i.e. the requests are well-formed); a full sign-in needs the owner's one-time Google
+Cloud client.
+
 ## Verified earlier (llama3.2:3b, lite profile)
 
 - **Self-heal, end to end:** null-handling bug → incident → 2 council rounds (round 1's

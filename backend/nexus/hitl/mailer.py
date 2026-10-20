@@ -147,7 +147,8 @@ class Mailer:
                 explain_smtp_error(exc, self.host)
                 if self.real_delivery or self.host not in {"127.0.0.1", "localhost"}
                 else "Not signed in with Google yet. Sign in under Settings → Email results; "
-                "this email waits in the outbox and can be sent from there."
+                "this email waits in the outbox and can be sent from there. "
+                f"(Local mail server {self.host}:{self.port}: {str(exc)[:80] or type(exc).__name__})"
             )
             log.warning("mail.smtp_unavailable", error=str(exc), to=to)
         else:

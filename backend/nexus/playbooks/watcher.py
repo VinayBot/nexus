@@ -28,6 +28,8 @@ from nexus.playbooks.demo_service import DemoService
 
 log = get_logger(__name__)
 BACKOFF_S = 15 * 60
+WAKE_GAP_S = 10.0  # polls are 2 s apart; a bigger gap means sleep or a stall
+WAKE_GRACE_S = 20.0  # longer than the demo's 15 s health window
 
 
 def error_digest(logs: list[dict[str, Any]], limit: int = 5) -> str:
@@ -57,6 +59,8 @@ class Watcher:
         self.auto_heal = auto_heal
         self.last: dict[str, Any] = {"status": "unknown"}
         self._bad_streak = 0
+        self._last_tick = 0.0
+        self._grace_until = 0.0
         self.history: list[dict[str, Any]] = []
 
     async def open_incident(self) -> IncidentRow | None:
@@ -64,9 +68,19 @@ class Watcher:
             res = await s.execute(select(IncidentRow).where(IncidentRow.status == "open").limit(1))
             return res.scalars().first()
 
-    async def tick(self) -> None:
+    async def tick(self, now: float | None = None) -> None:
         h = await self.demo.health()
         status = str(h.get("status", "down"))
+        now = time.time() if now is None else now
+        # A long gap between 2-second polls means the machine slept or stalled. On wake
+        # every timer fires late, so the demo logs a burst of TimeoutErrors that are not a
+        # bug. Ignore health until those orders leave the 15 s window (no false incidents).
+        if self._last_tick and now - self._last_tick > WAKE_GAP_S:
+            self._grace_until = now + WAKE_GRACE_S
+            self._bad_streak = 0
+            log.warning("watcher.wake_grace", gap_s=round(now - self._last_tick, 1))
+        self._last_tick = now
+        in_grace = now < self._grace_until
         self.last = {**h, "ts": time.time()}
         self.history = [
             *self.history[-299:],
@@ -95,6 +109,8 @@ class Watcher:
                     if row is not None:
                         row.status = "resolved"
                 log.info("incident.resolved", incident=incident.id)
+            return
+        if in_grace:
             return
         self._bad_streak += 1
         if self._bad_streak < 2 or incident is not None:
