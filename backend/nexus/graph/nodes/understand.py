@@ -21,7 +21,10 @@ from nexus.safety.guardrails import scan
 async def intake(state: dict[str, Any]) -> dict[str, Any]:
     """Guardrails on the raw request: redact secrets/PII, flag injection attempts."""
     status("commander", "receiving_task")
-    result = scan(state.get("task", ""), source="mission task")
+    from nexus.hitl.email_intent import email_request
+
+    # delivery is the system's job: the agents get the task without "...and email it to x"
+    result = scan(email_request(state.get("task", "")).task, source="mission task")
     settings = services().settings
     budget = TokenBudget(
         num_ctx=settings.num_ctx,

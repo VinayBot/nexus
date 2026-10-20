@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 
@@ -308,6 +309,53 @@ async def notify_connect(body: SmtpAccount) -> dict[str, Any]:
 @router.delete("/notify/smtp")
 async def notify_disconnect() -> dict[str, Any]:
     services().notifier.disconnect()
+    return dict(services().notifier.status())
+
+
+class GoogleClient(BaseModel):
+    client_id: str
+    client_secret: str
+
+
+@router.put("/notify/google/client")
+async def google_client(body: GoogleClient) -> dict[str, Any]:
+    try:
+        services().google_mail.save_client(body.client_id, body.client_secret)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    return dict(services().notifier.status())
+
+
+@router.get("/notify/google/start")
+async def google_start() -> dict[str, str]:
+    try:
+        return {"url": services().google_mail.auth_url()}
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
+@router.get("/notify/google/callback", include_in_schema=False)
+async def google_callback(
+    code: str | None = None, state: str | None = None, error: str | None = None
+) -> RedirectResponse:
+    """Google sends the browser back here; we finish sign-in and return to Settings."""
+    from urllib.parse import quote
+
+    from nexus.hitl.google_mail import GoogleMailError
+
+    ui = services().settings.ui_url.rstrip("/")
+    if error or not code or not state:
+        return RedirectResponse(f"{ui}/settings?google_error={quote(error or 'cancelled')}")
+    try:
+        email = await services().google_mail.finish(code, state)
+    except GoogleMailError as exc:
+        return RedirectResponse(f"{ui}/settings?google_error={quote(str(exc))}")
+    return RedirectResponse(f"{ui}/settings?google={quote(email)}")
+
+
+@router.delete("/notify/google")
+async def google_disconnect() -> dict[str, Any]:
+    await services().google_mail.disconnect()
     return dict(services().notifier.status())
 
 

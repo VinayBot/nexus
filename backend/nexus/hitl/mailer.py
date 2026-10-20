@@ -8,6 +8,7 @@ import contextlib
 import time
 import uuid
 from email.message import EmailMessage
+from typing import Any
 
 import aiosmtplib
 
@@ -25,6 +26,8 @@ log = get_logger(__name__)
 def explain_smtp_error(exc: BaseException, host: str) -> str:
     """Turn an SMTP failure into what to do about it."""
     text = str(exc)
+    if type(exc).__name__ == "GoogleMailError":  # already written for a person
+        return text
     if isinstance(exc, aiosmtplib.SMTPAuthenticationError) or (
         isinstance(exc, aiosmtplib.SMTPServerDisconnected) and "gmail" in host
     ):
@@ -59,6 +62,8 @@ class Mailer:
         self._reachable_until = 0.0
         #: Why the last send failed, in words a person can act on (None after a success).
         self.last_error: str | None = None
+        #: Set when the owner signed in with Google: mail then goes through the Gmail API.
+        self.google: Any = None
 
     @classmethod
     def from_settings(cls, db: Database, settings: Settings) -> Mailer:
@@ -76,8 +81,12 @@ class Mailer:
         )
 
     @property
+    def google_account(self) -> str | None:
+        return self.google.account() if self.google is not None else None
+
+    @property
     def real_delivery(self) -> bool:
-        return bool(self.username and self.password)
+        return bool(self.google_account or (self.username and self.password))
 
     async def reachable(self) -> bool:
         """Fast TCP probe (aiosmtplib waits its full timeout even on a refused port)."""
@@ -114,18 +123,24 @@ class Mailer:
         msg.set_content(text or "This message needs an HTML-capable mail client.")
         msg.add_alternative(html, subtype="html")
         status = "sent"
+        google = self.google_account
+        if google:
+            msg.replace_header("From", f"NEXUS <{google}>")
         try:
-            if not await self.reachable():
+            if google:
+                await self.google.send(msg)
+            elif not await self.reachable():
                 raise ConnectionError(f"SMTP {self.host}:{self.port} unreachable")
-            await aiosmtplib.send(
-                msg,
-                hostname=self.host,
-                port=self.port,
-                timeout=15 if self.real_delivery else 5,
-                username=self.username,
-                password=self.password,
-                start_tls=self.starttls or None,
-            )
+            else:
+                await aiosmtplib.send(
+                    msg,
+                    hostname=self.host,
+                    port=self.port,
+                    timeout=15 if self.real_delivery else 5,
+                    username=self.username,
+                    password=self.password,
+                    start_tls=self.starttls or None,
+                )
         except Exception as exc:
             status = "outbox"
             self.last_error = explain_smtp_error(exc, self.host)

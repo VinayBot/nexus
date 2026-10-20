@@ -91,10 +91,16 @@ async def runtime(
         svc.register("tokens", tokens)
         mailer = svc.extras.get("mailer") or Mailer.from_settings(db, settings)
         svc.register("email_approvals", EmailApprovals(settings, approvals, mailer, tokens))
+        from nexus.hitl.google_mail import GoogleMail
         from nexus.hitl.result_email import ResultNotifier
+
+        google = GoogleMail(settings)
+        mailer.google = google
+        svc.register("google_mail", google)
 
         notifier = ResultNotifier(settings, mailer, db)
         runner.finished_hooks.append(notifier.on_finished)
+        svc.extras["email_approvals"].owner_address = notifier.owner_address
         svc.register("notifier", notifier)
         if settings.secret_key == "dev-only-change-me":
             log.warning("security.default_secret", hint="set NEXUS_SECRET_KEY in .env")

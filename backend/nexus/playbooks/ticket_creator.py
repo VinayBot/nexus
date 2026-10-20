@@ -36,7 +36,6 @@ DRAFT = "ticket.json"
 CODE_WORDS = re.compile(
     r"\b(pipeline|orders?|inventory|config|main|store|api|service|shop)\b", re.I
 )
-EMAIL_WORDS = re.compile(r"\b(e-?mail|mail|share|send)\b", re.I)
 
 
 class TicketDraft(BaseModel):
@@ -230,16 +229,22 @@ class TicketCreator(Playbook):
         ticket_id = res.text.strip()
         details: dict[str, Any] = {"ticket_id": ticket_id}
         notifier = svc.extras.get("notifier")
-        to = notifier.prefs().get("to") if notifier else None
-        if notifier is not None and to and EMAIL_WORDS.search(state.get("task", "")):
-            _, status = await notifier.mailer.send(
-                str(to),
-                f"[NEXUS] New ticket {ticket_id}: {d.title}"[:250],
-                notifier_html(d, ticket_id),
-                mission_id=state["mission_id"],
-                text=draft_markdown(d, ticket_id),
-            )
-            details.update(emailed_to=to, email_status=status)
+        inputs = state.get("inputs") or {}
+        to = (
+            notifier.recipients(inputs)
+            if notifier is not None and inputs.get("email_requested")
+            else []
+        )
+        if notifier is not None and to:
+            for address in to:
+                _, status = await notifier.mailer.send(
+                    address,
+                    f"[NEXUS] New ticket {ticket_id}: {d.title}"[:250],
+                    notifier_html(d, ticket_id),
+                    mission_id=state["mission_id"],
+                    text=draft_markdown(d, ticket_id),
+                )
+            details.update(emailed_to=", ".join(to), email_status=status)
         summary = f"Created {ticket_id}" + (
             f" and emailed it to {to}" if details.get("emailed_to") else ""
         )
@@ -266,7 +271,7 @@ class TicketCreator(Playbook):
 
 
 def notifier_html(d: TicketDraft, ticket_id: str) -> str:
-    from nexus.hitl.result_email import markdown_html
+    from nexus.hitl.email_body import markdown_html
 
     return (
         '<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:640px">'

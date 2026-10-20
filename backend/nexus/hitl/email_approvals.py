@@ -9,6 +9,7 @@ service exactly as a UI decision would (channel = "email").
 from __future__ import annotations
 
 import html
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -39,6 +40,8 @@ class EmailApprovals:
         self.approvals = approvals
         self.mailer = mailer
         self.tokens = tokens
+        #: Set by the runtime: the owner's own inbox (Google account or default address).
+        self.owner_address: Callable[[], str | None] | None = None
         approvals.on_new.append(self.send_request)
 
     def _link(self, approval_id: str, decision: str) -> str:
@@ -48,6 +51,14 @@ class EmailApprovals:
     async def send_request(self, row: ApprovalRow) -> None:
         if row.kind not in EMAIL_KINDS:
             return
+        from nexus.db import repo
+
+        mission = await repo.get_mission(self.approvals.db, row.mission_id)
+        if mission is None or not (mission.inputs or {}).get("email_requested"):
+            return  # approval emails only when the prompt asked for email
+        # the approve/reject links control the mission, so they go to the owner only
+        owner = self.owner_address() if self.owner_address else None
+        to = owner or self.settings.owner_email
         p: dict[str, Any] = row.payload
         risk = p.get("risk") or {}
         evidence = [
@@ -84,7 +95,7 @@ class EmailApprovals:
             agent_id="swift",
         )
         _, status = await self.mailer.send(
-            self.settings.owner_email,
+            to,
             f"[NEXUS] Approval needed ({risk.get('level', 'team')}): {p.get('summary', '')[:80]}",
             body,
             mission_id=row.mission_id,

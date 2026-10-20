@@ -125,7 +125,9 @@ async def test_finished_mission_emails_the_result(monkeypatch: pytest.MonkeyPatc
     monkeypatch.setenv("NEXUS_RESULT_EMAIL", "owner@example.com")
     get_settings.cache_clear()
     async with runtime(get_settings(), provider=simulation_llm(), recover=False) as svc:
-        row = await svc.runner.create("Write a blog post about agents as an HTML page")
+        row = await svc.runner.create(
+            "Write a blog post about agents as an HTML page and email me the result"
+        )
         await asyncio.wait_for(svc.runner.wait(row.id), timeout=90)
         pending = await svc.approvals.list(mission_id=row.id)
         await svc.approvals.decide(pending[0].id, ApprovalDecision(decision="approve"))
@@ -140,11 +142,12 @@ async def test_finished_mission_emails_the_result(monkeypatch: pytest.MonkeyPatc
         result = [m for m in mails if m.subject.startswith("[NEXUS] Completed")]
         assert len(result) == 1
         body = result[0].html
-        assert "You asked" in body and "Open the published page" in body
+        assert "Summary" in body and "Page published" in body and "In short:" in body
+        assert "You asked" in body
         assert "How AI Agents Work Together" in body
 
-        svc.notifier.save(to="owner@example.com", enabled=False)
-        assert await svc.notifier.send_result(row.id) is None  # switched off → nothing sent
+        approval = [m for m in mails if m.subject.startswith("[NEXUS] Approval needed")]
+        assert [m.to for m in approval] == ["owner@example.com"]  # links go to the owner only
         with pytest.raises(ValueError):
             svc.notifier.save(to="not-an-address", enabled=True)
 
@@ -164,12 +167,12 @@ async def test_connect_gmail_checks_then_saves_private_credentials() -> None:
         # a normal Google password is refused before any network call, and never saved
         with pytest.raises(ValueError, match="not a Gmail App Password"):
             await n.connect("gmail", "me@gmail.com", "MyPass@19word!")
-        n._login_check = refuse  # type: ignore[method-assign]
+        n._login_check = refuse
         with pytest.raises(ValueError, match="refused"):
             await n.connect("gmail", "me@gmail.com", "abcd efgh ijkl mnop")
         assert not path.exists()
 
-        n._login_check = accept  # type: ignore[method-assign]
+        n._login_check = accept
         await n.connect("gmail", "me@gmail.com", "abcd efgh ijkl mnop")
         assert logins == ["abcdefghijklmnop"]
         st = n.status()
@@ -241,3 +244,41 @@ def test_chaos_reset_route_is_not_captured_by_the_switch_route() -> None:
 
     paths = [getattr(r, "path", "") for r in routes_chaos.router.routes]
     assert paths.index("/chaos/reset") < paths.index("/chaos/{switch_id}")
+
+
+def test_recipients_parse_and_per_mission_address_wins() -> None:
+    from nexus.hitl.result_email import parse_recipients
+
+    assert parse_recipients("a@x.com, b@y.org;junk  A@x.com") == ["a@x.com", "b@y.org"]
+
+
+async def test_email_goes_out_only_when_the_prompt_asks() -> None:
+    async with runtime(get_settings(), provider=ScriptedLLM(), recover=False) as svc:
+        n = svc.notifier
+        n.save(to="me@example.com", enabled=False)
+        assert n.recipients({}) == []  # no request in the prompt: nothing is emailed
+        row = await svc.runner.create(
+            "Write a blog about agents and send the output to boss@example.com",
+            playbook="council_qa",
+        )
+        assert row.inputs["email_requested"] and row.inputs["email_to"] == ["boss@example.com"]
+        assert n.recipients(row.inputs) == ["boss@example.com"]
+        me = await svc.runner.create("What is ReAct? Email me the answer.", playbook="council_qa")
+        assert n.recipients(me.inputs) == ["me@example.com"]  # "me" = the owner's inbox
+        plain = await svc.runner.create(
+            "Write an article about email marketing", playbook="council_qa"
+        )
+        assert "email_requested" not in plain.inputs and n.recipients(plain.inputs) == []
+        typed = await svc.runner.create(
+            "Explain ReAct", playbook="council_qa", inputs={"email_to": "a@x.com, b@y.org"}
+        )
+        assert n.recipients(typed.inputs) == ["a@x.com", "b@y.org"]
+        for r in (row, me, plain, typed):
+            await svc.runner.cancel(r.id)
+
+
+def test_summary_in_short_skips_headings_and_lists() -> None:
+    from nexus.hitl.email_body import in_short
+
+    md = "# Title\n\n_tagline_\n\n## Intro\n\nFirst sentence here. Second one. Third."
+    assert in_short(md) == "First sentence here. Second one."

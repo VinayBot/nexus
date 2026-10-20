@@ -302,3 +302,23 @@ def test_builder_fields_are_recovered_from_constraints_or_the_request() -> None:
     )
     fields, _ = normalise_fields([], [], "an API for books (title, author, year) with tests")
     assert fields == ["title: str", "author: str", "year: int"]
+
+
+def test_email_request_parsing() -> None:
+    from nexus.hitl.email_intent import email_request as e
+
+    r = e("Build an HTML page about AI and send the output to boss@company.com")
+    assert (r.requested, r.to, r.task) == (
+        True,
+        ["boss@company.com"],
+        "Build an HTML page about AI",
+    )
+    r = e("cretae ticket for fixing bug in pipeline and also share email")
+    assert r.requested and r.to_self and r.task == "cretae ticket for fixing bug in pipeline"
+    assert e("Write a blog about agents, then email it to a@x.com and b@y.org").to == [
+        "a@x.com",
+        "b@y.org",
+    ]
+    for topic in ("Write an article about email marketing", "Explain how to send an email with Python",
+                  "contact a@b.com for questions about the API"):  # fmt: skip
+        assert not e(topic).requested

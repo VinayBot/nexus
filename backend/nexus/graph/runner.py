@@ -92,6 +92,19 @@ class MissionRunner:
     ) -> MissionRow:
         mission_id = uuid.uuid4().hex[:12]
         inputs = {**(inputs or {}), "started_at": time.time()}
+        from nexus.hitl.email_intent import email_request
+
+        # "... and send the output to a@b.com": email only when the prompt asks for it
+        req = email_request(task)
+        explicit = [
+            a for a in str(inputs.get("email_to") or "").replace(";", ",").split(",") if a.strip()
+        ]
+        if req.requested or explicit:
+            inputs.update(
+                email_requested=True,
+                email_to=list(dict.fromkeys([*req.to, *(a.strip() for a in explicit)])),
+                email_self=req.to_self,
+            )
         if playbook:
             inputs["playbook"] = playbook
         row = MissionRow(

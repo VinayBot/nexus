@@ -79,7 +79,9 @@ def links(html: str) -> dict[str, str]:
 
 async def test_approval_email_link_resumes_mission_and_is_single_use(events: list[Event]) -> None:
     async with rt() as svc:
-        row = await svc.runner.create("What is a reducer?", playbook="risky_qa")
+        row = await svc.runner.create(
+            "What is a reducer? Email me the answer.", playbook="risky_qa"
+        )
         await finish(svc, row.id)
         assert (await repo.get_mission(svc.db, row.id)).status == "paused"  # type: ignore[union-attr]
         [pending] = await svc.approvals.list(mission_id=row.id)

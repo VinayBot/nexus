@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
-import html
 import json
 import re
 from typing import Any
@@ -20,6 +19,7 @@ from nexus.core.config import Settings
 from nexus.core.logging import get_logger
 from nexus.db import repo
 from nexus.db.engine import Database
+from nexus.hitl.email_body import compose_result
 from nexus.hitl.mailer import Mailer
 
 log = get_logger(__name__)
@@ -29,58 +29,14 @@ PROVIDERS = {"gmail": ("smtp.gmail.com", 587), "outlook": ("smtp.office365.com",
 EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 APP_PASSWORD = re.compile(r"[a-z]{16}")
 
-OUTCOME = {
-    "success": ("Completed", "#16a34a"),
-    "partial": ("Partly done", "#d97706"),
-    "rejected": ("Rejected by you", "#6b7280"),
-    "blocked": ("Blocked by policy", "#dc2626"),
-    "rolled_back": ("Rolled back", "#d97706"),
-    "failed": ("Stopped with an error", "#dc2626"),
-}
 
-
-def _inline(text: str) -> str:
-    out = html.escape(text)
-    out = re.sub(r"`([^`]+)`", r"<code>\1</code>", out)
-    out = re.sub(r"\*\*([^*]+)\*\*", r"<b>\1</b>", out)
-    return re.sub(r"(?<![\w*])_([^_]+)_(?![\w*])", r"<i>\1</i>", out)
-
-
-def markdown_html(md: str) -> str:
-    """Just enough Markdown for an email: headings, bullets, code blocks, paragraphs."""
-    parts: list[str] = []
-    in_list = in_code = False
-    code: list[str] = []
-    for line in md.splitlines():
-        if line.strip().startswith("```"):
-            if in_code:
-                parts.append(
-                    '<pre style="background:#f4f4f5;padding:10px;border-radius:6px;'
-                    'font-size:12px;overflow:auto">' + html.escape("\n".join(code)) + "</pre>"
-                )
-                code = []
-            in_code = not in_code
-            continue
-        if in_code:
-            code.append(line)
-            continue
-        bullet = re.match(r"^\s*[-*]\s+(.*)", line)
-        if in_list and not bullet:
-            parts.append("</ul>")
-            in_list = False
-        if bullet:
-            if not in_list:
-                parts.append("<ul>")
-                in_list = True
-            parts.append(f"<li>{_inline(bullet.group(1))}</li>")
-        elif m := re.match(r"^(#{1,3})\s+(.*)", line):
-            size = {1: 20, 2: 16, 3: 15}[len(m.group(1))]
-            parts.append(f'<p style="font-size:{size}px;font-weight:600">{_inline(m.group(2))}</p>')
-        elif line.strip():
-            parts.append(f"<p>{_inline(line)}</p>")
-    if in_list:
-        parts.append("</ul>")
-    return "\n".join(parts)
+def parse_recipients(text: str) -> list[str]:
+    """Valid addresses from "a@x.com, b@y.org; c@z.io" (duplicates and junk dropped)."""
+    out: list[str] = []
+    for a in re.split(r"[,;\s]+", text.strip()):
+        if EMAIL.match(a) and a.lower() not in {x.lower() for x in out}:
+            out.append(a)
+    return out[:10]
 
 
 class ResultNotifier:
@@ -165,9 +121,34 @@ class ResultNotifier:
             saved = {}
         return {**defaults, **saved}
 
+    def owner_address(self) -> str | None:
+        """Your own inbox: the Google account you signed in with, else the default address."""
+        own = parse_recipients(str(self.prefs().get("to") or ""))
+        return self.mailer.google_account or (own[0] if own else None)
+
+    def recipients(self, inputs: dict[str, Any] | None) -> list[str]:
+        """Who gets this mission's result: only when the prompt (or the composer) asked.
+
+        Addresses named in the request win; "email me" means your own inbox. The
+        Settings switch "email every mission" sends to the default address regardless.
+        """
+        inputs = inputs or {}
+        if inputs.get("email_requested"):
+            named = inputs.get("email_to") or []
+            to = parse_recipients(", ".join(named) if isinstance(named, list) else str(named))
+            me = self.owner_address()
+            if (inputs.get("email_self") or not to) and me:
+                to = [*to, me]
+            return parse_recipients(", ".join(to))
+        prefs = self.prefs()
+        return parse_recipients(str(prefs.get("to") or "")) if prefs.get("enabled") else []
+
     def save(self, *, to: str | None, enabled: bool) -> dict[str, Any]:
-        if to and not EMAIL.match(to):
-            raise ValueError(f"not an email address: {to!r}")
+        if to:
+            bad = [a for a in re.split(r"[,;\s]+", to.strip()) if a and not EMAIL.match(a)]
+            if bad:
+                raise ValueError(f"not an email address: {bad[0]!r}")
+            to = ", ".join(parse_recipients(to))
         prefs = {"to": to or None, "enabled": enabled}
         (self.settings.data_dir / FILE).write_text(json.dumps(prefs))
         if to:
@@ -176,9 +157,15 @@ class ResultNotifier:
 
     def status(self) -> dict[str, Any]:
         saved = self._saved_smtp() or {}
+        google = self.mailer.google
         return {
             **self.prefs(),
-            "delivery": "smtp" if self.mailer.real_delivery else "mailpit",
+            "delivery": "google"
+            if self.mailer.google_account
+            else ("smtp" if self.mailer.real_delivery else "mailpit"),
+            "google_account": self.mailer.google_account,
+            "google_ready": bool(google and google.client()),
+            "google_redirect": google.redirect_uri if google else None,
             "smtp": f"{self.mailer.host}:{self.mailer.port}",
             "account": self.mailer.username,
             "last_error": self.mailer.last_error,
@@ -193,28 +180,31 @@ class ResultNotifier:
         task.add_done_callback(self._tasks.discard)
 
     async def send_result(self, mission_id: str) -> str | None:
-        prefs = self.prefs()
-        if not (prefs.get("enabled") and prefs.get("to")):
-            return None
         row = await repo.get_mission(self.db, mission_id)
         if row is None or (row.report or {}).get("emailed_to"):
             return None  # the mission already emailed its own result (e.g. a new ticket)
+        to = self.recipients(row.inputs)
+        if not to:
+            return None
         try:
             subject, body, text = self.compose(row)
-            _, status = await self.mailer.send(
-                str(prefs["to"]), subject, body, mission_id=mission_id, text=text
-            )
+            status = "sent"
+            for address in to:
+                _, one = await self.mailer.send(
+                    address, subject, body, mission_id=mission_id, text=text
+                )
+                status = one if one != "sent" else status
             return status
         except Exception as exc:  # a notification must never break anything
             log.warning("result_email.failed", mission_id=mission_id, error=str(exc))
             return None
 
     async def send_test(self) -> dict[str, str | None]:
-        to = self.prefs().get("to")
+        to = parse_recipients(str(self.prefs().get("to") or ""))
         if not to:
             raise ValueError("set an address first")
         _, status = await self.mailer.send(
-            str(to),
+            to[0],
             "[NEXUS] Test email",
             "<p>This is a test from NEXUS. Mission results will arrive like this.</p>",
             text="This is a test from NEXUS. Mission results will arrive like this.",
@@ -222,39 +212,4 @@ class ResultNotifier:
         return {"status": status, "error": None if status == "sent" else self.mailer.last_error}
 
     def compose(self, row: Any) -> tuple[str, str, str]:
-        report: dict[str, Any] = row.report or {}
-        key = "failed" if row.status == "failed" else (row.outcome or "partial")
-        label, colour = OUTCOME.get(key, (key, "#6b7280"))
-        ui = self.settings.ui_url.rstrip("/")
-        api = self.settings.public_url.rstrip("/")
-        links = []
-        if report.get("preview_url"):
-            links.append(
-                f'<a href="{html.escape(report["preview_url"])}">Open the published page</a>'
-            )
-        if report.get("download"):
-            links.append(
-                f'<a href="{api}{html.escape(report["download"])}">Download the project (.zip)</a>'
-            )
-        links.append(f'<a href="{ui}/missions?m={row.id}">Open the mission in NEXUS</a>')
-        if row.status == "failed":
-            output = f"<p>{html.escape(row.error or 'Unknown error')[:1500]}</p>"
-        else:
-            output = markdown_html(str(report.get("answer") or report.get("summary") or ""))
-        steps = "".join(
-            f"<li>{_inline(h)}</li>" for h in dict.fromkeys(report.get("highlights") or [])
-        )
-        body = f"""<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:640px;color:#18181b">
-<p style="color:#71717a;font-size:12px;margin:0">You asked</p>
-<p style="font-size:15px;margin:4px 0 16px">&ldquo;{html.escape(row.task)}&rdquo;</p>
-<p><span style="background:{colour};color:#fff;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600">{label}</span>
-&nbsp;{html.escape(str(report.get("summary") or ""))}</p>
-<p>{" &middot; ".join(links)}</p>
-<hr style="border:none;border-top:1px solid #e4e4e7">
-<p style="color:#71717a;font-size:12px">Output</p>
-{output}
-{f'<hr style="border:none;border-top:1px solid #e4e4e7"><p style="color:#71717a;font-size:12px">How the team did it</p><ol style="font-size:13px;color:#3f3f46">{steps}</ol>' if steps else ""}
-<p style="color:#a1a1aa;font-size:11px">Sent by NEXUS on your Mac &middot; {int(report.get("tokens") or row.tokens or 0):,} tokens</p>
-</div>"""
-        text = f"You asked: {row.task}\n\n{label}\n\n{report.get('answer') or row.error or ''}"
-        return f"[NEXUS] {label}: {row.title[:90]}", body, text
+        return compose_result(row, self.settings)

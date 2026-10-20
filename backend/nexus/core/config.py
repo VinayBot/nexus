@@ -123,9 +123,13 @@ class Settings(BaseSettings):
     smtp_username: str | None = None
     smtp_password: SecretStr | None = None
     smtp_starttls: bool = False
+    #: "Sign in with Google" (Gmail API): a one-time Desktop-app OAuth client from Google Cloud.
+    google_client_id: str | None = None
+    google_client_secret: SecretStr | None = None
     #: Where mission results are emailed (also editable in Settings → Email results).
     result_email: str | None = None
-    email_results: bool = True
+    #: Email every mission even when the prompt does not ask (off: only on request).
+    email_results: bool = False
     owner_email: str = "owner@nexus.local"
     sandbox_backend: Literal["docker", "local"] = "docker"
     sandbox_image: str = "nexus-sandbox:latest"
