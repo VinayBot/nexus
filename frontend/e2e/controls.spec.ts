@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { waitForMission } from "./helpers";
+import { API, waitForMission } from "./helpers";
 
 function watchErrors(page: Page): string[] {
   const errors: string[] = [];
@@ -55,6 +55,12 @@ test("welcome starter runs a question mission; view toggles and replay work", as
   await result.getByRole("button", { name: "How the team did it" }).click();
   await expect(result.getByText(/Three solvers competed/)).toBeVisible();
 
+  // a finished mission opens on its result; the tabs switch to the agents and back
+  const panes = page.getByRole("tablist", { name: "Mission view" });
+  await expect(panes.getByRole("tab", { name: "Result" })).toHaveAttribute("aria-selected", "true");
+  await panes.getByRole("tab", { name: "Agents at work" }).click();
+  await expect(page.locator('[data-tour="mission-floor"]')).toBeVisible();
+  await expect(page.getByTestId("mission-result")).toHaveCount(0);
   await page.getByRole("tab", { name: "Graph" }).click();
   await expect(page.getByRole("tab", { name: "Graph" })).toHaveAttribute("aria-selected", "true");
   await page.getByRole("tab", { name: "Robots" }).click();
@@ -62,6 +68,8 @@ test("welcome starter runs a question mission; view toggles and replay work", as
   await expect(page.getByText("Recorded events at")).toBeVisible();
   await page.getByRole("button", { name: "Back to live" }).click();
   await expect(page.getByText("Recorded events at")).toBeHidden();
+  await panes.getByRole("tab", { name: "Result" }).click();
+  await expect(page.getByTestId("mission-result")).toBeVisible();
   expect(errors).toEqual([]);
 });
 
@@ -115,5 +123,44 @@ test("settings: accent colour, model switch and email results", async ({ page })
   await expect(email.getByText(/Not signed in with Google yet|Sent\./)).toBeVisible();
   await page.reload();
   await expect(page.getByLabel("Result email address")).toHaveValue("someone@example.com");
+  expect(errors).toEqual([]);
+});
+
+test("recent missions: filter by type and delete one", async ({ page, request }) => {
+  const errors = watchErrors(page);
+  const ticket = await (
+    await request.post(`${API}/missions`, { data: { task: "Create a ticket for the slow checkout", inputs: {} } })
+  ).json();
+  const page1 = await (
+    await request.post(`${API}/missions`, {
+      data: { task: "Write a blog post about robots as an HTML page", inputs: {} },
+    })
+  ).json();
+  await waitForMission(request, ticket.id, ["completed"]);
+  await waitForMission(request, page1.id, ["paused", "completed"]);
+
+  await page.goto("/missions");
+  // the blog mission is waiting for approval: its pop-up may open; "Later" closes it
+  const popup = page.getByRole("dialog", { name: "Approval needed" });
+  await page.waitForTimeout(1500);
+  if (await popup.isVisible()) await popup.getByRole("button", { name: "Later" }).click();
+  const list = page.getByRole("region", { name: "Missions" });
+  await list.getByRole("radio", { name: "Tickets" }).click();
+  await expect(list.getByText("Create a ticket for the slow checkout")).toBeVisible();
+  await expect(list.getByText("Write a blog post about robots as an HTML page")).toHaveCount(0);
+  await list.getByRole("radio", { name: "Web pages" }).click();
+  const item = list.getByText("Write a blog post about robots as an HTML page");
+  await expect(item).toBeVisible();
+
+  await item.hover();
+  await list.getByRole("button", { name: /Delete mission Write a blog post about robots/ }).click();
+  await list.getByRole("button", { name: "Keep" }).click(); // changing your mind keeps it
+  await expect(item).toBeVisible();
+  await item.hover();
+  await list.getByRole("button", { name: /Delete mission Write a blog post about robots/ }).click();
+  await list.getByRole("button", { name: "Delete", exact: true }).click();
+  await expect(item).toHaveCount(0);
+  expect((await request.get(`${API}/missions/${page1.id}`)).status()).toBe(404);
+  expect((await request.get(`${API}/missions/${ticket.id}`)).status()).toBe(200);
   expect(errors).toEqual([]);
 });

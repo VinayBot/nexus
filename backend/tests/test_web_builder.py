@@ -282,3 +282,34 @@ def test_summary_in_short_skips_headings_and_lists() -> None:
 
     md = "# Title\n\n_tagline_\n\n## Intro\n\nFirst sentence here. Second one. Third."
     assert in_short(md) == "First sentence here. Second one."
+
+
+async def test_delete_mission_removes_outputs_but_keeps_the_audit_log() -> None:
+    from sqlalchemy import func, select
+
+    from nexus.core.deletion import MissionBusyError, delete_mission
+    from nexus.db.models import AuditRow, EventRow
+
+    async with runtime(get_settings(), provider=simulation_llm(), recover=False) as svc:
+        row = await svc.runner.create("Write a blog post about agents as an HTML page")
+        await asyncio.wait_for(svc.runner.wait(row.id), timeout=90)
+        [pending] = await svc.approvals.list(mission_id=row.id)
+        await svc.approvals.decide(pending.id, ApprovalDecision(decision="approve"))
+        await asyncio.wait_for(svc.runner.wait(row.id), timeout=90)
+        site = svc.settings.data_dir / "sites" / row.id
+        assert site.is_dir() and svc.workspaces.path_for(row.id).is_dir()
+
+        await delete_mission(svc, row.id)
+        assert await repo.get_mission(svc.db, row.id) is None
+        async with svc.db.session() as s:
+            events = await s.scalar(select(func.count()).where(EventRow.mission_id == row.id))
+            audits = await s.scalar(select(func.count()).where(AuditRow.mission_id == row.id))
+        assert events == 0 and audits and audits > 0  # the decision record stays
+        assert not site.exists() and not svc.workspaces.path_for(row.id).exists()
+        state = await svc.runner.graph.aget_state(svc.runner.config(row.id))
+        assert not state.values  # checkpoints gone
+
+        busy = await svc.runner.create("Write a blog post about robots as an HTML page")
+        with pytest.raises(MissionBusyError):
+            await delete_mission(svc, busy.id)
+        await svc.runner.cancel(busy.id)

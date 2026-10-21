@@ -1,10 +1,10 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { LayoutGroup, motion } from "motion/react";
+import { AnimatePresence, LayoutGroup, motion } from "motion/react";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { AlertTriangle, RotateCcw } from "lucide-react";
 import { QuickApproval } from "@/components/approvals/QuickApproval";
 import { MissionFloor } from "@/components/mission/MissionFloor";
@@ -23,6 +23,7 @@ import { playbookName } from "@/lib/playbooks";
 import { useApprovals, useMission, type Mission } from "@/lib/queries";
 import { useActiveMission } from "@/stores/missions";
 import { useMissionStream } from "@/stores/missionStream";
+import { useTour } from "@/stores/tour";
 import { SPEEDS, useReplay } from "@/stores/replay";
 
 const LiveGraph = dynamic(() => import("@/components/graph/LiveGraph").then((m) => m.LiveGraph), {
@@ -122,6 +123,24 @@ function MissionControl() {
   const approvals = useApprovals("pending");
   const approval = approvals.data?.find((a) => a.mission_id === missionId);
   const [mode, setMode] = useState<"floor" | "graph">("floor");
+  // Result vs Agents: a finished mission opens on its result, a running one on the agents;
+  // when a running mission finishes, switch to the result once. The tabs switch back any time.
+  const [pane, setPane] = useState<"result" | "agents">("agents");
+  const hasOutput = Boolean(mission.data?.report) || mission.data?.status === "failed";
+  const shownFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!missionId || !mission.data || mission.data.id !== missionId) return;
+    const key = `${missionId}:${hasOutput}`;
+    if (shownFor.current === key) return;
+    shownFor.current = key;
+    setPane(hasOutput ? "result" : "agents");
+  }, [missionId, mission.data, hasOutput]);
+  // the tour's "Agents at work" stop needs the robots on screen
+  const tourOnFloor = useTour((t) => t.active && t.steps[t.index]?.element === "mission-floor");
+  useEffect(() => {
+    if (tourOnFloor) setPane("agents");
+  }, [tourOnFloor]);
+  const showResult = hasOutput && pane === "result" && !replayOn;
   const cancel = useMutation({ mutationFn: () => post(`/missions/${missionId}/cancel`) });
   const open = (id: string) => {
     setActive(id);
@@ -237,66 +256,126 @@ function MissionControl() {
                 <QuickApproval approval={approval} />
               </motion.section>
             )}
-            {m?.status === "failed" && !replayOn && <FailureCard mission={m} onRetry={(r) => open(r.id)} />}
-            {m?.report && !replayOn && <ReportCard mission={m} />}
-
-            <div className="panel overflow-hidden">
-              <div className="flex items-center gap-2 border-b border-border px-4 py-2">
-                <h2 className="text-sm font-semibold text-text">Agents at work</h2>
-                <LayoutGroup>
-                  <div className="ml-auto flex rounded-lg border border-border p-0.5" role="tablist" aria-label="View">
-                    {(["floor", "graph"] as const).map((v) => (
-                      <button
-                        key={v}
-                        type="button"
-                        role="tab"
-                        aria-selected={mode === v}
-                        onClick={() => setMode(v)}
-                        className="relative px-3 py-1 text-xs"
-                      >
-                        {mode === v && (
-                          <motion.span
-                            layoutId="view-toggle"
-                            className="absolute inset-0 rounded-md bg-surface-hover"
+            {hasOutput && !replayOn && (
+              <LayoutGroup id="pane-tabs">
+                <div
+                  className="flex gap-1 rounded-xl border border-border bg-[var(--surface)] p-1"
+                  role="tablist"
+                  aria-label="Mission view"
+                >
+                  {(
+                    [
+                      ["result", m?.status === "failed" ? "What went wrong" : "Result"],
+                      ["agents", "Agents at work"],
+                    ] as const
+                  ).map(([id, label]) => (
+                    <button
+                      key={id}
+                      type="button"
+                      role="tab"
+                      aria-selected={pane === id}
+                      onClick={() => setPane(id)}
+                      className="relative flex-1 rounded-lg px-3 py-2 text-sm font-medium"
+                    >
+                      {pane === id && (
+                        <motion.span
+                          layoutId="pane-tab"
+                          className="absolute inset-0 rounded-lg bg-[rgb(var(--accent-rgb)/0.16)] shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.45)]"
+                          transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                        />
+                      )}
+                      <span className={cn("relative", pane === id ? "text-text" : "text-muted")}>{label}</span>
+                    </button>
+                  ))}
+                </div>
+              </LayoutGroup>
+            )}
+            <AnimatePresence mode="wait" initial={false}>
+              {showResult ? (
+                <motion.div
+                  key="result"
+                  initial={{ opacity: 0, x: -14 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -14 }}
+                  transition={{ duration: 0.22 }}
+                  className="flex flex-col gap-3"
+                >
+                  {m?.status === "failed" && <FailureCard mission={m} onRetry={(r) => open(r.id)} />}
+                  {m?.report && <ReportCard mission={m} />}
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="agents"
+                  initial={{ opacity: 0, x: 14 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 14 }}
+                  transition={{ duration: 0.22 }}
+                  className="flex flex-col gap-3"
+                >
+                  <div className="panel overflow-hidden">
+                    <div className="flex items-center gap-2 border-b border-border px-4 py-2">
+                      <h2 className="text-sm font-semibold text-text">Agents at work</h2>
+                      <LayoutGroup>
+                        <div
+                          className="ml-auto flex rounded-lg border border-border p-0.5"
+                          role="tablist"
+                          aria-label="View"
+                        >
+                          {(["floor", "graph"] as const).map((v) => (
+                            <button
+                              key={v}
+                              type="button"
+                              role="tab"
+                              aria-selected={mode === v}
+                              onClick={() => setMode(v)}
+                              className="relative px-3 py-1 text-xs"
+                            >
+                              {mode === v && (
+                                <motion.span
+                                  layoutId="view-toggle"
+                                  className="absolute inset-0 rounded-md bg-surface-hover"
+                                />
+                              )}
+                              <span className={cn("relative", mode === v ? "text-text" : "text-faint")}>
+                                {v === "floor" ? "Robots" : "Graph"}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </LayoutGroup>
+                    </div>
+                    <motion.div layout className="relative h-[460px]" data-tour="mission-floor">
+                      <span key={`scan-${missionId}`} className="mission-scan" aria-hidden />
+                      {mode === "floor" ? (
+                        <motion.div
+                          key="floor"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="absolute inset-0"
+                        >
+                          <MissionFloor
+                            key={`${missionId}-${replayOn}`}
+                            view={view}
+                            agents={agents.data}
+                            className="h-full w-full"
                           />
-                        )}
-                        <span className={cn("relative", mode === v ? "text-text" : "text-faint")}>
-                          {v === "floor" ? "Robots" : "Graph"}
-                        </span>
-                      </button>
-                    ))}
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="graph"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="absolute inset-0"
+                        >
+                          <LiveGraph view={view} />
+                        </motion.div>
+                      )}
+                    </motion.div>
                   </div>
-                </LayoutGroup>
-              </div>
-              <motion.div layout className="relative h-[460px]" data-tour="mission-floor">
-                <span key={`scan-${missionId}`} className="mission-scan" aria-hidden />
-                {mode === "floor" ? (
-                  <motion.div
-                    key="floor"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="absolute inset-0"
-                  >
-                    <MissionFloor
-                      key={`${missionId}-${replayOn}`}
-                      view={view}
-                      agents={agents.data}
-                      className="h-full w-full"
-                    />
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="graph"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="absolute inset-0"
-                  >
-                    <LiveGraph view={view} />
-                  </motion.div>
-                )}
-              </motion.div>
-            </div>
-            <Timeline view={view} />
+                  <Timeline view={view} />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </>
         )}
       </section>

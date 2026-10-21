@@ -85,6 +85,20 @@ async def cancel(mission_id: str) -> dict[str, bool]:
     return {"cancelled": await services().runner.cancel(mission_id)}
 
 
+@router.delete("/{mission_id}", status_code=204)
+async def delete(mission_id: str) -> None:
+    """Delete a mission and its outputs (the audit log is kept). Paused ones are cancelled first."""
+    from nexus.core.deletion import MissionBusyError, delete_mission
+
+    row = await _mission(mission_id)
+    if row.status == "paused":
+        await services().runner.cancel(mission_id)
+    try:
+        await delete_mission(services(), mission_id)
+    except MissionBusyError as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+
 @router.get("/{mission_id}/events")
 async def events(mission_id: str, after_seq: int = 0, limit: int = 2000) -> list[dict[str, Any]]:
     await _mission(mission_id)

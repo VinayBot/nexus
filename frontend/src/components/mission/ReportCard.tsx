@@ -35,7 +35,7 @@ function plainOutcome(r: Report, playbook: string | null): string {
   if (playbook === "self_healing") return "The bug was fixed, verified on live traffic and saved to the Fix Library.";
   if (playbook === "ticket_solver") return "The ticket was solved and a comment with the fix was posted.";
   if (r.ticket_id)
-    return `The ticket was written from the code and logs and filed as ${r.ticket_id}${r.emailed_to ? ", then emailed to you" : ""}.`;
+    return `The ticket was written from the code and logs and filed as ${r.ticket_id}${r.emailed_to ? `, then emailed to ${r.emailed_to}` : ""}.`;
   return "Here is the team's answer.";
 }
 
