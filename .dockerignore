@@ -1,0 +1,22 @@
+# Build context for backend/Dockerfile is the repo root: never ship local state or secrets.
+.env
+**/.env
+backend/data/
+data/
+**/secret.key
+**/google.json
+**/google_client.json
+**/smtp.json
+# dependencies and caches are rebuilt inside the image
+**/.venv/
+**/node_modules/
+**/.next*/
+**/__pycache__/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.pytest_cache/
+frontend/
+.git/
+**/test-results/
+**/playwright-report/
+*.log

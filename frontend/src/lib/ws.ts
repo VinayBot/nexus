@@ -1,3 +1,4 @@
+import { withToken } from "./auth";
 import { WS_URL } from "./config";
 import { isEvent, type NexusEvent, type StreamMessage } from "./events";
 
@@ -43,8 +44,8 @@ export class EventSocket {
   }
 
   private url(): string {
-    if (!this.opts.missionId) return `${WS_URL}/ws/global`;
-    return `${WS_URL}/ws/missions/${this.opts.missionId}?after_seq=${this.lastSeq}`;
+    if (!this.opts.missionId) return withToken(`${WS_URL}/ws/global`);
+    return withToken(`${WS_URL}/ws/missions/${this.opts.missionId}?after_seq=${this.lastSeq}`);
   }
 
   private connect(): void {

@@ -11,6 +11,7 @@ import { useLive } from "@/stores/live";
 import { useTour } from "@/stores/tour";
 import { ApprovalsWaiting } from "@/components/approvals/ApprovalPrompt";
 import { SystemPower } from "./SystemPower";
+import { UserMenu } from "./UserMenu";
 import { MissionSwitcher } from "./MissionSwitcher";
 
 interface Readiness {
@@ -176,6 +177,7 @@ export function TopBar() {
         ▶ Present
       </button>
       <QuickSettings />
+      <UserMenu />
     </header>
   );
 }

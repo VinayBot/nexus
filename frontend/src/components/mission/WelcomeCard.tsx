@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { post } from "@/lib/api";
+import { useCan } from "@/lib/me";
 import { MISSION_TYPES } from "@/lib/playbooks";
 import type { Mission } from "@/lib/queries";
 import { useActiveMission } from "@/stores/missions";
@@ -20,6 +21,7 @@ export function WelcomeCard() {
   const qc = useQueryClient();
   const router = useRouter();
   const setActive = useActiveMission((s) => s.setActive);
+  const canRun = useCan("operator");
   const start = useMutation({
     mutationFn: (t: { id: string; example: string }) =>
       post<Mission>("/missions", { task: t.example, playbook: t.id || null, inputs: {} } as never),
@@ -66,7 +68,7 @@ export function WelcomeCard() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25 + 0.06 * i }}
-              disabled={start.isPending}
+              disabled={!canRun || start.isPending}
               onClick={() => start.mutate(t)}
               className="group lift flex items-start gap-3 rounded-xl border border-border p-3 text-left hover:border-[rgb(var(--accent-soft-rgb)/0.5)] hover:bg-[rgb(var(--accent-rgb)/0.06)]"
             >

@@ -1,5 +1,7 @@
 "use client";
 
+import { RoleGate } from "@/components/layout/RoleGate";
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, useAnimationControls } from "motion/react";
 import Link from "next/link";
@@ -172,7 +174,7 @@ export default function Page() {
   const hawk = initialRobot(0);
 
   return (
-    <>
+    <RoleGate min="owner">
       <RobotDefs />
       <PageHeader
         title="Chaos Lab"
@@ -270,6 +272,6 @@ export default function Page() {
           ))}
         </ul>
       </section>
-    </>
+    </RoleGate>
   );
 }

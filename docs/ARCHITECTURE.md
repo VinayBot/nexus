@@ -2,8 +2,8 @@
 
 NEXUS is a multi-agent orchestration system built on **LangGraph** and **local open
 models (Ollama)**. It has automated retries, **SQLite persistence** and **human approval
-gates**. The UI is a sci-fi "Sunset Command" HUD that animates the system from real backend
-events only.
+gates**. The UI (Next.js) animates the system from real backend events only, and every API
+route is guarded by accounts and roles (owner, operator, viewer; see `backend/nexus/auth/`).
 
 ## 1. Request flow
 

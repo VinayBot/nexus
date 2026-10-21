@@ -14,7 +14,7 @@ same path with spotlights, if you prefer to narrate over it.
 | 0:20 | Top bar | Hover **System Power** | "The Resource Governor watches RAM and queues LLM calls instead of crashing a 16 GB Mac." |
 | 0:40 | `/learn` | Scroll the table | "Every Day 16–20 concept, where it lives in code, and live counts of the events proving it ran." |
 | 1:10 | `/chaos` | Ring **Null-handling bug** | "That injected a real bug into the live service. Watch the heartbeat go red, and the sky." |
-| 1:40 | `/missions` | Open the new Hawk mission | "Hawk opened an incident. The Commander sends data packets to three investigators in parallel (Send fan-out). The Thought Stream is their live ReAct trace." |
+| 1:40 | `/missions` | Open the new Hawk mission | "Hawk opened an incident. The Commander sends data packets to three investigators in parallel (Send fan-out). The Activity panel is their live ReAct trace." |
 | 2:30 | Graph toggle | Switch to **Graph** | "This is the compiled LangGraph. The glowing node is the one running; light follows the branch just taken; ×N counts loops." |
 | 3:00 | `/arena/<id>` | Watch the council | "Three Challengers propose fixes independently. Each patch runs in its own sandbox: green lights passed. Identities hide for anonymous review, and Arbiter weighs test evidence first." |
 | 3:50 | `/approvals` (or Mailpit) | Show the risk gauge, the diff and the dry run, then **Approve** (or click Approve in the e-mail) | "HIGH risk means a dry run first, then a human approval. The e-mail link is signed and single-use; GET only shows a confirmation." |

@@ -1,3 +1,4 @@
+import { authHeaders, onUnauthorized } from "./auth";
 import { API_URL } from "./config";
 
 export class ApiError extends Error {
@@ -20,10 +21,12 @@ export async function api<T>(path: string, init: RequestInit & { json?: Json } =
     ...rest,
     headers: {
       ...(json !== undefined ? { "content-type": "application/json" } : {}),
+      ...authHeaders(),
       ...headers,
     },
     body: json !== undefined ? JSON.stringify(json) : rest.body,
   });
+  if (res.status === 401 && !path.startsWith("/auth/")) onUnauthorized();
   if (!res.ok) {
     let body: unknown;
     try {

@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import { authHeaders } from "@/lib/auth";
 import { API_URL } from "@/lib/config";
 import { get, post } from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -186,7 +187,7 @@ export function Nova() {
     try {
       const res = await fetch(`${API_URL}/api/v1/guide/chat`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", ...authHeaders() },
         body: JSON.stringify({ question, conversation_id: conv, mission_id: mission }),
       });
       for await (const { event, data } of sse(res)) {

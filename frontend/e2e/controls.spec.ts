@@ -38,7 +38,7 @@ test("composer: every mission type shows its hint", async ({ page }) => {
 test("welcome starter runs a question mission; view toggles and replay work", async ({ page, request }) => {
   const errors = watchErrors(page);
   await page.goto("/missions");
-  await page.evaluate(() => localStorage.clear());
+  await page.evaluate(() => localStorage.removeItem("nexus-active-mission")); // keep the session
   await page.goto("/missions");
   await expect(page.getByRole("heading", { name: "What should the agents do?" })).toBeVisible();
   await page.getByRole("button", { name: /^Question/ }).click();

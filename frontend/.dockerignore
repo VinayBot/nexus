@@ -2,3 +2,7 @@ node_modules
 .next
 e2e
 test-results
+.env
+.env.*
+.next-e2e
+playwright-report

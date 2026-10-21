@@ -4,9 +4,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { FileUp, Send, X } from "lucide-react";
 import { useRef, useState } from "react";
+import { authHeaders } from "@/lib/auth";
 import { API_URL } from "@/lib/config";
 import { post } from "@/lib/api";
 import { cn } from "@/lib/cn";
+import { useCan } from "@/lib/me";
 import { MISSION_TYPES } from "@/lib/playbooks";
 import { EmailIntentHint } from "./EmailIntentHint";
 import { useTickets, type Mission } from "@/lib/queries";
@@ -28,6 +30,7 @@ export function MissionComposer({ onCreated }: { onCreated: (m: Mission) => void
   const file = useRef<HTMLInputElement>(null);
   const chosen = MISSION_TYPES.find((t) => t.id === playbook) ?? MISSION_TYPES[0]!;
 
+  const canRun = useCan("operator");
   const create = useMutation({
     mutationFn: () => {
       const inputs: Record<string, unknown> = {};
@@ -48,7 +51,11 @@ export function MissionComposer({ onCreated }: { onCreated: (m: Mission) => void
     setUploadError(null);
     const form = new FormData();
     form.append("file", f);
-    const res = await fetch(`${API_URL}/api/v1/uploads/parse`, { method: "POST", body: form });
+    const res = await fetch(`${API_URL}/api/v1/uploads/parse`, {
+      method: "POST",
+      body: form,
+      headers: authHeaders(),
+    });
     if (!res.ok) {
       setUploadError((await res.json().catch(() => ({ detail: res.statusText }))).detail);
       return;
@@ -158,7 +165,8 @@ export function MissionComposer({ onCreated }: { onCreated: (m: Mission) => void
       )}
       <button
         type="submit"
-        disabled={create.isPending || (!task.trim() && playbook !== "ticket_solver")}
+        disabled={!canRun || create.isPending || (!task.trim() && playbook !== "ticket_solver")}
+        title={canRun ? undefined : "Viewers can watch missions; an operator or owner starts them."}
         className={cn("btn btn-primary w-full", create.isPending && "animate-pulse")}
       >
         <Send className="size-4" /> {create.isPending ? "Starting…" : "Start mission"}

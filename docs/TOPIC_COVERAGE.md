@@ -9,9 +9,10 @@ concept ran on this machine.
 
 | Concept | Implementation | Tests | UI |
 |---|---|---|---|
-| ReAct (Reason–Act–Observe) | `graph/subgraphs/react_worker.py` — `think` ⇄ `act`, `finalize` on the iteration guard | `test_graph_missions.py::test_react_iteration_guard_forces_final`, `::test_council_qa_runs_end_to_end` | Mission Control → Thought Stream (Thought / Action / Observation chips) |
-| Plan-and-Execute | `graph/nodes/planning.py::plan` (typed `Plan`, replanner revisions), `graph/nodes/work.py::dispatch` (executes ready steps by dependency) | `test_validation_failures_hit_fix_and_replan_guards`, `test_playbooks.py::test_project_builder_builds_tests_and_packages` (dependency waves) | Live Graph (`plan`, `dispatch` ×N); Thought Stream "Plan r0/r1" |
-| Raw SDK agent (no framework) | `llm/raw_react_agent.py` (httpx only: manual prompt, parsing, loop, retries) | `test_raw_agent.py` (+ `@live` against Ollama) | Under the Hood; Benchmarks "Raw SDK vs LangGraph" |
+| ReAct (Reason–Act–Observe) | `graph/subgraphs/react_worker.py` — `think` ⇄ `act`, `finalize` on the iteration guard | `test_graph_missions.py::test_react_iteration_guard_forces_final`, `::test_council_qa_runs_end_to_end` | Missions screen → Activity panel (Thought / Action / Observation chips) |
+| Plan-and-Execute | `graph/nodes/planning.py::plan` (typed `Plan`, replanner revisions), `graph/nodes/work.py::dispatch` (executes ready steps by dependency) | `test_validation_failures_hit_fix_and_replan_guards`, `test_playbooks.py::test_project_builder_builds_tests_and_packages` (dependency waves) | Live Graph (`plan`, `dispatch` ×N); Activity panel "Plan r0/r1" |
+| Raw SDK agent (no framework) | `llm/raw_react_agent.py` (httpx only: loop, retries, step limit) | `test_raw_agent.py` (+ `@live` against Ollama) | Under the Hood; Benchmarks "Raw SDK vs LangGraph" |
+| Native tool calling | `raw_react_agent.py::_run_native` — `tools=[JSON Schema]` → structured `tool_calls` → `{"role": "tool"}` results; a reply without tool calls is the answer (the prompted-JSON loop remains as `mode="json"`) | `test_raw_agent.py::test_native_tool_calling_loop` (asserts the request schema and the tool messages); verified live on qwen2.5:3b and llama3.2:3b | Under the Hood |
 | Conditional routing | `graph/nodes/understand.py::route/after_route`; `after_validate`, `after_gate`, `after_approval`, `after_verify`, `after_rollback` | `test_router_picks_playbook_and_emits_edge`, `test_hitl.py` (risk routes) | Live Graph — the chosen branch label flashes on the edge |
 
 ## Day 17 — LangGraph core: states & cycles
@@ -24,14 +25,14 @@ concept ran on this machine.
 | Cycles with guards | `state.DEFAULT_LIMITS` (clarify, dispatch, fix, replan, verify, debate, react), counters in `state.loops` (`sum_counts`) | `test_validation_failures_hit_fix_and_replan_guards`, `test_react_iteration_guard_forces_final`, `test_self_healing.py::test_failed_verification_rolls_back` | Live Graph ×N iteration badges; Stage strip counters |
 | Parallel fan-out / fan-in | `dispatch` returns `Command(goto=[Send("worker", …)])`; `collect` is the fan-in; the tournament uses `Send` for solvers and reviewers | `test_council_qa_runs_end_to_end` (2 workers, 3 solvers, 3 reviews each) | Mission Floor (data orbs fly to several workers at once, "Send ×N") |
 | Subgraphs | `react_worker`, `tournament` (compiled graphs invoked by nodes; structures exported to the UI) | graph tests | Live Graph (worker/council marked as subgraphs) |
-| Command handoffs | `dispatch` → `Command(goto=…, update=…)` | graph tests | Thought Stream "Handoff commander → agent" |
+| Command handoffs | `dispatch` → `Command(goto=…, update=…)` | graph tests | Activity panel "Handoff commander → agent" |
 
 ## Day 18 — Memory systems & context pruning
 
 | Concept | Implementation | Tests | UI |
 |---|---|---|---|
-| SQLite persistence | `AsyncSqliteSaver` in `core/runtime.py`; app tables in `db/models.py` | `test_crashed_mission_resumes_from_sqlite_checkpoint` | Time Travel; checkpoint nodes in Mission Control |
-| Crash resume | `graph/runner.py::recover()` on startup; shutdown keeps missions "running" | same test (planning is not redone after restart); also verified live when a dev reload restarted the backend mid-mission | "Mission resumed from checkpoint" in the Thought Stream |
+| SQLite persistence | `AsyncSqliteSaver` in `core/runtime.py`; app tables in `db/models.py` | `test_crashed_mission_resumes_from_sqlite_checkpoint` | Time Travel; checkpoint nodes in Missions screen |
+| Crash resume | `graph/runner.py::recover()` on startup; shutdown keeps missions "running" | same test (planning is not redone after restart); also verified live when a dev reload restarted the backend mid-mission | "Mission resumed from checkpoint" in the Activity panel |
 | Sliding-window pruning | `memory/pruning.py::sliding_window` (system + pinned + recent) | `test_sliding_window_keeps_system_pinned_and_recent` | Memory (vessels, pruning events) |
 | Summarisation pruning | `memory/pruning.py::summarise` (rolling pinned summary, fallback to the window) | `test_summarise_folds_old_turns_into_pinned_summary`, `test_summarise_failure_falls_back_to_sliding_window` | Memory; Benchmarks "pruning" suite |
 | Token limits / budgets | `llm/tokens.py` (estimates calibrated against Ollama's `prompt_eval_count`, `TokenBudget`), `core/meter.py` (per-mission cap from policy) | `test_token_estimates_learn_from_real_counts`, `test_budget_window_and_record`; the cap stopped a real mission at 124,576 / 120,000 tokens | Observatory; State Inspector token bars |
@@ -42,18 +43,20 @@ concept ran on this machine.
 | Concept | Implementation | Tests | UI |
 |---|---|---|---|
 | Supervisor routing | `planning.py::assemble` (reputation-aware team), `work.py::dispatch` (the Commander hands off steps) | graph tests | Mission Floor (Commander on the dais) |
-| Worker delegation | `work.py::worker` → ReAct subgraph per step with a per-agent tool allowlist | graph tests | Thought Stream; Agents (allowlists) |
+| Worker delegation | `work.py::worker` → ReAct subgraph per step with a per-agent tool allowlist | graph tests | Activity panel; Agents (allowlists) |
 | Custom MCP servers | `mcp_servers/` — workspace (path jail), sandbox, knowledge, tickets (+GitHub), notify (system-only), observability, demo; `hub.py` | `test_mcp.py` (all servers, path jail, allowlist, notify guard, sandbox, tickets) | Tools (servers, tools, schemas, health, call log, "try tool") |
+| MCP transport (stdio, JSON-RPC) | `mcp_servers/__main__.py` serves any server over stdio (`python -m nexus.mcp_servers tickets`) for external clients; the app hub uses in-process clients | `test_mcp_stdio.py` (spawns the server as a process, `list_tools`, `create` + `get` a ticket over stdio) | — |
 
 ## Day 20 — Human-in-the-loop & safety
 
 | Concept | Implementation | Tests | UI |
 |---|---|---|---|
-| State interrupts | `interrupt()` in `clarify`, `assemble` (team), `approval`; resumed with `Command(resume=…)` in `runner.resume` | `test_vague_task_interrupts_for_clarification_then_resumes`, `test_dynamic_mission_requires_team_approval…` | Approvals; "Awaiting your approval" in Mission Control |
+| State interrupts | `interrupt()` in `clarify`, `assemble` (team), `approval`; resumed with `Command(resume=…)` in `runner.resume` | `test_vague_task_interrupts_for_clarification_then_resumes`, `test_dynamic_mission_requires_team_approval…` | Approvals; "Awaiting your approval" in Missions screen |
 | Approval gates | `safety/risk.py` + `policies.yaml` route to approval; `hitl/approvals.py` | `test_hitl.py` (approve, reject, CRITICAL override) | Approvals (risk gauge, APPROVED stamp) |
 | E-mail approvals | `hitl/tokens.py` (signed, expiring, single-use), `hitl/email_approvals.py` (GET confirm, POST decide), Mailpit | `test_approval_email_link_resumes_mission_and_is_single_use`, `test_tampered_and_expired_tokens_are_rejected` | Mailpit inbox; e-mail status chip on approval cards |
 | Time travel | `hitl/timetravel.py` — history tree, `state_at`, re-run, fork via `update_state`, choose runner-up, compare | `test_time_travel_runner_up_fork_and_compare`, `test_fork_with_state_patch_reruns_from_checkpoint`; e2e `timetravel.spec.ts` | Time Travel |
 | Safety | guardrails (injection, redaction, fencing), allowlists, path jail, sandbox, policies, audit log | `test_units_core.py` guardrail and risk tests; `test_ticket_injection_is_flagged` | Settings → Policies; Audit log tab |
+| Who may approve (RBAC) | `auth/` — Argon2id passwords, JWT sessions, roles owner / operator / viewer checked by one policy table on every route (`auth/policy.py`); approvals record the real username; login rate limit; WebSockets need a session | `test_auth.py` (role matrix, spoofed `by` ignored, rate limit, WS 4401, last-owner rule); e2e `auth.spec.ts` | Sign-in page; Settings → Users; read-only controls for viewers |
 
 ## Brief — reliability with local open models
 
@@ -63,3 +66,14 @@ concept ran on this machine.
 | Fallbacks | primary → alternate model → reduced context (`gateway.complete`); safe defaults; dead letters with "retry from here" | `test_fallback_chain_alternate_model_then_reduced_context` | Observatory |
 | Circuit breakers | `reliability/circuit_breaker.py` per model | `test_circuit_breaker_*`, `test_all_fallbacks_failing_raises_and_opens_circuit` | Observatory circuit list |
 | Local open models | Ollama provider, model router (fast/main), Resource Governor | `test_router_*`, governor tests | System Power gauge; Settings |
+
+## Production readiness (from the Week 1–2 report cards)
+
+| Concern | Implementation | Tests |
+|---|---|---|
+| Auth and RBAC | see "Who may approve" above | `test_auth.py`, `auth.spec.ts` |
+| Observability | Prometheus `GET /metrics` (`api/routes_metrics.py`): missions, tokens, approvals, emails, RAM, concurrency, queue, tokens/s, circuit breakers; OpenTelemetry traces; Insights | `/metrics` scraped in the live check |
+| Containers | non-root images with health checks, compose `service_healthy` ordering, root `.dockerignore` keeps `backend/data` (DB, tokens, keys) out of images | `docker compose build` |
+| CI | `.github/workflows/ci.yml`: ruff, mypy --strict, pytest, eslint, tsc, vitest, Playwright | every push |
+| DB performance | one query per list endpoint (no N+1); index on `missions.created_at` | — |
+| Secrets | weak or placeholder `NEXUS_SECRET_KEY` → random 48-byte key in `data/secret.key` (0600) | `test_weak_secret_is_replaced_by_a_strong_private_key` |

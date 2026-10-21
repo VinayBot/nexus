@@ -1,5 +1,11 @@
 # NEXUS presentation guide
 
+> **Note:** this guide was written for an earlier version of the interface (a sci-fi theme
+> with different screen names). The concepts, code paths and tests it describes are current;
+> some screenshots and colours are not. For the current screens and mission types see
+> [HOW_IT_WORKS.md](HOW_IT_WORKS.md) and the [README](../README.md).
+
+
 This guide explains what NEXUS is, what was built, and what works.
 
 - **Part 1 (sections 1–10):** walks through every screen with a short demo you can follow
@@ -173,9 +179,9 @@ Ollama, no cloud, no API keys."
 
 ---
 
-### 5.2 Mission Control (`/missions`): the main screen
+### 5.2 Missions screen (`/missions`): the main screen
 
-![Mission Control](images/mission-control.jpg)
+![Missions screen](images/mission-result.png)
 
 **What it is:** where missions start and where you watch them.
 
@@ -183,7 +189,7 @@ Ollama, no cloud, no API keys."
   the list of missions.
 - **Centre:** the **Mission Floor**, an animated command deck where each robot stands at
   its post. Above it, a **stage strip** shows the workflow steps lighting up.
-- **Right:** the **Thought Stream**, a live log of each agent's reasoning: Thought,
+- **Right:** the **Activity** panel, a live log of each agent's reasoning: Thought,
   Action, Observation, decisions and retries. You can filter it.
 - **Bottom:** the **Report** (answer, code diff, highlights) and the **Checkpoints** bar.
 
@@ -196,7 +202,7 @@ Ollama, no cloud, no API keys."
    - robots show **expanding rings while thinking**, **sparks while using a tool**, an
      **RGB glitch while retrying**, a **hologram card while waiting for approval**, and
      a **spin and light burst on success**.
-3. Point at the Thought Stream filling with real reasoning text.
+3. Point at the Activity panel filling with real reasoning text.
 4. Toggle **Floor ↔ Graph** to see the same mission as the LangGraph diagram.
 5. When it finishes, open the **Report** and click a checkpoint, which opens Time Travel.
 6. Click **Replay**. The finished mission is re-played from its recorded events at
@@ -210,7 +216,7 @@ a green light bar appears."
 
 ### 5.3 Live Graph (`/graph/<mission>`)
 
-![Live Graph](images/live-graph.jpg)
+![Live Graph](images/live-graph.png)
 
 **What it is:** the actual compiled LangGraph, drawn live.
 
@@ -254,7 +260,7 @@ The winner is the patch that actually passes."
 
 ### 5.5 Approvals (`/approvals`)
 
-![Approvals](images/approvals.jpg)
+![Approvals](images/approval.png)
 
 **What it is:** the human-in-the-loop inbox. A mission pauses here with LangGraph
 `interrupt()` and resumes with `Command(resume=…)`.
@@ -329,9 +335,9 @@ Self-Healing mission starts automatically.
 
 1. Arm **Null-handling bug**. The switch turns red and the heartbeat spikes.
 2. Hawk raises the alarm (red siren), and the app's background turns red (incident mode).
-3. Go to Mission Control and open the new "Heal INC-…" mission.
+3. Go to Missions screen and open the new "Heal INC-…" mission.
 4. Follow it to the Arena (the tournament), then Approvals (approve), then back to
-   Mission Control.
+   Missions screen.
 5. Watch the fix get applied, then **verified on live traffic**. The sky turns to dawn
    colours and the victory burst plays.
 6. **Restore baseline** when done.
@@ -487,11 +493,11 @@ counts."
 | 0:20 | Top bar | Hover System Power: "a 16 GB Mac stays responsive" |
 | 0:40 | How it Works → Curriculum | Show the course topics with live event counts |
 | 1:10 | Chaos Lab | Arm **Null-handling bug** and watch the heartbeat and red sky |
-| 1:40 | Mission Control | Open the Heal mission: fan-out orbs, Thought Stream |
+| 1:40 | Missions screen | Open the Heal mission: fan-out orbs, Activity panel |
 | 2:30 | Graph toggle | The real LangGraph, with glowing nodes and ×N loops |
 | 3:00 | Arena | Three solvers, sandbox test bars, anonymous review, verdict |
 | 3:50 | Approvals | Risk gauge, diff, dry run, then **Approve** |
-| 4:30 | Mission Control | Execute, verify on live traffic, dawn sky and victory burst |
+| 4:30 | Missions screen | Execute, verify on live traffic, dawn sky and victory burst |
 | 5:10 | Time Travel | Choose the runner-up, then compare branches |
 | 6:00 | Memory | The fix is now in the Fix Library |
 | 6:30 | Nova | "Explain how reducers merged the parallel findings" |
@@ -548,7 +554,8 @@ shows it).
 - **Email needs Mailpit** (or any SMTP server). Otherwise messages go to an outbox table.
 - **Subgraphs are not checkpointed internally,** so a crash mid-tournament re-runs that
   tournament step.
-- **Single user, no login.** It is meant to run on localhost.
+- **Accounts with roles, one machine.** Owner, operator and viewer accounts (Argon2id, JWT);
+  it is meant for a small team on one machine, not a multi-tenant service.
 
 ---
 
@@ -646,7 +653,7 @@ nodes, `think` and `act`, in a loop, plus `finalize`.
 - **Hard cap:** the iteration guard exists because small models sometimes repeat the same
   tool call.
 
-**Show it:** Mission Control → Thought Stream, filter **ReAct**. Each card is labelled
+**Show it:** Missions screen → Activity panel, filter **ReAct**. Each card is labelled
 Thought, Action, Observation or Final.
 
 **Proof:** `test_react_iteration_guard_forces_final`, `test_council_qa_runs_end_to_end`.
@@ -670,7 +677,7 @@ result fails validation, re-plan.
 - **Plan + ReAct per step** gives the best of both: structure at the top and flexibility
   inside each step.
 
-**Show it:** Live Graph (`plan`, `dispatch` ×N) and Thought Stream "Plan r0".
+**Show it:** Live Graph (`plan`, `dispatch` ×N) and Activity panel "Plan r0".
 
 **Proof:**
 - `test_validation_failures_hit_fix_and_replan_guards`;
@@ -710,7 +717,7 @@ vs LangGraph".
 - **Visible decisions:** every routing decision emits an `edge.taken` event with its
   label.
 
-**Show it:** Live Graph, where the chosen branch label flashes on the edge. Thought Stream
+**Show it:** Live Graph, where the chosen branch label flashes on the edge. Activity panel
 "Route".
 
 **Proof:** `test_router_picks_playbook_and_emits_edge`.
@@ -841,7 +848,7 @@ model (see 11.22), so parallelism doesn't multiply memory.
 
 **Show it:**
 - Live Graph: worker and council are marked as subgraphs.
-- Thought Stream: "Handoff commander → echo".
+- Activity panel: "Handoff commander → echo".
 
 ---
 
@@ -867,7 +874,7 @@ On startup, `runner.recover()` resumes any mission that was still running.
 **Show it:**
 - Time Travel, the checkpoint rail.
 - After a backend restart mid-mission, "Mission resumed from checkpoint" appears in the
-  Thought Stream.
+  Activity panel.
 
 **Proof:** `test_crashed_mission_resumes_from_sqlite_checkpoint`; this was also verified
 live.
@@ -1077,13 +1084,13 @@ person. How risky something is decides whether it needs approval.
   it; a clean approval streak lowers it slightly.
 
 **Why this way:**
-- **Rules are explainable:** the Thought Stream shows each factor (e.g. `files_touched
+- **Rules are explainable:** the Activity panel shows each factor (e.g. `files_touched
   +0.05`). A model-based risk judge would be a black box and could be prompt-injected.
 - **Stricter-only policies** mean a configuration mistake can't remove a safety check.
 
 **Show it:**
 - Approvals: risk gauge, diff, dry run.
-- Thought Stream: "Risk HIGH → dry_run" with its factors.
+- Activity panel: "Risk HIGH → dry_run" with its factors.
 
 **Proof:** `test_hitl.py` (approve, reject, CRITICAL override), and the interrupt tests in
 `test_graph_missions.py`.

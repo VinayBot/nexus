@@ -342,5 +342,6 @@ guided tour of 14 stops (→/← keys, Esc to exit; you can click around while i
   says "local (not isolated)" when that happens.
 - Email approvals need Mailpit (`make mail`); without it the email stays in the outbox, and
   the in-app pop-up still works.
-- Single user, no login. Each mission has a 120k-token cap, so a runaway mission stops
+- Accounts with roles (owner, operator, viewer) for a small team on one machine, not a
+  multi-tenant service. Each mission has a 120k-token cap, so a runaway mission stops
   with a clear message.

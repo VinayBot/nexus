@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ApprovalCard } from "@/components/approvals/ApprovalCard";
+import { RoleGate } from "@/components/layout/RoleGate";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { get } from "@/lib/api";
@@ -63,9 +64,11 @@ export default function Page() {
           </EmptyState>
         ) : (
           <div className="space-y-4" data-tour="approvals-list">
-            {pending.data.map((a) => (
-              <ApprovalCard key={a.id} approval={a} />
-            ))}
+            <RoleGate min="operator">
+              {pending.data.map((a) => (
+                <ApprovalCard key={a.id} approval={a} />
+              ))}
+            </RoleGate>
           </div>
         )
       ) : (

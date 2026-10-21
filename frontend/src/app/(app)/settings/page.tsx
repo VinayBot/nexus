@@ -3,7 +3,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { EmailResults } from "@/components/settings/EmailResults";
+import { RoleGate } from "@/components/layout/RoleGate";
 import { ModelPicker } from "@/components/settings/ModelPicker";
+import { UsersPanel } from "@/components/settings/UsersPanel";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { get, put } from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -69,67 +71,76 @@ export default function Page() {
     <>
       <PageHeader title="Settings" description="Every setting here changes the running backend immediately." />
       <div className="grid gap-3 xl:grid-cols-2">
-        <ModelPicker />
-        <EmailResults />
-        <section className="panel p-4">
-          <h2 className="panel-title text-sm ">Live knobs</h2>
-          {d && (
-            <>
-              <Row label="LLM concurrency" hint="Resource Governor slots (lowered automatically under memory pressure)">
-                <input
-                  type="range"
-                  min={1}
-                  max={4}
-                  value={d.llm_max_concurrency}
-                  onChange={(e) => save.mutate({ llm_max_concurrency: Number(e.target.value) })}
-                  aria-label="LLM concurrency"
-                />
-                <span className="ml-2 font-mono">{d.llm_max_concurrency}</span>
-              </Row>
-              <Row label="Pruning strategy">
-                {(["sliding_window", "summarise"] as const).map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => save.mutate({ pruning_strategy: v })}
-                    className={cn("chip mr-1 cursor-pointer", d.pruning_strategy === v && "border-accent text-accent")}
-                  >
-                    {v}
-                  </button>
-                ))}
-              </Row>
-              <Row label="Verify window" hint="Seconds of live traffic watched after a fix">
-                <input
-                  type="number"
-                  min={2}
-                  max={120}
-                  value={d.verify_window_s}
-                  onChange={(e) => save.mutate({ verify_window_s: Number(e.target.value) })}
-                  className="w-20 rounded border border-border bg-black/40 px-2 py-1"
-                  aria-label="Verify window seconds"
-                />
-              </Row>
-              <Row label="Auto-heal incidents">
-                <input
-                  type="checkbox"
-                  checked={d.auto_heal}
-                  onChange={(e) => save.mutate({ auto_heal: e.target.checked })}
-                  aria-label="Auto-heal"
-                />
-              </Row>
-              <Row label="Token cap / mission">{d.mission_token_limit.toLocaleString()} (policy)</Row>
-              <Row label="Sandbox">{d.sandbox_backend}</Row>
-              <Row label="Email">
-                {d.smtp} → {d.owner_email}
-              </Row>
-              {d.default_secret && (
-                <p className="mt-2 rounded bg-warning/10 px-2 py-1 text-xs text-warning">
-                  NEXUS_SECRET_KEY is the dev default — set your own in .env before sharing approval links.
-                </p>
-              )}
-            </>
-          )}
-        </section>
+        <UsersPanel />
+        <RoleGate min="owner">
+          <ModelPicker />
+          <EmailResults />
+          <section className="panel p-4">
+            <h2 className="panel-title text-sm ">Live knobs</h2>
+            {d && (
+              <>
+                <Row
+                  label="LLM concurrency"
+                  hint="Resource Governor slots (lowered automatically under memory pressure)"
+                >
+                  <input
+                    type="range"
+                    min={1}
+                    max={4}
+                    value={d.llm_max_concurrency}
+                    onChange={(e) => save.mutate({ llm_max_concurrency: Number(e.target.value) })}
+                    aria-label="LLM concurrency"
+                  />
+                  <span className="ml-2 font-mono">{d.llm_max_concurrency}</span>
+                </Row>
+                <Row label="Pruning strategy">
+                  {(["sliding_window", "summarise"] as const).map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => save.mutate({ pruning_strategy: v })}
+                      className={cn(
+                        "chip mr-1 cursor-pointer",
+                        d.pruning_strategy === v && "border-accent text-accent",
+                      )}
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </Row>
+                <Row label="Verify window" hint="Seconds of live traffic watched after a fix">
+                  <input
+                    type="number"
+                    min={2}
+                    max={120}
+                    value={d.verify_window_s}
+                    onChange={(e) => save.mutate({ verify_window_s: Number(e.target.value) })}
+                    className="w-20 rounded border border-border bg-black/40 px-2 py-1"
+                    aria-label="Verify window seconds"
+                  />
+                </Row>
+                <Row label="Auto-heal incidents">
+                  <input
+                    type="checkbox"
+                    checked={d.auto_heal}
+                    onChange={(e) => save.mutate({ auto_heal: e.target.checked })}
+                    aria-label="Auto-heal"
+                  />
+                </Row>
+                <Row label="Token cap / mission">{d.mission_token_limit.toLocaleString()} (policy)</Row>
+                <Row label="Sandbox">{d.sandbox_backend}</Row>
+                <Row label="Email">
+                  {d.smtp} → {d.owner_email}
+                </Row>
+                {d.default_secret && (
+                  <p className="mt-2 rounded bg-warning/10 px-2 py-1 text-xs text-warning">
+                    NEXUS_SECRET_KEY is the dev default — set your own in .env before sharing approval links.
+                  </p>
+                )}
+              </>
+            )}
+          </section>
+        </RoleGate>
         <section className="panel p-4">
           <h2 className="panel-title text-sm ">Appearance</h2>
           <Row label="Accent colour" hint="Buttons, navigation and highlights">
@@ -172,41 +183,43 @@ export default function Page() {
             <input type="checkbox" checked={ui.soundOn} onChange={ui.toggleSound} aria-label="Sound" />
           </Row>
         </section>
-        <section className="panel p-4">
-          <div className="flex items-center">
-            <h2 className="panel-title text-sm ">Safety policies</h2>
-            {draft && (
-              <button
-                type="button"
-                onClick={() => savePolicies.mutate(draft, { onSuccess: () => setDraft(null) })}
-                className="chip ml-auto cursor-pointer text-success"
-              >
-                Save policies
-              </button>
-            )}
-          </div>
-          <ul className="mt-2 space-y-1">
-            {pol.map((p, i) => (
-              <li key={p.id} className="flex items-start gap-2 text-xs">
-                <input
-                  type="checkbox"
-                  checked={p.enabled}
-                  onChange={(e) => setDraft(pol.map((x, j) => (j === i ? { ...x, enabled: e.target.checked } : x)))}
-                  aria-label={p.id}
-                  className="mt-0.5"
-                />
-                <div>
-                  <p className="font-mono ">{p.id}</p>
-                  <p className="text-muted">
-                    {p.description}
-                    {p.value != null ? ` (${String(p.value)})` : ""}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
-          {savePolicies.error && <p className="text-xs text-danger">{savePolicies.error.message}</p>}
-        </section>
+        <RoleGate min="owner">
+          <section className="panel p-4">
+            <div className="flex items-center">
+              <h2 className="panel-title text-sm ">Safety policies</h2>
+              {draft && (
+                <button
+                  type="button"
+                  onClick={() => savePolicies.mutate(draft, { onSuccess: () => setDraft(null) })}
+                  className="chip ml-auto cursor-pointer text-success"
+                >
+                  Save policies
+                </button>
+              )}
+            </div>
+            <ul className="mt-2 space-y-1">
+              {pol.map((p, i) => (
+                <li key={p.id} className="flex items-start gap-2 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={p.enabled}
+                    onChange={(e) => setDraft(pol.map((x, j) => (j === i ? { ...x, enabled: e.target.checked } : x)))}
+                    aria-label={p.id}
+                    className="mt-0.5"
+                  />
+                  <div>
+                    <p className="font-mono ">{p.id}</p>
+                    <p className="text-muted">
+                      {p.description}
+                      {p.value != null ? ` (${String(p.value)})` : ""}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            {savePolicies.error && <p className="text-xs text-danger">{savePolicies.error.message}</p>}
+          </section>
+        </RoleGate>
       </div>
     </>
   );

@@ -5,6 +5,7 @@ import remarkGfm from "remark-gfm";
 import { motion } from "motion/react";
 import { AlertTriangle, CheckCircle2, ChevronDown, Download, ExternalLink, Globe, Mail, XCircle } from "lucide-react";
 import { useState } from "react";
+import { withToken } from "@/lib/auth";
 import { API_URL } from "@/lib/config";
 import { cn } from "@/lib/cn";
 import type { Mission } from "@/lib/queries";
@@ -116,7 +117,7 @@ export function ReportCard({ mission }: { mission: Mission }) {
             </>
           )}
           {r.download && (
-            <a href={`${API_URL}${r.download}`} className="btn btn-primary btn-sm">
+            <a href={withToken(`${API_URL}${r.download}`)} className="btn btn-primary btn-sm">
               <Download className="size-3.5" /> Download project (.zip)
             </a>
           )}

@@ -1,194 +1,190 @@
-# NEXUS — a dynamic multi-agent command center on local models
+# NEXUS: a multi-agent workspace on local models
 
-NEXUS is a multi-agent orchestration system built with **LangGraph** on **local open
-models (Ollama)**. It has layered **automated retries**, **SQLite persistence** and
-**human approval gates**, and it runs entirely on a 16 GB MacBook. You give it a task;
-the Commander (supervisor) routes it to a playbook, plans, delegates to a squad of agents,
-runs evidence-grounded tournaments, asks a human before anything risky, and keeps every
-step rewindable.
+A team of 14 AI agents that plans, writes, codes, tests and asks a human before anything
+risky, built on **LangGraph** with **local models (Ollama)**, **MCP tools**, **human-in-the-loop
+approvals**, **checkpoints and time travel**, and a live UI where every animation is a real
+backend event. Week 4 assignment (Agentic systems, state machines and MCP), AI Engineering
+Bootcamp.
 
-The UI is "Sunset Command", a sci-fi HUD: a void-black base under sunset aurora light,
-neon corner-bracketed panels, a rolling grid horizon and original animated mecha robots.
-Every animation in Live mode is driven by a real backend event.
+![Mission result](docs/images/mission-result.png)
 
-![Mission Control](docs/images/mission-control.jpg)
+**What you can ask it**
+
+| Mission | Example | What you get |
+|---|---|---|
+| Web page | "Build an HTML page with a blog about AI" | A styled page, published with a link and a live preview |
+| Question | "When should a team prefer optimistic locking?" | A council answer: 3 agents, anonymous review, a judge |
+| Fix service | Switch on a bug in the Chaos Lab | The bug found, fixed with tests, approved, applied and verified on live traffic |
+| Build API | "Build a FastAPI API to manage books (title, author, year)" | A tested project as a zip |
+| New ticket / Solve ticket | "Create a ticket for the slow inventory check" / "Solve ticket T-101" | A filed bug report, or a fix with tests posted to the ticket |
+| Custom team | Anything else | The Commander designs a team; you approve it first |
+
+Add "…and send the output to name@example.com" to any prompt to get the result by email.
+
+---
 
 ## Quick start
 
-Prerequisites: macOS or Linux, [uv](https://docs.astral.sh/uv/), Node 22,
-[Ollama](https://ollama.com). Docker is optional (Mailpit plus an isolated sandbox).
+**Needs:** macOS or Linux, Python 3.12 with [uv](https://docs.astral.sh/uv/), Node 22 with
+pnpm (via corepack), and [Ollama](https://ollama.com/download). 16 GB RAM is enough.
 
 ```bash
-make setup     # uv sync + pnpm install, creates .env
-make models    # pulls the profile's models (lite: llama3.2:3b; balanced: + qwen2.5 3B and coder 3B)
-make dev       # backend :8000 (also launches the demo-service :8100), frontend :3000
-make prod      # same ports, optimised build without dev compiling or reloaders: fastest
+git clone https://github.com/VinayBot/nexus.git && cd nexus
+make setup            # backend deps (uv), frontend deps (pnpm), creates .env from .env.example
+make models           # pulls llama3.2:3b + nomic-embed-text (the "lite" profile, ~2.3 GB)
+make dev              # backend http://127.0.0.1:8000 · app http://localhost:3000
 ```
 
-Open <http://localhost:3000>. For the walkthrough, see
-[docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) or press **▶ Present**.
+Open http://localhost:3000 → **Enter Command Center** → create the **owner account** (first
+run only) → type a mission → **Start mission**.
 
-Optional extras:
+Recommended models: in **Settings → Models** pick **Balanced** (Qwen2.5 3B + Qwen2.5-Coder
+3B, ~5 GB), or `ollama pull qwen2.5:3b qwen2.5-coder:3b` first. **Standard (7B)** downloads
+from the same screen when you want it.
 
-- `make mail` starts Mailpit for approval e-mails (<http://localhost:8025>).
-- `make sandbox-image` builds the network-less Docker test runner (otherwise tests run
-  in a clearly labelled local fallback).
-- Set `NEXUS_MODEL_PROFILE=standard` to use qwen2.5-coder:7b as the main model (needs
-  ~7.5 GB free).
-- `NEXUS_LLM_PROVIDER=simulation` runs without Ollama on a scripted model (the UI shows
-  a SIMULATION badge).
+<details>
+<summary>Other ways to run</summary>
 
-## What it does
+```bash
+make prod                       # optimised frontend build + backend without the reloader
+make check                      # everything CI runs: lint, mypy --strict, tsc, all tests
+make e2e                        # Playwright end-to-end tests (own servers on :8011/:3011)
+docker compose up --build       # backend + frontend + Mailpit; Ollama stays native on the host
+NEXUS_LLM_PROVIDER=simulation make dev   # no models needed: scripted, clearly labelled
+```
+</details>
 
-| Playbook | What happens |
-|---|---|
-| **Self-Healing** (flagship) | Arm a chaos switch in the Chaos Lab and a real bug goes into the live demo-service. Hawk the Watcher opens an incident. The squad investigates in parallel, reproduces the bug with a test, and three Challengers propose patches; each patch runs in its own sandbox. After anonymous review, a judge, a dry run and **your approval** (UI or signed e-mail link), the fix lands on a git branch with hot reload. It is **verified on live traffic**, rolled back automatically if errors return, and stored in the Fix Library. |
-| **Web Page Builder** | "Build an HTML page with an AI blog", "a landing page for my bakery": Sage plans the sections, Quill and Echo write them in parallel, Forge renders a professional, script-free page from a fixed template, Aegis checks it (title, one H1, sections, 250+ words), and after **your approval** it is published at `/sites/<mission>/` with an **Open page** button and a live preview. |
-| **Create Ticket** | Echo reads the code and error logs the request points at, Quill writes a structured bug report (steps to reproduce, expected/actual, suspected file, severity), Swift files it as the next T-number and emails it to you; "Solve this ticket now" hands it to the Ticket Solver. |
-| **Ticket Solver** | Reads a ticket (local tracker or GitHub Issues), writes an acceptance test that must fail first, runs a tournament, then attaches the test report, diff and logs to the ticket after approval. |
-| **Project Builder** | Small services only (≤ 8 files: a FastAPI CRUD API or a CLI). Builds from a spec and a template, writes files in dependency waves, repairs until the tests pass, and packages a zip. |
-| **Council Q&A** | Parallel answers, anonymous peer review, debate on disagreement, and a verdict with confidence and dissent. |
-| **Dynamic** | For anything else. The Commander composes a team from the registry and you approve the team before it runs; a successful run can be saved as a YAML playbook. |
+### Configuration
 
-## Verified live on 2026-10-19 (16 GB M-series Mac)
+All settings are `NEXUS_*` environment variables in `.env` (see [.env.example](.env.example)).
+The important ones:
 
-Every mission type, on real local models, approved through the app:
-
-| Mission | Models | Result |
+| Variable | Default | Meaning |
 |---|---|---|
-| Web page ("build a html page and write ai blog…") | Lite | 5 sections, 1,208 words, published at `/sites/<id>/` in 55 s |
-| Web page (bakery landing page) | Balanced | published in about 60 s, no retries |
-| Question (optimistic vs pessimistic locking) | Balanced | council answer in 183 s |
-| Fix service (Bad config chaos switch) | Balanced | round 2 root-cause fix in `app/config.py` passed 10/10; applied; 98 live orders, 0 errors; 156 s |
-| New ticket ("cretae ticket for fixing bug in pipeline and also share email") | Balanced | T-105 written from `app/pipeline.py` and the logs, filed and emailed, 9 s |
-| Ticket T-101 | Balanced | WELCOME5 added, 10/10 tests, ticket commented and closed, 115 s |
-| Build API (books: title, author, year) | Balanced | 4/4 tests, zip downloaded, 15 s |
-| Custom team (error-handling review) | Balanced | found the real timeout and cancellation issues, 25 s |
+| `NEXUS_MODEL_PROFILE` | `lite` | `lite`, `balanced` or `standard`; Settings → Models switches it live |
+| `NEXUS_AUTH_ENABLED` | `true` | accounts and roles; `false` only for throwaway demos |
+| `NEXUS_BOOTSTRAP_USERS` | – | seed accounts: `alice:password:owner,bob:password:operator` |
+| `NEXUS_SECRET_KEY` | generated | signs sessions and approval links; a weak value is replaced by a random key |
+| `NEXUS_SANDBOX_BACKEND` | `docker` | `docker` (isolated, no network) or `local` (subprocess, dev only) |
+| `NEXUS_GOOGLE_CLIENT_ID/SECRET` | – | "Sign in with Google" to send result emails (or paste them in Settings) |
 
-### Email and approvals, verified live on 2026-10-20 (real SMTP into a local inbox)
+---
 
-| Prompt | Emails delivered |
-|---|---|
-| Web page "…send the output to boss@company.com" | approval to the owner, **approved from the email link**, result to boss |
-| Question "…Email me the answer." | team approval + answer to the owner |
-| "Create a ticket… send it to dev@company.com" | ticket T-106 to dev (LOW risk, no approval) |
-| Build API "…send the result to a@company.com and b@company.com" | approval to the owner, result to both |
-| Custom team, no email in the prompt | none |
-| Solve ticket T-102 "…email me the result" | approval + result to the owner |
-
-Google's real endpoints were exercised with a dummy client (they answer "OAuth client was not
-found", i.e. the requests are well-formed); a full sign-in needs the owner's one-time Google
-Cloud client.
-
-## Verified earlier (llama3.2:3b, lite profile)
-
-- **Self-heal, end to end:** null-handling bug → incident → 2 council rounds (round 1's
-  patches failed 2/10 tests; the failing tests were fed back) → winning patch passed
-  10/10 in the sandbox → HIGH risk → dry run → human approval → applied →
-  **103 live orders, 0 new errors** → promoted to `main` → Fix Library.
-- **Crash recovery:** a backend restart mid-mission resumed it from its SQLite checkpoint.
-- **Policy cap:** a mission was stopped at 124,576 tokens against the 120,000 cap, with a
-  dead letter written and nothing changed.
-- **Raw SDK vs LangGraph agent** (Benchmarks): both 2/3 correct, ~3.9 s and
-  ~1,600 tokens per task. Both missed `(144/12)**2 - 40`, which is a 3B reasoning limit,
-  not a framework one.
-
-- **Pruning** (420-token budget, ~70% of tokens removed): the sliding window kept 0/3
-  early facts answerable and summarisation kept 1/3. This is why `summarise` is the
-  default.
-- **Council vs single model** on 4 easy factual questions: single 4/4 in ~3 s, council
-  3/4 in ~23 s. The council answered "Not Found" without the code 404. On easy recall
-  the council only adds latency; its value is in code mode, where sandbox tests decide.
-  Treat this as an honest negative result.
-
-The 3B model often needs the second tournament round. The design leans on test evidence
-precisely because the model is small. The `standard` profile (7B coder) is expected to
-do better, but I have not benchmarked it here.
-
-## Screens
-
-| | |
-|---|---|
-| ![Landing](docs/images/gate.jpg) Landing | ![Robots](docs/images/robots.jpg) Agents |
-| ![Arena](docs/images/arena.jpg) Arena | ![Approvals](docs/images/approvals.jpg) Approvals |
-| ![Time travel](docs/images/time-travel.jpg) Time Travel | ![Chaos Lab](docs/images/chaos-lab.jpg) Chaos Lab |
-| ![Memory](docs/images/memory.jpg) Memory | ![Insights](docs/images/insights.jpg) Insights |
-
-Also included: Live Graph with State Inspector, Tools (MCP), Insights tabs (Observatory,
-Benchmarks, Under the Hood), How it Works tabs (Architecture Explorer, Curriculum Map),
-Settings, Replay mode, Nova the guide, the ⌘K palette, and Presentation Mode.
-
-The robots are animated SVG mecha: hover thrusters, LED visors with expressions, a reactor
-core, and per-state effects (holo rings while thinking, sparks on tool calls, an RGB glitch
-while retrying, a hologram card while waiting for approval, a barrel-roll on success,
-power flicker on failure). Each effect is triggered by a real backend event.
-
-## Architecture
+## How a mission works
 
 ```mermaid
 flowchart LR
-  UI[Next.js command center] <-- REST / WS / SSE --> API[FastAPI]
-  API --> R[Mission runner] --> G[LangGraph orchestrator]
-  G --> GW[LLM gateway<br/>router · governor · retries · fallback] --> O[(Ollama)]
-  G --> H[MCP hub] --> S1[workspace] & S2[sandbox] & S3[knowledge/Chroma] & S4[tickets] & S5[notify/Mailpit] & S6[observability] & S7[demo]
-  G -- events --> B[Event bus] --> API
-  R --> DB[(SQLite: checkpoints · events · approvals · audit · traces)]
+    U([Prompt]) --> I[intake<br/>guardrails] --> R[rewrite] --> RT{route}
+    RT -->|vague| C[clarify<br/>interrupt] --> R
+    RT --> P[plan] --> A[assemble team] --> D[dispatch<br/>Send fan-out]
+    D --> W1[worker<br/>ReAct] & W2[worker<br/>ReAct] --> CO[collect]
+    CO -->|code / answer| T[council<br/>tournament] --> V{validate}
+    CO --> S[synthesize] --> V
+    V -->|fail| T
+    V -->|pass| G{risk gate}
+    G -->|LOW| X[execute]
+    G -->|MEDIUM / HIGH| H[approval<br/>interrupt] --> X
+    X --> VE{verify} -->|unhealthy| RB[rollback] --> P
+    VE --> M[memory] --> REP([report])
 ```
 
-Presenting it? See [docs/PRESENTATION_GUIDE.md](docs/PRESENTATION_GUIDE.md). Learning how it
-works inside? See [docs/CODE_WALKTHROUGH.md](docs/CODE_WALKTHROUGH.md). What each mission
-can do and how to demo it: [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md).
+1. **Quill** rewrites the prompt; keyword rules or the fast model **route** it to a playbook.
+2. **Sage** writes a typed plan; the **Commander** assigns each step to the best agent by
+   reputation and **dispatches** them in parallel with `Send`.
+3. Each worker runs a **ReAct** subgraph with its own MCP tool allowlist.
+4. For code and hard questions, **Blaze, Volt and Frost** compete: each patch is tested in a
+   sandbox, reviews are anonymous, and the judge **Arbiter** weighs test results most.
+5. **Aegis** validates; failures loop back (bounded by guards).
+6. A **rule-based risk score** decides: run, ask a human (`interrupt()`), rehearse first, or block.
+7. Execute → verify (live traffic for the demo service) → roll back if needed → remember → report.
 
-Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · decisions: [docs/adr/](docs/adr/) ·
-course mapping: [docs/TOPIC_COVERAGE.md](docs/TOPIC_COVERAGE.md).
+Every step is checkpointed in SQLite, so missions survive restarts and can be rewound
+(Time Travel). Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and the design
+decisions in [docs/adr/](docs/adr/).
+
+## Week 4 syllabus coverage
+
+| Day | Topic | Where |
+|---|---|---|
+| 16 | ReAct · Plan-and-Execute · raw SDK loop with **native tool calling** · conditional routing | `graph/subgraphs/react_worker.py`, `graph/nodes/planning.py`, `llm/raw_react_agent.py` |
+| 17 | Typed state · reducers · conditional edges · guarded cycles · `Send` fan-out · subgraphs · `Command` | `graph/state.py`, `graph/reducers.py`, `graph/main_graph.py` |
+| 18 | SQLite checkpointing · crash resume · sliding-window and summary pruning · token budgets · long-term memory | `core/runtime.py`, `graph/runner.py`, `memory/` |
+| 19 | Supervisor routing · worker delegation · **7 MCP servers** (in-process and **stdio**) | `graph/nodes/work.py`, `mcp_servers/` |
+| 20 | `interrupt()` approval gates · email approvals · time travel and forking · guardrails · **RBAC** | `graph/nodes/gate.py`, `hitl/`, `safety/`, `auth/` |
+
+The full map, with the test that proves each item: [docs/TOPIC_COVERAGE.md](docs/TOPIC_COVERAGE.md).
+
+## Security
+
+- **Accounts and roles.** Argon2id password hashes, JWT sessions, login rate limit
+  (5 per minute per user and address). One policy table ([auth/policy.py](backend/nexus/auth/policy.py))
+  guards every route:
+
+  | Role | Can |
+  |---|---|
+  | Viewer | read everything |
+  | Operator | + start and cancel missions, approve or reject, time travel |
+  | Owner | + settings, models, users, chaos switches, agents, deleting missions |
+
+  Approvals record the signed-in user, never a name sent by the client. Public by design:
+  health probes, sign-in, signed one-time email-approval links, the Google OAuth callback and
+  published pages.
+- **Agents are boxed in.** Per-agent MCP tool allowlists, a workspace path jail, a sandbox
+  with no network for tests, prompt-injection detection, secret and PII redaction, and
+  fencing of untrusted text.
+- **Email** goes out only when a prompt asks for it, through Sign in with Google with the
+  `gmail.send` scope only (NEXUS never sees the password and cannot read mail).
+- **Secrets** stay in `.env` and `backend/data/` (both ignored by git and Docker).
+
+## Reliability and observability
+
+Model fallback chain (primary → alternate → reduced context), circuit breakers, retries with
+jitter, schema-constrained structured output with re-prompts, a per-mission token cap, and a
+**Resource Governor** that lowers LLM concurrency under memory pressure instead of crashing.
+`GET /metrics` serves Prometheus metrics (missions, tokens, approvals, emails, RAM,
+concurrency, queue, tokens/s, circuit breakers); traces and benchmarks are in **Insights**.
 
 ## Tests and quality
 
-```bash
-make check     # ruff + ruff format + mypy --strict, eslint + prettier + tsc, pytest + vitest
-make e2e       # Playwright: every screen error-free, mission → approve → complete, time travel, guide
-```
+| Suite | Count | Command |
+|---|---|---|
+| Backend (pytest; scripted model, real SQLite, MCP, sandbox, demo service) | 119 | `make test-backend` |
+| Frontend unit (vitest) | 13 | `make test-frontend` |
+| End-to-end (Playwright; auth on, Simulation provider) | 25 | `make e2e` |
+| Lint and types | ruff · mypy --strict · eslint · prettier · tsc strict | `make check` |
 
-- **Backend:** 71 pytest tests. They cover reducers, pruning, guardrails, risk,
-  tournament scoring, the gateway (routing, re-prompts, escalation, fallback, breakers),
-  the governor, the raw agent, all MCP servers, graph behaviour (routing, fan-out/fan-in,
-  cycle guards, interrupts, crash resume), HITL (e-mail tokens, override, time travel),
-  and every playbook end to end. The Self-Healing tests use a real demo-service
-  subprocess and real sandbox pytest runs; only the LLM is scripted. `@pytest.mark.live`
-  tests need Ollama and are deselected by default.
-- **Frontend:** 11 Vitest tests (event reducer, robot state machine, legacy ids, scenery) and
-  10 Playwright tests against a Simulation-mode backend, including a sweep that opens every
-  screen and fails on any console error.
-- **CI:** `.github/workflows/ci.yml`. It sits under `assignment4/` and runs when this
-  folder is its own repository.
+CI runs all of them on every push ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
+Live-model tests are marked `@pytest.mark.live`.
+
+**Verified live** on a 16 GB Mac (Balanced profile): every mission type end to end, e.g. a
+blog page published in 55 s, a self-heal that fixed a bad tax setting (10/10 tests, 99 live
+orders, 0 errors), tickets filed and solved, and email results delivered with an approval
+clicked from the email itself.
 
 ## Known limitations
 
-- **Small-model quality.** With 3B models, tournaments often need a retry round, and
-  free-form planning and Project Builder output are hit-and-miss. Validation, fallbacks
-  and safe defaults keep missions safe, not always successful.
-- **Sandbox isolation needs Docker.** The local fallback is not isolated (no network
-  restriction) and says so in every result.
-- **E-mail** needs Mailpit or another SMTP server. Otherwise messages go to the outbox
-  table and the UI shows that.
-- **Subgraph checkpoints.** Subgraphs are not checkpointed internally, so a crash
-  mid-tournament re-runs that tournament step.
-- **Settings scope.** Live settings changes are runtime-only; persistent ones go in `.env`.
-- **Single user.** The UI has no authentication. Run it on localhost.
-
-## Roadmap
-
-Benchmark the `standard` profile and qwen3 models · an MLX backend behind
-`LLMProvider` · an OTLP exporter to Arize Phoenix (the compose profile exists) ·
-Playwright screenshots attached as ticket evidence for UI tickets · per-user auth.
+- 3B local models sometimes need a second round of work; the guarded fix loops handle it.
+- Build API is scoped to small services (8 files or fewer).
+- Without Docker the sandbox is a plain subprocess (labelled "not isolated" in the UI).
+- Links inside result emails point to the machine running NEXUS.
+- One node: SQLite for state, an in-process rate limiter, no horizontal scaling.
 
 ## Repository layout
 
 ```
-backend/   FastAPI + LangGraph (nexus/…), tests/
-frontend/  Next.js 15 command center UI, e2e/
-demo-service/  the orders service NEXUS watches and heals
-sandbox/   Dockerfile for the isolated test runner
-docs/      ARCHITECTURE, TOPIC_COVERAGE, DEMO_SCRIPT, PLAN, adr/
-scripts/   ollama_env.sh, pull_models.sh, dev.sh, seed_demo.py
+backend/            FastAPI + LangGraph (Python 3.12, uv)
+  nexus/graph/      the main graph, nodes, ReAct and tournament subgraphs, runner
+  nexus/playbooks/  mission types (web page, self-healing, tickets, builder, council, dynamic)
+  nexus/llm/        gateway, router, Ollama provider, raw SDK agent, model profiles
+  nexus/mcp_servers/ 7 MCP servers + hub
+  nexus/hitl/       approvals, email approvals, time travel, result emails, Google mail
+  nexus/auth/       roles, policy table, sessions, rate limit
+  nexus/safety/     guardrails, risk scoring, policies
+  tests/            pytest suites
+frontend/           Next.js 15 + TypeScript (strict), Tailwind v4, Playwright e2e
+demo-service/       the FastAPI shop the self-healing missions repair
+docs/               architecture, ADRs, topic coverage, mission guide, demo scripts
 ```
+
+More: [mission guide](docs/HOW_IT_WORKS.md) · [code walkthrough](docs/CODE_WALKTHROUGH.md) ·
+[presentation guide](docs/PRESENTATION_GUIDE.md).

@@ -10,6 +10,7 @@ import { post } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import type { Approval } from "@/lib/queries";
 import { sounds } from "@/lib/sound";
+import { useCan } from "@/lib/me";
 import { useUi } from "@/stores/ui";
 import { DiffView } from "./DiffView";
 
@@ -59,6 +60,7 @@ export function QuickApproval({ approval, onDone }: { approval: Approval; onDone
   const diff = evidence.find((e) => e.kind === "diff");
   const team = (p.team as { members?: { agent_id: string; step_ids: string[] }[] } | undefined)?.members;
 
+  const canDecide = useCan("operator");
   const decide = useMutation({
     mutationFn: (body: Record<string, unknown>) => post(`/approvals/${approval.id}/decide`, body as never),
     onSuccess: (_, body) => {
@@ -190,7 +192,8 @@ export function QuickApproval({ approval, onDone }: { approval: Approval; onDone
         />
       )}
 
-      <div className="flex flex-wrap items-center gap-2">
+      {!canDecide && <p className="text-xs text-muted">Viewers can read this; an operator or owner decides.</p>}
+      <fieldset disabled={!canDecide} className="flex flex-wrap items-center gap-2">
         {question ? (
           <button
             type="button"
@@ -223,7 +226,7 @@ export function QuickApproval({ approval, onDone }: { approval: Approval; onDone
         <Link href="/approvals" className="ml-auto inline-flex items-center gap-1 text-xs text-muted hover:text-text">
           Full details <ExternalLink className="size-3" />
         </Link>
-      </div>
+      </fieldset>
       {decide.isError && <p className="text-xs text-danger">{decide.error.message}</p>}
     </div>
   );

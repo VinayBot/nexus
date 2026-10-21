@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { del } from "@/lib/api";
 import { cn } from "@/lib/cn";
+import { useCan } from "@/lib/me";
 import { useActiveMission } from "@/stores/missions";
 import { playbookName } from "@/lib/playbooks";
 import { useMissions, type Mission } from "@/lib/queries";
@@ -48,6 +49,7 @@ export function MissionList({ activeId, onSelect }: { activeId: string | null; o
   const router = useRouter();
   const { data, isLoading, isError } = useMissions(30);
   const [filter, setFilter] = useState("all");
+  const canDelete = useCan("owner");
   const [confirming, setConfirming] = useState<string | null>(null);
   const remove = useMutation({
     mutationFn: (id: string) => del(`/missions/${id}`),
@@ -160,7 +162,7 @@ export function MissionList({ activeId, onSelect }: { activeId: string | null; o
                         {m.source === "watcher" && <span className="text-warning">· Hawk</span>}
                       </div>
                     </button>
-                    {m.status !== "running" && m.status !== "queued" && (
+                    {canDelete && m.status !== "running" && m.status !== "queued" && (
                       <button
                         type="button"
                         onClick={() => setConfirming(m.id)}

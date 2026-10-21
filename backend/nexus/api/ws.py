@@ -24,6 +24,10 @@ async def _pump(ws: WebSocket, mission_id: str | None, after_seq: int) -> None:
     async with bus.subscribe(mission_id) as sub:
         last = after_seq
         if mission_id:
+            # Events are broadcast at once but written in batches. Anything emitted before
+            # this subscription and not yet written would be in neither the backlog nor the
+            # live queue (a new mission's first events went missing): write it now.
+            await bus.flush()
             backlog = await repo.events_after(services().db, mission_id, after_seq)
             for ev in backlog:
                 await ws.send_json(ev)

@@ -24,6 +24,13 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "next-env.d.ts", ".next-e2e/types/**/*.ts"],
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".next-e2e/types/**/*.ts",
+    ".next/types/**/*.ts",
+    "next-env.d.ts",
+    ".next-shots/types/**/*.ts"
+  ],
   "exclude": ["node_modules", ".next-e2e"]
 }
