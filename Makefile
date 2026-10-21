@@ -40,7 +40,7 @@ sandbox-image: ## Build the isolated test-runner image used by sandbox-exec
 test: test-backend test-frontend ## Run all offline tests
 
 test-backend:
-	cd backend && uv run pytest -q --cov=nexus --cov-report=term:skip-covered --cov-fail-under=80
+	cd backend && uv run pytest -q --cov=nexus --cov-report=term:skip-covered --cov-fail-under=85
 
 test-postgres: ## Backend tests against a throwaway PostgreSQL 16 container
 	docker run -d --rm --name nexus-test-pg -e POSTGRES_USER=nexus -e POSTGRES_PASSWORD=nexus \

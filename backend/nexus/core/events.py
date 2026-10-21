@@ -71,6 +71,9 @@ class EventBus:
         self._seq: dict[str, int] = {}
         self._sink: Sink | None = None
         self._pending: list[Event] = []
+        # one batch at a time, so flush() also waits for in-flight writes; per event loop,
+        # because the bus is process-wide and outlives loops (tests, reloads)
+        self._flush_locks: dict[asyncio.AbstractEventLoop, asyncio.Lock] = {}
         self._flusher: asyncio.Task[None] | None = None
         self._listeners: list[Callable[[Event], None]] = []
 
@@ -162,13 +165,22 @@ class EventBus:
         await self.flush()
 
     async def flush(self) -> None:
-        if not self._pending or self._sink is None:
-            return
-        batch, self._pending = self._pending, []
-        try:
-            await self._sink(batch)
-        except Exception as exc:  # noqa: BLE001 - losing a persisted batch must not stop live delivery
-            log.error("event.persist_failed", count=len(batch), error=str(exc))
+        """Persist pending events. Returns only once every earlier batch is written, so a
+        caller that flushes before deleting or reading a mission sees a settled store."""
+        loop = asyncio.get_running_loop()
+        if loop not in self._flush_locks:
+            self._flush_locks = {
+                lp: lk for lp, lk in self._flush_locks.items() if not lp.is_closed()
+            }
+        lock = self._flush_locks.setdefault(loop, asyncio.Lock())
+        async with lock:
+            if not self._pending or self._sink is None:
+                return
+            batch, self._pending = self._pending, []
+            try:
+                await self._sink(batch)
+            except Exception as exc:  # noqa: BLE001 - losing a persisted batch must not stop live delivery
+                log.error("event.persist_failed", count=len(batch), error=str(exc))
 
     # -- subscribe ----------------------------------------------------------------
     @contextlib.asynccontextmanager
@@ -190,6 +202,7 @@ class EventBus:
         self._seq.clear()
         self._pending.clear()
         self._listeners.clear()
+        self._flush_locks.clear()
         self._sink = None
 
 

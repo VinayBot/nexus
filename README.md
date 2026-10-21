@@ -165,11 +165,11 @@ concurrency, queue, tokens/s, circuit breakers); traces and benchmarks are in **
 
 | Suite | Count | Command |
 |---|---|---|
-| Backend (pytest; scripted model, real SQLite, MCP, sandbox, demo service; coverage gate 80%) | 135 | `make test-backend` |
-| Same suite on PostgreSQL 16 | 135 | `make test-postgres` |
-| Frontend unit (vitest) | 21 | `make test-frontend` |
+| Backend (pytest; scripted model, real SQLite, MCP, sandbox, demo service, every API route group; 87% line coverage, gate 85%) | 158 | `make test-backend` |
+| Same suite on PostgreSQL 16 | 158 | `make test-postgres` |
+| Frontend unit and component (vitest, Testing Library) | 28 | `make test-frontend` |
 | End-to-end (Playwright; auth on, Simulation provider) | 25 | `make e2e` |
-| Lint and types | ruff · mypy --strict · eslint · prettier · tsc strict | `make check` |
+| Lint and types | ruff (incl. blind-except) · mypy --strict · eslint · prettier · tsc strict · 400-line file limit | `make check` |
 
 CI runs all of them on every push, plus pip-audit and pnpm audit
 ([.github/workflows/ci.yml](.github/workflows/ci.yml)); CodeQL runs separately. `pre-commit

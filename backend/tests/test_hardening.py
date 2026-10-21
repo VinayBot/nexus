@@ -159,3 +159,35 @@ async def test_google_callback_redirects_only_with_fixed_words() -> None:
             follow_redirects=False,
         )
         assert res.headers["location"] == f"{ui}/settings?google_error=expired"
+
+
+async def test_delete_waits_for_events_still_being_written() -> None:
+    """A batch already in flight when a mission is deleted must not re-create its events."""
+    import asyncio
+
+    from sqlalchemy import func, select
+
+    from nexus.core.deletion import delete_mission
+    from nexus.core.events import Event, bus
+    from nexus.db import repo
+    from nexus.db.models import EventRow
+
+    async with runtime(get_settings(), provider=simulation_llm(), recover=False) as svc:
+        row = await svc.runner.create("What is a reducer?", playbook="council_qa")
+        await asyncio.wait_for(svc.runner.wait(row.id), timeout=60)
+        await bus.flush()
+
+        async def slow_sink(events: list[Event]) -> None:
+            await asyncio.sleep(0.3)  # a slow database
+            await repo.save_events(svc.db, events)
+
+        bus.set_sink(slow_sink)
+        for i in range(3):
+            bus.emit("agent.thinking", {"agent_id": "echo", "text": f"late {i}"}, mission_id=row.id)
+        in_flight = asyncio.create_task(bus.flush())
+        await asyncio.sleep(0.05)  # the batch has left the queue but is not written yet
+        await delete_mission(svc, row.id)
+        await in_flight
+        async with svc.db.session() as s:
+            left = await s.scalar(select(func.count()).where(EventRow.mission_id == row.id))
+        assert left == 0

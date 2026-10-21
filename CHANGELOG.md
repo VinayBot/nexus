@@ -2,6 +2,23 @@
 
 All notable changes, newest first. Versions follow [Semantic Versioning](https://semver.org).
 
+## [Unreleased]
+
+### Changed
+- Every catch-all `except Exception` is narrowed or states its reason; Ruff's blind-except
+  rule enforces it. Five modules over 400 lines were split; a CI check keeps the limit.
+- Coverage gate raised from 80% to 85% (now 87%): HTTP contract tests for every route group,
+  the Ollama provider against an in-memory transport, and React component tests.
+
+### Fixed
+- CodeQL `py/polynomial-redos` (high): the email-address pattern is bounded and anchored.
+- CodeQL `py/url-redirection` (medium): the Google sign-in redirect carries fixed words only.
+- On PostgreSQL, traces were written to the SQLite file and never shown; spans now go to
+  the configured database.
+- Deleting a mission while an event batch was still being written could leave its events
+  behind (seen on CI's PostgreSQL job). Bus flushes are now serialized and deletion waits
+  for them; a test with a slow sink reproduces the race.
+
 ## [1.0.0] - 2026-10-21
 
 Submission release for Week 4 (agentic systems, state machines and MCP).
