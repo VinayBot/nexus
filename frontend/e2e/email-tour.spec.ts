@@ -17,17 +17,17 @@ test.beforeEach(async ({ request }) => {
   await request.put(`${API}/notify`, { data: { to: "me@example.com", enabled: false } });
 });
 
-test("violet is the default theme and an old orange choice is migrated", async ({ page }) => {
+test("orange (Ember) is the default theme and an older saved choice is migrated", async ({ page }) => {
   await page.goto("/missions");
   await page.evaluate(() =>
-    localStorage.setItem("nexus-ui", JSON.stringify({ state: { accent: "ember" }, version: 0 })),
+    localStorage.setItem("nexus-ui", JSON.stringify({ state: { accent: "violet" }, version: 2 })),
   );
   await page.reload();
-  await expect(page.locator("html")).toHaveAttribute("data-accent", "violet");
+  await expect(page.locator("html")).toHaveAttribute("data-accent", "ember");
   const accent = await page.evaluate(() =>
     getComputedStyle(document.documentElement).getPropertyValue("--accent-rgb").trim(),
   );
-  expect(accent).toBe("124 92 255");
+  expect(accent).toBe("242 103 58");
 });
 
 test("prompt asks for email: hint, result card status, approval email to the owner only", async ({ page, request }) => {

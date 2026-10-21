@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
 export type Theme = "sunset" | "night";
-export type Accent = "violet" | "emerald" | "teal" | "rose" | "ember";
+export type Accent = "ember" | "violet" | "emerald" | "teal" | "rose";
 /** The sky reflects system state: calm, an active incident, or a successful heal. */
 export type SkyMood = "idle" | "incident" | "dawn";
 
@@ -27,7 +27,7 @@ export const useUi = create<UiState>()(
   persist(
     (set) => ({
       theme: "sunset",
-      accent: "violet",
+      accent: "ember",
       navCollapsed: false,
       soundOn: false,
       performanceMode: false,
@@ -42,11 +42,11 @@ export const useUi = create<UiState>()(
     }),
     {
       name: "nexus-ui",
-      // v2: the default accent moved from Ember (orange) to Violet; move saved browsers too
-      version: 2,
+      // v3: the owner chose the orange (Ember) theme as the default; move saved browsers too
+      version: 3,
       migrate: (saved, version) => {
         const state = (saved ?? {}) as Partial<UiState>;
-        return (version < 2 ? { ...state, accent: "violet" } : state) as UiState;
+        return (version < 3 ? { ...state, accent: "ember" } : state) as UiState;
       },
       skipHydration: true, // rehydrated after mount so SSR and first client render match
       storage: createJSONStorage(() => localStorage),

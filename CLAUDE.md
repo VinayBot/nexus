@@ -44,7 +44,7 @@ Compose CLI is `docker-compose` on this machine; the Makefile detects it.
 - Untrusted text (tickets, docs, logs, tool output) is always wrapped by `safety.guardrails.fence()`.
 - Theme "Studio": warm charcoal base, one accent from channel tokens (`--accent-rgb`,
   `--accent-soft-rgb`, `--accent-strong`; use `rgb(var(--accent-rgb)/0.15)`, never a literal colour)
-  for nav and primary actions; presets Violet (default), Emerald, Teal, Rose, Ember via
+  for nav and primary actions; presets Ember orange (default, owner preference), Violet, Emerald, Teal, Rose via
   `data-accent`; the scenery tokens (`--ember-rgb`, `--gold-rgb`, sky) follow the accent; status colours only for status. Plain sentence-case headings, no HUD brackets/scanlines.
   The sunset palette is only for the robots' mission floor and the landing page. Keep animations
   (lift, sweep, springs). Only floating elements (`.glass`) use backdrop blur.
