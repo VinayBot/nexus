@@ -146,6 +146,8 @@ class Settings(BaseSettings):
     auto_heal: bool = True
     mission_token_limit: int = 120_000
     pruning_strategy: Literal["sliding_window", "summarise"] = "summarise"
+    #: ReAct worker turn format: provider-native tool calling, or schema-constrained JSON.
+    react_mode: Literal["native", "json"] = "native"
     #: Seconds the verifier watches demo-service health after a fix.
     verify_window_s: float = 12.0
 
