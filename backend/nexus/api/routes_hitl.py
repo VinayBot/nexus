@@ -9,6 +9,7 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
+from nexus.api.schemas import AuditEntry, CheckpointState, DeadLetter, RunStatus
 from nexus.core.services import services
 from nexus.db import repo
 from nexus.db.models import AuditRow, DeadLetterRow, OutboxRow
@@ -62,14 +63,14 @@ async def history(mission_id: str) -> dict[str, Any]:
 
 
 @router.get("/missions/{mission_id}/checkpoints/{checkpoint_id}")
-async def checkpoint(mission_id: str, checkpoint_id: str) -> dict[str, Any]:
+async def checkpoint(mission_id: str, checkpoint_id: str) -> CheckpointState:
     from nexus.api.routes_missions import jsonable
 
     try:
         data = await _tt().state_at(mission_id, checkpoint_id)
     except TimeTravelError as exc:
         raise HTTPException(404, str(exc)) from exc
-    return {"summary": data["summary"], "values": jsonable(data["values"])}
+    return CheckpointState(summary=data["summary"], values=jsonable(data["values"]))
 
 
 class Rerun(BaseModel):
@@ -77,12 +78,12 @@ class Rerun(BaseModel):
 
 
 @router.post("/missions/{mission_id}/rerun")
-async def rerun(mission_id: str, body: Rerun) -> dict[str, str]:
+async def rerun(mission_id: str, body: Rerun) -> RunStatus:
     try:
         await _tt().rerun(mission_id, body.checkpoint_id)
     except TimeTravelError as exc:
         raise HTTPException(409, str(exc)) from exc
-    return {"status": "running"}
+    return RunStatus(status="running")
 
 
 class Fork(BaseModel):
@@ -131,41 +132,25 @@ async def compare(mission_id: str, a: str, b: str) -> dict[str, Any]:
 
 # --- audit, dead letters ---------------------------------------------------------------------
 @router.get("/audit")
-async def audit(mission_id: str | None = None, limit: int = 100) -> list[dict[str, Any]]:
+async def audit(mission_id: str | None = None, limit: int = 100) -> list[AuditEntry]:
     q = select(AuditRow).order_by(AuditRow.ts.desc()).limit(min(limit, 500))
     if mission_id:
         q = q.where(AuditRow.mission_id == mission_id)
     async with services().db.session() as s:
         return [
-            {
-                "id": r.id,
-                "ts": r.ts,
-                "actor": r.actor,
-                "channel": r.channel,
-                "action": r.action,
-                "mission_id": r.mission_id,
-                "detail": r.detail,
-            }
+            AuditEntry.model_validate(r, from_attributes=True)
             for r in (await s.execute(q)).scalars()
         ]
 
 
 @router.get("/dead-letters")
-async def dead_letters(include_resolved: bool = False) -> list[dict[str, Any]]:
+async def dead_letters(include_resolved: bool = False) -> list[DeadLetter]:
     q = select(DeadLetterRow).order_by(DeadLetterRow.created_at.desc()).limit(100)
     if not include_resolved:
         q = q.where(DeadLetterRow.resolved.is_(False))
     async with services().db.session() as s:
         return [
-            {
-                "id": r.id,
-                "mission_id": r.mission_id,
-                "node": r.node,
-                "error": r.error,
-                "checkpoint_id": r.checkpoint_id,
-                "created_at": r.created_at,
-                "resolved": r.resolved,
-            }
+            DeadLetter.model_validate(r, from_attributes=True)
             for r in (await s.execute(q)).scalars()
         ]
 

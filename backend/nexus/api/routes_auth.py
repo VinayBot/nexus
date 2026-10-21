@@ -11,6 +11,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 
+from nexus.api.schemas import AuthStatus, Me, UserOut
 from nexus.auth.ratelimit import RateLimiter
 from nexus.auth.security import create_token, hash_password, needs_rehash, verify_password
 from nexus.core.services import services
@@ -57,9 +58,9 @@ async def _count(role: str | None = None) -> int:
 
 
 @router.get("/status")
-async def status() -> dict[str, bool]:
+async def status() -> AuthStatus:
     enabled = services().settings.auth_enabled
-    return {"auth_enabled": enabled, "setup_required": enabled and await _count() == 0}
+    return AuthStatus(auth_enabled=enabled, setup_required=enabled and await _count() == 0)
 
 
 @router.post("/setup", response_model=Session, status_code=201)
@@ -100,22 +101,28 @@ async def login(body: Credentials, request: Request) -> Session:
 
 
 @router.get("/me")
-async def me(request: Request) -> dict[str, str | bool]:
+async def me(request: Request) -> Me:
+    from nexus.auth.quotas import tokens_today
+
     user = request.state.user
     if user is None:
         raise HTTPException(401, "Not signed in.")
-    return {
-        "username": user.username,
-        "role": user.role,
-        "auth_enabled": services().settings.auth_enabled,
-    }
+    settings = services().settings
+    return Me(
+        username=user.username,
+        role=user.role,
+        auth_enabled=settings.auth_enabled,
+        tokens_today=await tokens_today(user.username),
+        daily_token_quota=settings.daily_token_quota,
+        missions_per_minute=settings.missions_per_minute,
+    )
 
 
 @router.get("/users")
-async def list_users() -> list[dict[str, object]]:
+async def list_users() -> list[UserOut]:
     async with services().db.session() as s:
         rows = (await s.execute(select(UserRow).order_by(UserRow.created_at))).scalars().all()
-    return [{"username": r.username, "role": r.role, "created_at": r.created_at} for r in rows]
+    return [UserOut(username=r.username, role=r.role, created_at=r.created_at) for r in rows]
 
 
 @router.post("/users", status_code=201)

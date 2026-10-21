@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
+from nexus.api.schemas import EventOut, MissionState, TokenUsage
 from nexus.core.meter import meter
 from nexus.core.services import services
 from nexus.db import repo
@@ -108,29 +109,30 @@ async def delete(mission_id: str) -> None:
 
 
 @router.get("/{mission_id}/events")
-async def events(mission_id: str, after_seq: int = 0, limit: int = 2000) -> list[dict[str, Any]]:
+async def events(mission_id: str, after_seq: int = 0, limit: int = 2000) -> list[EventOut]:
     await _mission(mission_id)
-    return await repo.events_after(services().db, mission_id, after_seq, min(limit, 10000))
+    rows = await repo.events_after(services().db, mission_id, after_seq, min(limit, 10000))
+    return [EventOut.model_validate(r) for r in rows]
 
 
 @router.get("/{mission_id}/state")
-async def state(mission_id: str) -> dict[str, Any]:
+async def state(mission_id: str) -> MissionState:
     await _mission(mission_id)
     runner = services().runner
     snap = await runner.graph.aget_state(runner.config(mission_id))
     usage = meter.usage(mission_id)
-    return {
-        "values": jsonable(snap.values),
-        "next": list(snap.next),
-        "checkpoint_id": (snap.config or {}).get("configurable", {}).get("checkpoint_id"),
-        "interrupts": [jsonable(i.value) for i in snap.interrupts],
-        "tokens": {
-            "prompt": usage.prompt,
-            "completion": usage.completion,
-            "calls": usage.calls,
-            "by_agent": dict(usage.by_agent),
-        },
-    }
+    return MissionState(
+        values=jsonable(snap.values),
+        next=list(snap.next),
+        checkpoint_id=(snap.config or {}).get("configurable", {}).get("checkpoint_id"),
+        interrupts=[jsonable(i.value) for i in snap.interrupts],
+        tokens=TokenUsage(
+            prompt=usage.prompt,
+            completion=usage.completion,
+            calls=usage.calls,
+            by_agent=dict(usage.by_agent),
+        ),
+    )
 
 
 @router.get("/{mission_id}/report")
