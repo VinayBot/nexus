@@ -53,6 +53,7 @@ async def test_user_management_rules(monkeypatch: pytest.MonkeyPatch) -> None:
         audit = (await client.get("/api/v1/audit", headers=h)).json()
         actions = {a["action"] for a in audit}
         assert {"auth.user_created", "auth.role_changed", "auth.user_deleted"} <= actions
+        client.cookies.clear()
         assert (await client.post("/api/v1/auth/logout")).status_code == 401  # needs a session
 
 

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 // signed out: no stored session and no Authorization header
-test.use({ storageState: { cookies: [], origins: [] }, extraHTTPHeaders: {} });
+test.use({ storageState: { cookies: [], origins: [] } });
 
 test("sign-in page: wrong password, then the owner signs in and lands back where they were", async ({ page }) => {
   await page.goto("/approvals");
@@ -28,11 +28,12 @@ test("a viewer can look but not act", async ({ page }) => {
   await page.goto("/settings");
   await expect(page.getByText(/Read-only for your role/).first()).toBeVisible();
   await expect(page.getByRole("region", { name: "Users" })).toHaveCount(0); // owner only
-  // the server refuses too, whatever the UI shows
-  const token = await page.evaluate(() => localStorage.getItem("nexus-token"));
+  // the session is an HttpOnly cookie: page scripts cannot see it
+  expect(await page.evaluate(() => localStorage.getItem("nexus-token"))).toBeNull();
+  expect(await page.evaluate(() => document.cookie)).not.toContain("nexus_session");
+  // the server refuses too, whatever the UI shows (same browser session, cookie only)
   const res = await page.request.post("http://127.0.0.1:8011/api/v1/missions", {
     data: { task: "hello" },
-    headers: { Authorization: `Bearer ${token}` },
   });
   expect(res.status()).toBe(403);
 });

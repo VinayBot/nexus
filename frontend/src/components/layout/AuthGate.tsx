@@ -3,9 +3,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { get } from "@/lib/api";
-import { getToken } from "@/lib/auth";
+import { useEffect } from "react";
+import { ApiError, get } from "@/lib/api";
+import { forgetLegacyToken } from "@/lib/auth";
 import { useMe } from "@/lib/me";
 
 /**
@@ -22,23 +22,23 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     staleTime: 60_000,
     retry: 1,
   });
-  const [hasToken, setHasToken] = useState<boolean | null>(null);
-  useEffect(() => setHasToken(Boolean(getToken())), []);
+  useEffect(forgetLegacyToken, []);
   const enabled = status.data?.auth_enabled;
-  const me = useMe();
+  const me = useMe(); // the session cookie is HttpOnly: the server says who we are
+  const signedOut = me.error instanceof ApiError && me.error.status === 401;
   const toLogin = () => router.replace(`/login?next=${encodeURIComponent(pathname)}`);
 
   useEffect(() => {
-    if (enabled && hasToken === false) toLogin();
+    if (enabled && signedOut) toLogin();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, hasToken]);
+  }, [enabled, signedOut]);
   useEffect(() => {
     window.addEventListener("nexus:unauthorized", toLogin);
     return () => window.removeEventListener("nexus:unauthorized", toLogin);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
-  const ready = status.data && (!enabled || (hasToken && me.data));
+  const ready = status.data && (!enabled || me.data);
   if (status.isError) return <>{children}</>; // backend down: the pages show their own errors
   if (!ready) {
     return (

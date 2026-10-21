@@ -4,7 +4,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { FileUp, Send, X } from "lucide-react";
 import { useRef, useState } from "react";
-import { authHeaders } from "@/lib/auth";
 import { API_URL } from "@/lib/config";
 import { post } from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -54,7 +53,7 @@ export function MissionComposer({ onCreated }: { onCreated: (m: Mission) => void
     const res = await fetch(`${API_URL}/api/v1/uploads/parse`, {
       method: "POST",
       body: form,
-      headers: authHeaders(),
+      credentials: "include",
     });
     if (!res.ok) {
       setUploadError((await res.json().catch(() => ({ detail: res.statusText }))).detail);

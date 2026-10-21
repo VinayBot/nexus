@@ -10,12 +10,14 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("@/components/layout/StudioBackdrop", () => ({ StudioBackdrop: () => null }));
 
-function page(status: { auth_enabled: boolean; setup_required: boolean }, login?: Response) {
+function page(status: { auth_enabled: boolean; setup_required: boolean }, login?: () => Response) {
   vi.stubGlobal(
     "fetch",
-    vi.fn((url: string) =>
-      Promise.resolve(url.endsWith("/auth/status") ? Response.json(status) : (login ?? Response.json({}))),
-    ),
+    vi.fn((url: string) => {
+      if (url.endsWith("/auth/status")) return Promise.resolve(Response.json(status));
+      if (url.endsWith("/auth/me")) return Promise.resolve(Response.json({ detail: "Sign in" }, { status: 401 }));
+      return Promise.resolve(login ? login() : Response.json({}));
+    }),
   );
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -43,8 +45,7 @@ describe("sign-in page", () => {
   });
 
   it("shows the server's reason when sign-in is refused", async () => {
-    page(
-      { auth_enabled: true, setup_required: false },
+    page({ auth_enabled: true, setup_required: false }, () =>
       Response.json({ detail: "Too many sign-in attempts. Wait a minute and try again." }, { status: 429 }),
     );
     expect(await screen.findByRole("heading", { name: "Sign in" })).toBeInTheDocument();

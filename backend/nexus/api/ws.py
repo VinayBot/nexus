@@ -12,7 +12,7 @@ import contextlib
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-from nexus.auth.guard import user_for_token
+from nexus.auth.guard import cross_site, token_from, user_for_token
 from nexus.core.events import bus
 from nexus.core.services import services
 from nexus.db import repo
@@ -45,8 +45,13 @@ async def _pump(ws: WebSocket, mission_id: str | None, after_seq: int) -> None:
 
 
 async def _serve(ws: WebSocket, mission_id: str | None) -> None:
-    # browsers cannot set headers on a WebSocket: the session token comes as ?token=
-    user = await user_for_token(ws.query_params.get("token"))
+    # the browser sends the session cookie with the handshake; refuse foreign pages
+    # (cross-site WebSocket hijacking) and anyone without a session
+    scheme = "https" if ws.url.scheme == "wss" else "http"
+    if cross_site(ws.headers, f"{scheme}://{ws.url.netloc}"):
+        await ws.close(code=4403, reason="cross-site connection refused")
+        return
+    user = await user_for_token(token_from(ws.headers))
     if user is None:
         await ws.close(code=4401, reason="sign in required")
         return

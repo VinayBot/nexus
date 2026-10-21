@@ -140,11 +140,13 @@ async def test_setup_login_roles_and_audit() -> None:
         await asyncio.wait_for(svc.runner.wait(mid), timeout=60)
         assert (await c.delete(f"/api/v1/missions/{mid}", headers=h_owner)).status_code == 204
 
-        # a tampered token is rejected; ?token= works for links (downloads, previews)
+        # a tampered token is rejected; a token in the URL is not accepted (it would leak
+        # into logs and history): browsers use the HttpOnly cookie instead
+        c.cookies.clear()
         assert (
             await c.get("/api/v1/missions", headers=bearer(owner["token"] + "x"))
         ).status_code == 401
-        assert (await c.get(f"/api/v1/missions?token={owner['token']}")).status_code == 200
+        assert (await c.get(f"/api/v1/missions?token={owner['token']}")).status_code == 401
         # the last owner can never be removed or demoted
         assert (
             await c.put("/api/v1/auth/users/vinay", json={"role": "viewer"}, headers=h_owner)
@@ -180,13 +182,23 @@ async def test_websocket_needs_a_session() -> None:
         token = tc.post(
             "/api/v1/auth/login", json={"username": "vinay", "password": "s3cret-pass"}
         ).json()["token"]
+        tc.cookies.clear()  # the login above left the session cookie in the client
         with (
             pytest.raises(WebSocketDisconnect) as closed,
             tc.websocket_connect("/ws/global") as ws,
         ):
             ws.receive_json()
         assert closed.value.code == 4401
-        with tc.websocket_connect(f"/ws/global?token={token}") as ws:
+        session = {"cookie": f"nexus_session={token}"}
+        with (
+            pytest.raises(WebSocketDisconnect) as foreign,
+            tc.websocket_connect(
+                "/ws/global", headers={**session, "origin": "https://evil.example"}
+            ) as ws,
+        ):
+            ws.receive_json()
+        assert foreign.value.code == 4403  # cross-site WebSocket hijacking is refused
+        with tc.websocket_connect("/ws/global", headers=session) as ws:
             ws.send_text("ping")
             assert ws.receive_json()["type"] in {"pong", "governor.metrics", "service.health"}
 

@@ -124,7 +124,9 @@ The full map, with the test that proves each item: [docs/TOPIC_COVERAGE.md](docs
 
 ## Security
 
-- **Accounts and roles.** Argon2id password hashes, JWT sessions, login rate limit
+- **Accounts and roles.** Argon2id password hashes; the session is an HttpOnly,
+  SameSite cookie that page scripts cannot read (API clients may use a Bearer token);
+  CSRF and cross-site WebSocket checks; CORS with exact origins, methods and headers; login rate limit
   (5 per minute per user and address). One policy table ([auth/policy.py](backend/nexus/auth/policy.py))
   guards every route:
 
@@ -165,8 +167,8 @@ concurrency, queue, tokens/s, circuit breakers); traces and benchmarks are in **
 
 | Suite | Count | Command |
 |---|---|---|
-| Backend (pytest; scripted model, real SQLite, MCP, sandbox, demo service, every API route group; 87% line coverage, gate 85%) | 158 | `make test-backend` |
-| Same suite on PostgreSQL 16 | 158 | `make test-postgres` |
+| Backend (pytest; scripted model, real SQLite, MCP, sandbox, demo service, every API route group; 87% line coverage, gate 85%) | 160 | `make test-backend` |
+| Same suite on PostgreSQL 16 | 160 | `make test-postgres` |
 | Frontend unit and component (vitest, Testing Library) | 28 | `make test-frontend` |
 | End-to-end (Playwright; auth on, Simulation provider) | 25 | `make e2e` |
 | Lint and types | ruff (incl. blind-except) · mypy --strict · eslint · prettier · tsc strict · 400-line file limit | `make check` |

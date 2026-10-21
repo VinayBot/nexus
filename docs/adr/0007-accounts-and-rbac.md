@@ -15,7 +15,13 @@ assignments also flagged missing authentication and RBAC.
   which is memory-hard and upgrades its own parameters on login (`needs_rehash`).
 - **Sessions** are short-lived **JWTs** (HS256, 12 h by default) signed with
   `NEXUS_SECRET_KEY`; a weak or placeholder key is replaced by a random 48-byte key stored
-  in `data/secret.key` (0600).
+  in `data/secret.key` (0600). Browsers hold the session in an **HttpOnly, SameSite=Lax
+  cookie** (`nexus_session`; `Secure` over HTTPS), so page scripts never see it. API
+  clients send the same token as `Authorization: Bearer`. Tokens are never accepted in
+  URLs, where they would leak into logs and history.
+- **CSRF and cross-site WebSockets:** an unsafe request or WebSocket handshake carrying the
+  cookie must come from a listed origin (or the API's own); browsers always send `Origin`
+  cross-site. CORS lists exact methods and headers, with credentials.
 - **Three roles**: viewer (read), operator (run missions, decide approvals, time travel),
   owner (settings, models, users, chaos, agents, deletes).
 - **One policy table** (`auth/policy.py`) maps method + path to the minimum role, applied
@@ -32,7 +38,10 @@ assignments also flagged missing authentication and RBAC.
 
 - The first visit asks for an owner account; `NEXUS_BOOTSTRAP_USERS` seeds accounts for
   CI, e2e and containers. `NEXUS_AUTH_ENABLED=false` exists only for tests and throwaway demos.
-- WebSockets and links (zip downloads) cannot send headers, so the token is also accepted as
-  `?token=`; it is short-lived and the API is local.
-- The rate limiter is in-process: fine for one node, to be replaced by a shared store if
-  NEXUS ever runs on several.
+- WebSockets and download links authenticate with the cookie, which the browser sends by
+  itself. The frontend therefore talks to the API on the page's own site (for local use,
+  `localhost` and `127.0.0.1` are aligned automatically).
+- Rate limits and revoked sessions live in the database (ADR 0009), so they hold across
+  restarts and replicas.
+- Amended 2026-10-21: the token moved from `localStorage` (readable by any injected script)
+  to the HttpOnly cookie, and `?token=` was removed.

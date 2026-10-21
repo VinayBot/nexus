@@ -13,7 +13,8 @@ Only the latest release on `main` receives fixes.
 
 | Area | Measure |
 |---|---|
-| Accounts | Argon2id hashes, JWT sessions (12 h) with server-side revocation, login limit of 5 per minute per user and address |
+| Accounts | Argon2id hashes; JWT sessions (12 h) in an HttpOnly, SameSite=Lax cookie (Bearer for API clients, never in URLs) with server-side revocation; login limit of 5 per minute per user and address |
+| CSRF / CORS | unsafe requests and WebSocket handshakes that carry the cookie must come from a listed origin; CORS lists exact origins, methods and headers |
 | Authorization | one policy table for every route (viewer, operator, owner); approvals record the signed-in user |
 | Abuse limits | per user: missions per minute and a daily token quota, stored in the database |
 | Agents | per-agent MCP tool allowlists, workspace path jail, sandboxed tests with no network, prompt-injection detection, secret and PII redaction, fenced untrusted text |

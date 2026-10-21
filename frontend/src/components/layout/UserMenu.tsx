@@ -6,7 +6,6 @@ import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { post } from "@/lib/api";
-import { clearToken } from "@/lib/auth";
 import { ROLE_LABEL, useMe } from "@/lib/me";
 
 /** Who is signed in, their role, and Sign out. Hidden when auth is off. */
@@ -24,8 +23,7 @@ export function UserMenu() {
   }, [open]);
   if (!me?.auth_enabled) return null;
   const signOut = async () => {
-    await post("/auth/logout").catch(() => undefined); // revoke the session server-side
-    clearToken();
+    await post("/auth/logout").catch(() => undefined); // revokes the session, clears the cookie
     qc.clear();
     router.replace("/login");
   };
