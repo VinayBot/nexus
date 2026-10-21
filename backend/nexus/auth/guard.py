@@ -15,7 +15,7 @@ from fastapi import HTTPException, Request
 from nexus.auth.policy import required_role
 from nexus.auth.security import ROLE_RANK, decode_token
 from nexus.core.services import services
-from nexus.db.models import UserRow
+from nexus.db.models import RevokedTokenRow, UserRow
 
 
 @dataclass(frozen=True)
@@ -45,6 +45,8 @@ async def user_for_token(token: str | None) -> CurrentUser | None:
     except jwt.InvalidTokenError:
         return None
     async with svc.db.session() as s:
+        if await s.get(RevokedTokenRow, str(claims.get("jti", ""))) is not None:
+            return None  # signed out
         row = await s.get(UserRow, str(claims.get("sub", "")))
     return CurrentUser(row.username, row.role) if row is not None else None
 

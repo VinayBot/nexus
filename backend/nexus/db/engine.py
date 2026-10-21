@@ -19,8 +19,6 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from nexus.db.models import Base
-
 
 class Database:
     def __init__(self, target: Path | str, *, pooled: bool = True) -> None:
@@ -48,12 +46,12 @@ class Database:
         self._sessions = async_sessionmaker(self.engine, expire_on_commit=False)
 
     async def init(self) -> None:
-        async with self.engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-            # create_all never adds indexes to tables that already exist: add new ones here
-            await conn.execute(
-                text("CREATE INDEX IF NOT EXISTS ix_missions_created_at ON missions (created_at)")
-            )
+        """Bring the schema to the latest migration (``nexus/db/migrations``)."""
+        from nexus.db.migrate import upgrade
+
+        async with self.engine.connect() as conn:
+            await conn.run_sync(upgrade)
+            await conn.commit()
 
     def insert(self, table: Any) -> Any:
         """``INSERT`` with ``on_conflict_do_nothing`` for this database's dialect."""

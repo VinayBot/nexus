@@ -76,8 +76,13 @@ concept ran on this machine.
 | Containers | non-root images with health checks, compose `service_healthy` ordering, root `.dockerignore` keeps `backend/data` (DB, tokens, keys) out of images | `docker compose build` |
 | CI | `.github/workflows/ci.yml`: ruff, mypy --strict, pytest with an 80% coverage gate (82% now), the suite again on PostgreSQL 16, pip-audit, pnpm audit, eslint, tsc, vitest, Playwright; CodeQL (`codeql.yml`), Dependabot, pre-commit hooks | every push |
 | Scalability | optional PostgreSQL for app data and checkpoints (pooled asyncpg engine), so several backend replicas can share one store | PostgreSQL CI job |
-| Abuse limits | per user: missions per minute (429 + `Retry-After`) and a daily token quota (`auth/quotas.py`); per mission: the token cap; login: 5 per minute | `test_quotas.py` |
+| Abuse limits | per user: missions per minute (429 + `Retry-After`) and a daily token quota (`auth/quotas.py`); per mission: the token cap; login: 5 per minute. Stored in the database (`auth/ratelimit.py`, `rate_hits`), so limits survive restarts and are shared by replicas | `test_quotas.py`, `test_hardening.py::test_rate_limit_survives_a_restart` |
+| Schema migrations | Alembic (`db/migrations`), applied on startup; older databases are stamped at the baseline and upgraded | `test_hardening.py::test_migrations_build_exactly_the_model_schema`, `::test_database_from_before_migrations_is_stamped_then_upgraded` |
+| Session revocation | `jti` in every JWT; `POST /auth/logout` → `revoked_tokens`; checked by the guard | `test_hardening.py::test_logout_revokes_the_token` |
+| HTTP security headers | `api/security_headers.py`: CSP, nosniff, frame-deny; published pages `script-src 'none'` | `test_hardening.py::test_security_headers` |
+| Error contract | `api/errors.py`: `{"detail", "request_id"}` for 4xx/5xx; unexpected errors logged, never leaked | `test_hardening.py::test_errors_carry_the_request_id`; `frontend/src/lib/__tests__/api.test.ts` |
 | Traceability | `X-Request-ID` accepted or generated, bound to every log line, echoed on the response (`api/request_id.py`) | `test_quotas.py::test_request_id_is_echoed_or_generated` |
+| SDLC | Conventional Commits, PR and issue templates, CHANGELOG, CONTRIBUTING, SECURITY policy, tagged release `v1.0.0` | — |
 | API contracts | Pydantic response models for missions, events, state, auth, users, audit, time travel (`api/schemas.py`) | OpenAPI at `/docs` |
 | DB performance | one query per list endpoint (no N+1); index on `missions.created_at` | — |
 | Secrets | weak or placeholder `NEXUS_SECRET_KEY` → random 48-byte key in `data/secret.key` (0600) | `test_weak_secret_is_replaced_by_a_strong_private_key` |

@@ -11,7 +11,6 @@ import pytest
 from starlette.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
-from nexus.api import routes_auth
 from nexus.api.app import create_app
 from nexus.auth.policy import required_role
 from nexus.auth.security import hash_password, needs_rehash, verify_password
@@ -26,7 +25,6 @@ def auth_on(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("NEXUS_AUTH_ENABLED", "true")
     monkeypatch.setenv("NEXUS_SMTP_PORT", "9")
     get_settings.cache_clear()
-    routes_auth.login_limiter._hits.clear()
 
 
 @asynccontextmanager

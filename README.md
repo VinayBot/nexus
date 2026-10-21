@@ -52,6 +52,7 @@ make e2e                        # Playwright end-to-end tests (own servers on :8
 make test-postgres              # the backend suite against a throwaway PostgreSQL 16
 make audit                      # known-vulnerability scan (pip-audit, pnpm audit)
 docker compose up --build       # backend + frontend + Mailpit; Ollama stays native on the host
+docker compose -f docker-compose.yml -f docker-compose.postgres.yml up --build   # … on PostgreSQL
 NEXUS_LLM_PROVIDER=simulation make dev   # no models needed: scripted, clearly labelled
 ```
 </details>
@@ -133,7 +134,8 @@ The full map, with the test that proves each item: [docs/TOPIC_COVERAGE.md](docs
   | Operator | + start and cancel missions, approve or reject, time travel |
   | Owner | + settings, models, users, chaos switches, agents, deleting missions |
 
-  Approvals record the signed-in user, never a name sent by the client. Public by design:
+  Signing out revokes the session on the server. Approvals record the signed-in user,
+  never a name sent by the client. Public by design:
   health probes, sign-in, signed one-time email-approval links, the Google OAuth callback and
   published pages.
 - **Agents are boxed in.** Per-agent MCP tool allowlists, a workspace path jail, a sandbox
@@ -142,8 +144,12 @@ The full map, with the test that proves each item: [docs/TOPIC_COVERAGE.md](docs
 - **Email** goes out only when a prompt asks for it, through Sign in with Google with the
   `gmail.send` scope only (NEXUS never sees the password and cannot read mail).
 - **Limits.** Per user: missions per minute and a daily token quota (HTTP 429 with
-  `Retry-After`); per mission: a token cap.
-- **Traceable.** Every response carries an `X-Request-ID`, which is also on every log line.
+  `Retry-After`), stored in the database so they survive restarts and are shared by
+  replicas; per mission: a token cap.
+- **HTTP hardening.** CSP, `nosniff`, frame-deny and a referrer policy on every response;
+  published pages may not run scripts.
+- **Traceable.** Every response, and every error body, carries an `X-Request-ID`, which is
+  also on every log line.
 - **Supply chain.** CI runs pip-audit, pnpm audit and CodeQL; Dependabot proposes updates.
 - **Secrets** stay in `.env` and `backend/data/` (both ignored by git and Docker).
 
@@ -159,9 +165,9 @@ concurrency, queue, tokens/s, circuit breakers); traces and benchmarks are in **
 
 | Suite | Count | Command |
 |---|---|---|
-| Backend (pytest; scripted model, real SQLite, MCP, sandbox, demo service; coverage gate 80%, now 82%) | 129 | `make test-backend` |
-| Same suite on PostgreSQL 16 | 129 | `make test-postgres` |
-| Frontend unit (vitest) | 13 | `make test-frontend` |
+| Backend (pytest; scripted model, real SQLite, MCP, sandbox, demo service; coverage gate 80%) | 135 | `make test-backend` |
+| Same suite on PostgreSQL 16 | 135 | `make test-postgres` |
+| Frontend unit (vitest) | 21 | `make test-frontend` |
 | End-to-end (Playwright; auth on, Simulation provider) | 25 | `make e2e` |
 | Lint and types | ruff · mypy --strict · eslint · prettier · tsc strict | `make check` |
 
@@ -205,8 +211,8 @@ What the numbers changed:
 - Build API is scoped to small services (8 files or fewer).
 - Without Docker the sandbox is a plain subprocess (labelled "not isolated" in the UI).
 - Links inside result emails point to the machine running NEXUS.
-- PostgreSQL makes the data store shareable, but long-term memory (Chroma) and the rate
-  limiters are still per process, so replicas need sticky sessions or a shared Chroma.
+- PostgreSQL makes the data store and rate limits shareable, but long-term memory (Chroma)
+  and the live event bus are per process, so replicas need sticky sessions.
 
 ## Repository layout
 
@@ -224,6 +230,9 @@ frontend/           Next.js 15 + TypeScript (strict), Tailwind v4, Playwright e2
 demo-service/       the FastAPI shop the self-healing missions repair
 docs/               architecture, ADRs, topic coverage, mission guide, demo scripts, benchmarks
 ```
+
+Project: [changelog](CHANGELOG.md) · [contributing](CONTRIBUTING.md) ·
+[security policy](SECURITY.md) · [design decisions](docs/adr/).
 
 More: [mission guide](docs/HOW_IT_WORKS.md) · [code walkthrough](docs/CODE_WALKTHROUGH.md) ·
 [presentation guide](docs/PRESENTATION_GUIDE.md).

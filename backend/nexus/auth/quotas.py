@@ -18,15 +18,6 @@ from nexus.db.models import MissionRow
 DAY_S = 86_400
 
 
-def _limiter() -> RateLimiter:
-    svc = services()
-    limiter: RateLimiter | None = svc.extras.get("mission_limiter")
-    if limiter is None:
-        limiter = RateLimiter(limit=svc.settings.missions_per_minute, window_s=60)
-        svc.register("mission_limiter", limiter)
-    return limiter
-
-
 async def tokens_today(username: str) -> int:
     async with services().db.session() as s:
         total = await s.scalar(
@@ -41,12 +32,13 @@ async def tokens_today(username: str) -> int:
 async def check_mission_quota(username: str) -> None:
     """Raise 429 (with Retry-After) when this user may not start another mission now."""
     settings = services().settings
-    limiter = _limiter()
-    if not limiter.allow(username):
+    db = services().db
+    limiter = RateLimiter("missions", limit=settings.missions_per_minute, window_s=60)
+    if not await limiter.allow(db, username):
         raise HTTPException(
             429,
             f"Too many missions: at most {settings.missions_per_minute} per minute.",
-            headers={"Retry-After": str(limiter.retry_after(username))},
+            headers={"Retry-After": str(await limiter.retry_after(db, username))},
         )
     quota = settings.daily_token_quota
     if quota and (used := await tokens_today(username)) >= quota:

@@ -6,10 +6,29 @@ export class ApiError extends Error {
     readonly status: number,
     message: string,
     readonly body?: unknown,
+    /** Matches the server log line; worth quoting in a bug report. */
+    readonly requestId?: string,
   ) {
     super(message);
     this.name = "ApiError";
   }
+}
+
+/** The backend's `detail`: a message, or FastAPI's list of validation errors. */
+export function errorMessage(body: unknown, fallback: string): string {
+  if (!body || typeof body !== "object" || !("detail" in body)) return fallback;
+  const detail = (body as { detail: unknown }).detail;
+  if (Array.isArray(detail)) {
+    return (
+      detail
+        .map((d: { loc?: unknown[]; msg?: string }) => {
+          const field = (d.loc ?? []).filter((p) => p !== "body").join(".");
+          return field ? `${field}: ${d.msg ?? "invalid"}` : (d.msg ?? "invalid");
+        })
+        .join("; ") || fallback
+    );
+  }
+  return typeof detail === "string" ? detail : fallback;
 }
 
 type Json = Record<string, unknown> | unknown[] | string | number | boolean | null;
@@ -34,11 +53,13 @@ export async function api<T>(path: string, init: RequestInit & { json?: Json } =
     } catch {
       body = await res.text().catch(() => undefined);
     }
-    const detail =
-      body && typeof body === "object" && "detail" in body
-        ? String((body as { detail: unknown }).detail)
-        : res.statusText;
-    throw new ApiError(res.status, detail, body);
+    const requestId =
+      (body && typeof body === "object" && "request_id" in body
+        ? String((body as { request_id: unknown }).request_id)
+        : null) ??
+      res.headers.get("x-request-id") ??
+      undefined;
+    throw new ApiError(res.status, errorMessage(body, res.statusText), body, requestId);
   }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;

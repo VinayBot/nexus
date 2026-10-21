@@ -6,11 +6,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends git curl \
 WORKDIR /app/backend
 # dependencies first (cached layer), then the code
 COPY backend/pyproject.toml backend/uv.lock ./
-RUN uv sync --frozen --no-dev --no-install-project
+RUN uv sync --frozen --no-dev --extra postgres --no-install-project
 COPY backend/ ./
 COPY demo-service/ /app/demo-service/
 COPY docs/ /app/docs/
-RUN uv sync --frozen --no-dev && mkdir -p /app/backend/data && chown -R nexus:nexus /app
+RUN uv sync --frozen --no-dev --extra postgres && mkdir -p /app/backend/data && chown -R nexus:nexus /app
 # git commits fixes on demo-service branches; the container user needs an identity
 RUN git config --system user.name "NEXUS" && git config --system user.email "nexus@localhost"
 USER nexus

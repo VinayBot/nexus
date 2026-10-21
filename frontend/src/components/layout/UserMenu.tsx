@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { post } from "@/lib/api";
 import { clearToken } from "@/lib/auth";
 import { ROLE_LABEL, useMe } from "@/lib/me";
 
@@ -22,7 +23,8 @@ export function UserMenu() {
     return () => window.removeEventListener("mousedown", close);
   }, [open]);
   if (!me?.auth_enabled) return null;
-  const signOut = () => {
+  const signOut = async () => {
+    await post("/auth/logout").catch(() => undefined); // revoke the session server-side
     clearToken();
     qc.clear();
     router.replace("/login");
@@ -56,7 +58,7 @@ export function UserMenu() {
             )}
             <button
               type="button"
-              onClick={signOut}
+              onClick={() => void signOut()}
               className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted hover:bg-surface-hover hover:text-text"
             >
               <LogOut className="size-4" /> Sign out

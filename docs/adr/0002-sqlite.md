@@ -1,6 +1,6 @@
 # ADR 0002 — SQLite for checkpoints and app data
 
-**Status:** accepted
+**Status:** accepted; amended by [ADR 0008](0008-native-tools-and-postgres.md) (optional PostgreSQL) and [ADR 0009](0009-migrations-and-persistent-limits.md) (migrations)
 
 ## Context
 Everything must run on one laptop with no extra services. We need durable checkpoints,

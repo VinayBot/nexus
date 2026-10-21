@@ -36,6 +36,7 @@ RULES: list[tuple[set[str], re.Pattern[str], str]] = [
         ({"DELETE"}, r"^/api/v1/missions/[^/]+$", "owner"),
         ({"POST"}, r"^/api/v1/notify/intent$", "viewer"),  # a read-only preview
         ({"POST"}, r"^/api/v1/guide(/.*)?$", "viewer"),  # asking Nova changes nothing
+        ({"POST"}, r"^/api/v1/auth/logout$", "viewer"),  # anyone may end their own session
     )
 ]
 

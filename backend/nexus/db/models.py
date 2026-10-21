@@ -1,7 +1,7 @@
-"""SQLite tables for app data (LangGraph checkpoints live in their own file).
+"""Tables for app data (LangGraph checkpoints live in their own store).
 
-The schema is created at startup with ``create_all``; there are no migrations
-because runtime data is disposable (``make reset``). See docs/adr/0002-sqlite.md.
+The schema is versioned with Alembic (``nexus/db/migrations``) and upgraded on startup.
+After changing a model: ``uv run alembic revision --autogenerate -m "what changed"``.
 """
 
 from __future__ import annotations
@@ -221,3 +221,21 @@ class UserRow(Base):
     password_hash: Mapped[str] = mapped_column(String(255))
     role: Mapped[str] = mapped_column(String(16), default="viewer")
     created_at: Mapped[float] = mapped_column(Float, default=now)
+
+
+class RateHitRow(Base):
+    """One counted request for a rate limit; shared by every replica on the same database."""
+
+    __tablename__ = "rate_hits"
+    __table_args__ = (Index("ix_rate_hits_key_ts", "key", "ts"),)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    key: Mapped[str] = mapped_column(String(200))
+    ts: Mapped[float] = mapped_column(Float)
+
+
+class RevokedTokenRow(Base):
+    """A signed-out session (JWT ``jti``); kept until the token would have expired anyway."""
+
+    __tablename__ = "revoked_tokens"
+    jti: Mapped[str] = mapped_column(String(64), primary_key=True)
+    expires_at: Mapped[float] = mapped_column(Float, index=True)

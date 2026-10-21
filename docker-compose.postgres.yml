@@ -1,0 +1,26 @@
+# PostgreSQL instead of the SQLite files, for app data and LangGraph checkpoints:
+#   docker compose -f docker-compose.yml -f docker-compose.postgres.yml up --build
+# Set POSTGRES_PASSWORD in .env for anything beyond a local trial.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: nexus
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nexus-local}
+      POSTGRES_DB: nexus
+    volumes: [nexus-pg:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexus"]
+      interval: 5s
+      retries: 10
+    deploy: { resources: { limits: { memory: 512m } } }
+
+  backend:
+    environment:
+      NEXUS_DATABASE_URL: postgresql+asyncpg://nexus:${POSTGRES_PASSWORD:-nexus-local}@postgres:5432/nexus
+    depends_on:
+      mailpit: { condition: service_started }
+      postgres: { condition: service_healthy }
+
+volumes:
+  nexus-pg:

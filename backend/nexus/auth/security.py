@@ -7,6 +7,7 @@ carries its own parameters and salt, and ``needs_rehash`` upgrades old hashes on
 from __future__ import annotations
 
 import time
+import uuid
 from typing import Any, Literal
 
 import jwt
@@ -35,7 +36,13 @@ def needs_rehash(stored: str) -> bool:
 
 def create_token(username: str, role: str, secret: str, ttl_s: int) -> str:
     now = int(time.time())
-    claims = {"sub": username, "role": role, "iat": now, "exp": now + ttl_s}
+    claims = {
+        "sub": username,
+        "role": role,
+        "iat": now,
+        "exp": now + ttl_s,
+        "jti": uuid.uuid4().hex,
+    }
     return jwt.encode(claims, secret, algorithm="HS256")
 
 

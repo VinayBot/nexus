@@ -13,13 +13,19 @@ from sqlalchemy import func, select
 
 from nexus.api.schemas import AuthStatus, Me, UserOut
 from nexus.auth.ratelimit import RateLimiter
-from nexus.auth.security import create_token, hash_password, needs_rehash, verify_password
+from nexus.auth.security import (
+    create_token,
+    decode_token,
+    hash_password,
+    needs_rehash,
+    verify_password,
+)
 from nexus.core.services import services
 from nexus.db import repo
 from nexus.db.models import UserRow
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-login_limiter = RateLimiter(limit=5, window_s=60)
+login_limiter = RateLimiter("login", limit=5, window_s=60)
 
 USERNAME = r"^[a-zA-Z0-9_.-]{3,32}$"
 
@@ -84,11 +90,12 @@ async def setup(body: Credentials) -> Session:
 async def login(body: Credentials, request: Request) -> Session:
     client = request.client.host if request.client else "?"
     key = f"{body.username.lower()}|{client}"
-    if not login_limiter.allow(key):
+    db = services().db
+    if not await login_limiter.allow(db, key):
         raise HTTPException(
             429,
             "Too many sign-in attempts. Wait a minute and try again.",
-            headers={"Retry-After": str(login_limiter.retry_after(key))},
+            headers={"Retry-After": str(await login_limiter.retry_after(db, key))},
         )
     async with services().db.session() as s:
         row = await s.get(UserRow, body.username)
@@ -98,6 +105,34 @@ async def login(body: Credentials, request: Request) -> Session:
     if not ok or row is None:
         raise HTTPException(401, "Wrong username or password.")
     return _session(row.username, row.role)
+
+
+@router.post("/logout", status_code=204)
+async def logout(request: Request) -> None:
+    """Revoke this session server-side; the token stops working at once, not at expiry."""
+    import time
+
+    import jwt
+    from sqlalchemy import delete
+
+    from nexus.auth.guard import token_from
+    from nexus.db.models import RevokedTokenRow
+
+    token = token_from(dict(request.headers), dict(request.query_params))
+    settings = services().settings
+    if not settings.auth_enabled or not token:
+        return
+    try:
+        claims = decode_token(token, settings.secret_key)
+    except jwt.InvalidTokenError:
+        return
+    async with services().db.session() as s:
+        await s.execute(delete(RevokedTokenRow).where(RevokedTokenRow.expires_at < time.time()))
+        if claims.get("jti") and await s.get(RevokedTokenRow, claims["jti"]) is None:
+            s.add(RevokedTokenRow(jti=claims["jti"], expires_at=float(claims["exp"])))
+    await repo.audit(
+        services().db, actor=str(claims.get("sub")), channel="ui", action="auth.logout", detail={}
+    )
 
 
 @router.get("/me")
