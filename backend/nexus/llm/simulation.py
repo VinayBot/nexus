@@ -12,6 +12,7 @@ import json
 import re
 
 from nexus.llm.scripted import ScriptedLLM
+from nexus.llm.simulation_code import code_fix, requirements
 from nexus.llm.types import LLMRequest
 
 
@@ -65,6 +66,8 @@ def _review(req: LLMRequest) -> str:
 
 
 def _solve(req: LLMRequest) -> str:
+    if "start_line" in json.dumps((req.json_schema or {}).get("properties", {})):
+        return code_fix(req)  # code mode: a line-range edit
     who = req.agent_id or "solver"
     return json.dumps(
         {
@@ -157,6 +160,7 @@ def simulation_llm() -> ScriptedLLM:
             "route": json.dumps({"playbook": "council_qa", "reason": "a question (simulation)"}),
             "plan": _plan,
             "plan:page": _page_spec,
+            "plan:requirements": requirements,
             "write": _section,
             "ticket": _ticket,
             "replan": _plan,

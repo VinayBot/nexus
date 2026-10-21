@@ -4,6 +4,12 @@ All notable changes, newest first. Versions follow [Semantic Versioning](https:/
 
 ## [Unreleased]
 
+### Added
+- Simulation mode (no Ollama) completes the code missions: Fix service for every Chaos Lab
+  bug, and Solve ticket for T-101 and T-103. The scripted model only proposes the edit
+  from the numbered files it is shown; the patch, sandbox tests, approval and live
+  verification are real. Unknown problems get an honest no-op and fail validation.
+
 ### Changed
 - Every catch-all `except Exception` is narrowed or states its reason; Ruff's blind-except
   rule enforces it. Five modules over 400 lines were split; a CI check keeps the limit.
@@ -21,6 +27,10 @@ All notable changes, newest first. Versions follow [Semantic Versioning](https:/
 - CodeQL `py/url-redirection` (medium): the Google sign-in redirect carries fixed words only.
 - On PostgreSQL, traces were written to the SQLite file and never shown; spans now go to
   the configured database.
+- The demo service ran under `uvicorn --reload`, so a code change (chaos switch, fix,
+  rollback) depended on a file watcher that can miss or half-apply a burst of git writes
+  on a busy machine. It now restarts explicitly and waits until it serves again; this
+  removed an intermittent CI failure (`test_failed_verification_rolls_back`).
 - Deleting a mission while an event batch was still being written could leave its events
   behind (seen on CI's PostgreSQL job). Bus flushes are now serialized and deletion waits
   for them; a test with a slow sink reproduces the race.
