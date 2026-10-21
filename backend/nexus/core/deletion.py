@@ -15,6 +15,7 @@ from typing import Any
 
 from sqlalchemy import delete, update
 
+from nexus.core.events import bus
 from nexus.db.models import (
     ApprovalRow,
     BranchRow,
@@ -36,6 +37,8 @@ async def delete_mission(svc: Any, mission_id: str) -> None:
     runner = svc.runner
     if runner.is_running(mission_id):
         raise MissionBusyError("the mission is running: cancel it first")
+    # events are written in batches: settle them first, or a late batch re-creates rows
+    await bus.flush()
     async with svc.db.session() as s:
         for table in (
             EventRow,

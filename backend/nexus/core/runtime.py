@@ -54,7 +54,7 @@ async def runtime(
         await db.init()
         from nexus.core.tracing import setup_tracing, shutdown_tracing
 
-        setup_tracing(settings.sqlite_path)
+        setup_tracing(settings.database_target)
         stack.callback(shutdown_tracing)
         stack.push_async_callback(db.close)
         svc.register("db", db)
