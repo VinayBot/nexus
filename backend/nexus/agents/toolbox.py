@@ -80,7 +80,7 @@ async def run_with_events(
     with span(f"tool:{name}", "tool", agent=agent_id) as s:
         try:
             outcome = await invoke()
-        except Exception as exc:  # tools report errors as observations
+        except Exception as exc:  # noqa: BLE001 - tools report errors as observations
             outcome = ToolOutcome(False, f"ERROR: {type(exc).__name__}: {exc}")
         s.set_attribute("nexus.ok", outcome.ok)
     outcome.duration_ms = round((time.perf_counter() - started) * 1000, 1)

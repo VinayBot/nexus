@@ -186,7 +186,7 @@ class MissionRunner:
             if not self._shutting_down:  # on shutdown stay "running" so recover() resumes it
                 await repo.update_mission(self.db, mission_id, status="cancelled")
                 emit("mission.cancelled", MissionCancelled(reason="cancelled by user"))
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - top of a mission task: anything becomes a dead letter
             node, err = last_failure.pop(mission_id, (None, f"{type(exc).__name__}: {exc}"))
             log.error("mission.failed", mission_id=mission_id, node=node, error=err)
             await repo.dead_letter(
@@ -237,7 +237,7 @@ class MissionRunner:
         for hook in self.finished_hooks:
             try:
                 hook(mission_id)
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 - a broken hook must not affect the finished mission
                 log.warning("mission.finished_hook_failed", error=str(exc))
 
     async def resume(self, mission_id: str, decision: dict[str, Any]) -> None:

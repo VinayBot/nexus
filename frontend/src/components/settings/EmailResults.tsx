@@ -18,6 +18,15 @@ interface NotifyStatus {
   waiting: number;
 }
 
+/** What each `google_error` code from the sign-in redirect means. */
+const GOOGLE_ERRORS: Record<string, string> = {
+  cancelled: "you cancelled it, or Google returned no sign-in.",
+  expired: "the sign-in link expired. Start again.",
+  not_configured: "the Google client ID and secret are not set yet.",
+  refused: "Google refused it. Check the client ID, secret and redirect URI.",
+  failed: "something went wrong. Check the server log and try again.",
+};
+
 /** Google's "G" mark, in Google's colours as their sign-in guidelines ask. */
 function GoogleG() {
   return (
@@ -136,12 +145,13 @@ export function EmailResults() {
     if (s) setTo(s.to ?? "");
   }, [s]);
   useEffect(() => {
-    // Google sends the browser back to /settings?google=<email> or ?google_error=<why>
+    // Google sends the browser back to /settings?google=connected or ?google_error=<code>
     const q = new URLSearchParams(window.location.search);
     const ok = q.get("google");
     const bad = q.get("google_error");
-    if (ok) setBanner({ ok: true, text: `Signed in with Google as ${ok}. Results will be sent from this account.` });
-    if (bad) setBanner({ ok: false, text: `Google sign-in did not finish: ${bad}` });
+    if (ok) setBanner({ ok: true, text: "Signed in with Google. Results will be sent from this account." });
+    if (bad)
+      setBanner({ ok: false, text: `Google sign-in did not finish: ${GOOGLE_ERRORS[bad] ?? GOOGLE_ERRORS.failed}` });
     if (ok || bad) window.history.replaceState(null, "", "/settings");
   }, []);
   const onSaved = (d: NotifyStatus) => qc.setQueryData(["notify"], d);

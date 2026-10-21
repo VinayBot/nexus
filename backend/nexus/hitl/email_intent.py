@@ -12,7 +12,9 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
-ADDRESS = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+# Bounded (RFC 5321 limits) and anchored at the start of a run, so matching stays linear
+# even on hostile input such as thousands of "a." (CodeQL py/polynomial-redos).
+ADDRESS = re.compile(r"(?<![\w.+-])[\w.+-]{1,64}@[\w-]{1,63}(?:\.[\w-]{1,63}){1,8}")
 VERB = r"(?:send|e-?mail|mail|share|forward|deliver)"
 CONNECTOR = r"(?:\s*(?:,|\band\b|\balso\b|\bthen\b|\bplease\b|\bpls\b))*\s*"
 FILLER = (

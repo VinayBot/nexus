@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, ClassVar, Literal
 
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from nexus.core.services import services
 from nexus.graph.schemas import Plan
@@ -105,7 +105,7 @@ def load_saved(directory: Path) -> list[SavedPlaybook]:
             out.append(
                 SavedPlaybook(SavedPlaybookSpec.model_validate(yaml.safe_load(path.read_text())))
             )
-        except Exception:
+        except (OSError, yaml.YAMLError, ValidationError):
             continue  # a broken user file must not take the registry down
     return out
 

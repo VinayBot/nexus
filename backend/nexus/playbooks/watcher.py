@@ -187,6 +187,6 @@ class Watcher:
         while True:
             try:
                 await self.tick()
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 - the watcher loop must survive any single bad tick
                 log.error("watcher.tick_failed", error=str(exc))
             await asyncio.sleep(interval_s)

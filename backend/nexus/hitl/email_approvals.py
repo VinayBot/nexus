@@ -149,7 +149,7 @@ class EmailApprovals:
         )
         try:
             await self.approvals.decide(t.approval_id, decision)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - show the reason on the confirm page instead of a 500
             return 409, page("Could not apply", html.escape(str(exc)))
         done = (
             "approved — the mission is resuming"

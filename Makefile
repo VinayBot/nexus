@@ -63,6 +63,7 @@ test-frontend:
 lint: ## Ruff + ESLint + Prettier check
 	cd backend && uv run ruff check . && uv run ruff format --check .
 	cd frontend && pnpm lint && pnpm format:check
+	scripts/check_file_size.sh
 
 typecheck: ## mypy (strict) + tsc
 	cd backend && uv run mypy

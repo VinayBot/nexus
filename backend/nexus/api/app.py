@@ -27,6 +27,7 @@ from nexus.api import (
     routes_memory,
     routes_metrics,
     routes_missions,
+    routes_notify,
     routes_system,
     routes_work,
     ws,
@@ -51,7 +52,7 @@ async def _index_docs_later(svc: object) -> None:
     try:
         added = await index_docs(memory, project_doc_paths())
         log.info("docs.indexed", chunks_added=added)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - indexing docs is optional at startup
         log.warning("docs.index_failed", error=str(exc))
 
 
@@ -118,6 +119,7 @@ def create_app() -> FastAPI:
         routes_guide,
         routes_hitl,
         routes_insight,
+        routes_notify,
         routes_mcp,
         routes_memory,
         routes_work,

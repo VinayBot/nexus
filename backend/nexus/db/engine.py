@@ -73,7 +73,7 @@ class Database:
             try:
                 yield s
                 await s.commit()
-            except Exception:
+            except Exception:  # roll back whatever failed, then re-raise
                 await s.rollback()
                 raise
 

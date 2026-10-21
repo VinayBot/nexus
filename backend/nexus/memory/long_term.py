@@ -68,7 +68,7 @@ class LongTermMemory:
             vecs = await self.embed(texts)
             self.embedding_ok = True
             return vecs
-        except Exception as exc:  # embedding model down → keyword fallback
+        except Exception as exc:  # noqa: BLE001 - embedding model down → keyword fallback
             log.warning("memory.embed_failed", error=str(exc))
             self.embedding_ok = False
             return None

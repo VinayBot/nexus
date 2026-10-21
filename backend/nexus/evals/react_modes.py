@@ -59,7 +59,7 @@ async def run_one(task: str, expected: str) -> dict[str, Any]:
             react_worker.ainvoke(initial_worker_state(spec, task, TOOLS)), 180
         )
         answer = str(out.get("final") or "")
-    except Exception as exc:  # a failed run counts as wrong, the benchmark goes on
+    except Exception as exc:  # noqa: BLE001 - a failed run counts as wrong, the benchmark goes on
         answer = f"error: {exc!r}"
     calls = [e.payload for e in events if e.type == "llm.call"]
     return {

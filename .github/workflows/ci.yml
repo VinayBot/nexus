@@ -12,6 +12,7 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - run: uv sync --frozen --extra postgres # so mypy also checks the PostgreSQL path
       - run: uv run ruff check . && uv run ruff format --check .
+      - run: ../scripts/check_file_size.sh
       - run: uv run mypy
       - run: uv run pytest -q --cov=nexus --cov-report=term-missing:skip-covered --cov-fail-under=80
         env: { NEXUS_SANDBOX_BACKEND: local }

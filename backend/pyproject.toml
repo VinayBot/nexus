@@ -68,7 +68,7 @@ extend-exclude = ["nexus/playbooks/templates"]
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "SIM", "RUF", "ASYNC", "PT"]
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "SIM", "RUF", "ASYNC", "PT", "BLE"]
 ignore = ["E501", "PT011", "PT018", "RUF001", "RUF002", "RUF003", "ASYNC240"]  # line length is enforced by `ruff format`
 
 [tool.mypy]

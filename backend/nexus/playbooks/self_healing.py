@@ -231,7 +231,7 @@ class SelfHealing(CodeFixPlaybook):
                 content,
                 f"nexus: fix {(state.get('inputs') or {}).get('incident_id', state['mission_id'])}",
             )
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - report any apply failure as the execution result
             return ExecutionResult(ok=False, summary=f"Could not apply: {exc}")
         return ExecutionResult(
             ok=True,

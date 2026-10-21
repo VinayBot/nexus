@@ -131,7 +131,7 @@ async def prune(
                         summary=result.summary[:600],
                     ),
                 )
-        except Exception:
+        except Exception:  # noqa: BLE001 - summariser failed for any reason: fall back to the window
             result = sliding_window(messages, budget, model=model)
             strategy = "sliding_window"
     else:

@@ -97,7 +97,7 @@ async def worker(payload: dict[str, Any]) -> dict[str, Any]:
     )
     try:
         custom = await get_playbook(payload["playbook"]).run_step(payload)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - a failed step becomes a finding, not a crashed mission
         custom = Finding(
             step_id=step["id"], agent_id=agent_id, summary=f"Step failed: {exc}"[:500], ok=False
         ).model_dump()
@@ -130,7 +130,7 @@ async def worker(payload: dict[str, Any]) -> dict[str, Any]:
             iterations=int(out.get("iteration", 0)),
         )
         status(agent_id, "success" if finding.ok else "confused")
-    except Exception as exc:  # a failed worker is a finding, not a crashed mission
+    except Exception as exc:  # noqa: BLE001 - a failed worker is a finding, not a crashed mission
         finding = Finding(
             step_id=step["id"],
             agent_id=agent_id,

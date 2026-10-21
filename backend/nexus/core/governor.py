@@ -175,6 +175,6 @@ class ResourceGovernor:
         while True:
             try:
                 await self.sample()
-            except Exception as exc:  # telemetry must never take the app down
+            except Exception as exc:  # noqa: BLE001 - telemetry must never take the app down
                 log.error("governor.sample_failed", error=str(exc))
             await asyncio.sleep(interval_s)

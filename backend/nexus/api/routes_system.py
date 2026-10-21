@@ -51,7 +51,7 @@ async def check_database(settings: Settings) -> DependencyCheck:
 
         try:
             await services().db.ping()
-        except Exception as exc:  # any driver error means the store is down
+        except Exception as exc:  # noqa: BLE001 - any driver error means the store is down
             return DependencyCheck(name="postgresql", status="down", detail=type(exc).__name__)
         return DependencyCheck(name="postgresql", status="ok", detail="connected")
     try:

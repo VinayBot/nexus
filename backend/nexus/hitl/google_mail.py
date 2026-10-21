@@ -37,7 +37,11 @@ CLIENT_FILE = "google_client.json"
 
 
 class GoogleMailError(RuntimeError):
-    pass
+    """``code`` is a fixed word the sign-in redirect may carry; the message stays server-side."""
+
+    def __init__(self, message: str, code: str = "failed") -> None:
+        super().__init__(message)
+        self.code = code
 
 
 def _write_private(path: Any, data: dict[str, Any]) -> None:
@@ -122,9 +126,11 @@ class GoogleMail:
         pending = self._pending.pop(state, None)
         client = self.client()
         if pending is None or time.time() - pending[1] > 600:
-            raise GoogleMailError("This sign-in link expired. Start again from Settings.")
+            raise GoogleMailError(
+                "This sign-in link expired. Start again from Settings.", "expired"
+            )
         if client is None:
-            raise GoogleMailError("The Google client is not configured.")
+            raise GoogleMailError("The Google client is not configured.", "not_configured")
         async with httpx.AsyncClient(timeout=15) as http:
             r = await http.post(
                 TOKEN_URL,
@@ -140,7 +146,8 @@ class GoogleMail:
         body = r.json()
         if r.status_code != 200 or "refresh_token" not in body:
             raise GoogleMailError(
-                f"Google refused the sign-in: {body.get('error_description') or body.get('error') or r.status_code}"
+                f"Google refused the sign-in: {body.get('error_description') or body.get('error') or r.status_code}",
+                "refused",
             )
         email = _email_from_id_token(body.get("id_token", ""))
         _write_private(
@@ -156,8 +163,8 @@ class GoogleMail:
             token = json.loads(path.read_text())["refresh_token"]
             async with httpx.AsyncClient(timeout=10) as http:
                 await http.post(REVOKE_URL, data={"token": token})  # best effort
-        except Exception:
-            pass
+        except (OSError, ValueError, KeyError, httpx.HTTPError):
+            pass  # no token file, a bad file, or Google unreachable: delete locally anyway
         path.unlink(missing_ok=True)
         self._access = None
 

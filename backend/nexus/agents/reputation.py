@@ -53,7 +53,7 @@ async def bump(agent_id: str, **deltas: float) -> None:
 
     try:
         await bump_agent_stats(db, agent_id, **deltas)
-    except Exception as exc:  # bookkeeping must never fail a mission
+    except Exception as exc:  # noqa: BLE001 - bookkeeping must never fail a mission
         log.warning("reputation.bump_failed", agent=agent_id, error=str(exc))
 
 
@@ -65,5 +65,5 @@ async def reward(agent_id: str, topic: str, points: float) -> None:
 
     try:
         await add_topic_reputation(db, agent_id, topic, points)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - bookkeeping must never fail a mission
         log.warning("reputation.reward_failed", agent=agent_id, error=str(exc))

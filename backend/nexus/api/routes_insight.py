@@ -1,11 +1,11 @@
-"""Observatory, Benchmarks (evals), Under the Hood, Settings and Curriculum evidence."""
+"""Observatory, Benchmarks (evals), Under the Hood, Settings and Curriculum evidence.
+Result-email settings are in :mod:`nexus.api.routes_notify`."""
 
 from __future__ import annotations
 
 from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 
@@ -269,131 +269,6 @@ async def put_settings(body: SettingsPatch) -> dict[str, Any]:
         if watcher is not None:
             watcher.auto_heal = body.auto_heal
     return _settings_view()
-
-
-# --- result emails ---------------------------------------------------------------------
-class NotifyPrefs(BaseModel):
-    to: str | None = None
-    enabled: bool = True
-
-
-@router.get("/notify")
-async def notify_status() -> dict[str, Any]:
-    n = services().notifier
-    return {**n.status(), "waiting": len(await n.pending())}
-
-
-@router.post("/notify/resend")
-async def notify_resend() -> dict[str, int]:
-    result: dict[str, int] = await services().notifier.resend_pending()
-    return result
-
-
-@router.put("/notify")
-async def notify_save(body: NotifyPrefs) -> dict[str, Any]:
-    try:
-        services().notifier.save(to=(body.to or "").strip() or None, enabled=body.enabled)
-    except ValueError as exc:
-        raise HTTPException(422, str(exc)) from exc
-    return dict(services().notifier.status())
-
-
-class SmtpAccount(BaseModel):
-    provider: Literal["gmail", "outlook"] = "gmail"
-    username: str
-    app_password: str
-
-
-@router.put("/notify/smtp")
-async def notify_connect(body: SmtpAccount) -> dict[str, Any]:
-    try:
-        await services().notifier.connect(body.provider, body.username.strip(), body.app_password)
-    except ValueError as exc:
-        raise HTTPException(422, str(exc)) from exc
-    return dict(services().notifier.status())
-
-
-@router.delete("/notify/smtp")
-async def notify_disconnect() -> dict[str, Any]:
-    services().notifier.disconnect()
-    return dict(services().notifier.status())
-
-
-class GoogleClient(BaseModel):
-    client_id: str
-    client_secret: str
-
-
-@router.put("/notify/google/client")
-async def google_client(body: GoogleClient) -> dict[str, Any]:
-    try:
-        services().google_mail.save_client(body.client_id, body.client_secret)
-    except ValueError as exc:
-        raise HTTPException(422, str(exc)) from exc
-    return dict(services().notifier.status())
-
-
-@router.get("/notify/google/start")
-async def google_start() -> dict[str, str]:
-    try:
-        return {"url": services().google_mail.auth_url()}
-    except ValueError as exc:
-        raise HTTPException(422, str(exc)) from exc
-
-
-@router.get("/notify/google/callback", include_in_schema=False)
-async def google_callback(
-    code: str | None = None, state: str | None = None, error: str | None = None
-) -> RedirectResponse:
-    """Google sends the browser back here; we finish sign-in and return to Settings."""
-    from urllib.parse import quote
-
-    from nexus.hitl.google_mail import GoogleMailError
-
-    ui = services().settings.ui_url.rstrip("/")
-    if error or not code or not state:
-        return RedirectResponse(f"{ui}/settings?google_error={quote(error or 'cancelled')}")
-    try:
-        email = await services().google_mail.finish(code, state)
-    except GoogleMailError as exc:
-        return RedirectResponse(f"{ui}/settings?google_error={quote(str(exc))}")
-    return RedirectResponse(f"{ui}/settings?google={quote(email)}")
-
-
-@router.delete("/notify/google")
-async def google_disconnect() -> dict[str, Any]:
-    await services().google_mail.disconnect()
-    return dict(services().notifier.status())
-
-
-class IntentRequest(BaseModel):
-    task: str = Field(max_length=5000)
-
-
-@router.post("/notify/intent")
-async def notify_intent(body: IntentRequest) -> dict[str, Any]:
-    """Live preview for the composer: will this prompt email its result, and to whom?"""
-    from nexus.hitl.email_intent import email_request
-
-    req = email_request(body.task)
-    n = services().notifier
-    to = n.recipients(
-        {"email_requested": req.requested, "email_to": req.to, "email_self": req.to_self}
-    )
-    return {
-        "requested": req.requested,
-        "to": to,
-        "needs_address": req.requested and not to,
-        "delivery": n.status()["delivery"],
-    }
-
-
-@router.post("/notify/test")
-async def notify_test() -> dict[str, str | None]:
-    try:
-        return dict(await services().notifier.send_test())
-    except ValueError as exc:
-        raise HTTPException(422, str(exc)) from exc
 
 
 # --- curriculum evidence -------------------------------------------------------------------
