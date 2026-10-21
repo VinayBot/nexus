@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
@@ -46,14 +46,22 @@ def out(row: MissionRow) -> MissionOut:
 
 
 @router.post("", response_model=MissionOut, status_code=201)
-async def create(body: MissionCreate) -> MissionOut:
+async def create(body: MissionCreate, request: Request) -> MissionOut:
+    from nexus.auth.quotas import check_mission_quota
+
+    user = request.state.user.username
+    await check_mission_quota(user)
     if body.playbook:
         from nexus.playbooks import all_playbooks
 
         if body.playbook not in {p.id for p in all_playbooks()}:
             raise HTTPException(422, f"unknown playbook '{body.playbook}'")
     row = await services().runner.create(
-        body.task, title=body.title, playbook=body.playbook, inputs=body.inputs, limits=body.limits
+        body.task,
+        title=body.title,
+        playbook=body.playbook,
+        inputs={**body.inputs, "created_by": user},
+        limits=body.limits,
     )
     return out(row)
 

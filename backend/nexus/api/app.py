@@ -30,6 +30,7 @@ from nexus.api import (
     routes_work,
     ws,
 )
+from nexus.api.request_id import RequestIdMiddleware
 from nexus.auth.guard import guard
 from nexus.core.config import get_settings
 from nexus.core.logging import configure_logging, get_logger
@@ -95,7 +96,9 @@ def create_app() -> FastAPI:
         allow_origins=settings.cors_origins,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=["X-Request-ID", "Retry-After"],
     )
+    app.add_middleware(RequestIdMiddleware)  # outermost: every response carries the id
     # event logs and summaries run to 100+ KB of JSON; SSE streams are excluded by Starlette
     app.add_middleware(GZipMiddleware, minimum_size=2048, compresslevel=5)
     # every API route passes the RBAC guard (auth/policy.py decides public / viewer / ...)

@@ -145,6 +145,9 @@ class Settings(BaseSettings):
     demo_autostart: bool = True
     auto_heal: bool = True
     mission_token_limit: int = 120_000
+    #: Per user: missions started per minute, and model tokens per 24 hours (0 = no cap).
+    missions_per_minute: int = 10
+    daily_token_quota: int = 2_000_000
     pruning_strategy: Literal["sliding_window", "summarise"] = "summarise"
     #: Optional PostgreSQL for app data and checkpoints, e.g.
     #: ``postgresql+asyncpg://nexus:secret@localhost:5432/nexus`` (``uv sync --extra postgres``).

@@ -51,6 +51,7 @@ export default defineConfig({
         NEXUS_SMTP_PORT: "9",
         NEXUS_PUBLIC_URL: API,
         NEXUS_AUTH_ENABLED: "true",
+        NEXUS_MISSIONS_PER_MINUTE: "1000", // the suite starts many missions quickly
         NEXUS_SECRET_KEY: SECRET,
         NEXUS_BOOTSTRAP_USERS: "owner:owner-pass-123:owner,viewer:viewer-pass-123:viewer",
         NEXUS_CORS_ORIGINS: '["http://localhost:3011","http://127.0.0.1:3011"]',
