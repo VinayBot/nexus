@@ -10,8 +10,6 @@ from collections.abc import AsyncIterator
 from contextlib import AsyncExitStack, asynccontextmanager
 from typing import Any
 
-from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
-
 from nexus.agents.registry import AgentRegistry
 from nexus.agents.toolbox import ToolBox
 from nexus.core.config import Settings, get_settings
@@ -20,6 +18,7 @@ from nexus.core.logging import get_logger
 from nexus.core.meter import meter
 from nexus.core.services import Services, build_services, set_services
 from nexus.db import repo
+from nexus.db.checkpoints import open_checkpointer
 from nexus.db.engine import Database
 from nexus.graph.main_graph import build_graph
 from nexus.graph.runner import MissionRunner
@@ -51,7 +50,7 @@ async def runtime(
         svc = build_services(settings, provider)
         set_services(svc)
 
-        db = Database(settings.sqlite_path)
+        db = Database(settings.database_target, pooled=settings.env != "test")
         await db.init()
         from nexus.core.tracing import setup_tracing, shutdown_tracing
 
@@ -76,9 +75,7 @@ async def runtime(
             toolbox = await stack.enter_async_context(start_mcp_hub(svc))
         svc.register("toolbox", toolbox)
 
-        saver = await stack.enter_async_context(
-            AsyncSqliteSaver.from_conn_string(str(settings.checkpoints_path))
-        )
+        saver = await stack.enter_async_context(open_checkpointer(settings))
         graph = build_graph(saver)
         runner = MissionRunner(
             graph, db, token_cap=svc.policies.token_cap(settings.mission_token_limit)

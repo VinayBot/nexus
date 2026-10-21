@@ -1,4 +1,8 @@
-"""Async SQLAlchemy engine for app data (WAL mode so readers never block the writer)."""
+"""Async SQLAlchemy engine for app data.
+
+SQLite by default (WAL mode so readers never block the writer); PostgreSQL when
+``NEXUS_DATABASE_URL`` is set, for several backend replicas sharing one store.
+"""
 
 from __future__ import annotations
 
@@ -19,18 +23,28 @@ from nexus.db.models import Base
 
 
 class Database:
-    def __init__(self, path: Path) -> None:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        self.engine: AsyncEngine = create_async_engine(f"sqlite+aiosqlite:///{path}")
+    def __init__(self, target: Path | str, *, pooled: bool = True) -> None:
+        if isinstance(target, Path):
+            target.parent.mkdir(parents=True, exist_ok=True)
+            self.engine: AsyncEngine = create_async_engine(f"sqlite+aiosqlite:///{target}")
 
-        @event.listens_for(self.engine.sync_engine, "connect")
-        def _pragmas(dbapi_conn: Any, _record: Any) -> None:
-            cur = dbapi_conn.cursor()
-            cur.execute("PRAGMA journal_mode=WAL")
-            cur.execute("PRAGMA synchronous=NORMAL")
-            cur.execute("PRAGMA busy_timeout=5000")
-            cur.close()
+            @event.listens_for(self.engine.sync_engine, "connect")
+            def _pragmas(dbapi_conn: Any, _record: Any) -> None:
+                cur = dbapi_conn.cursor()
+                cur.execute("PRAGMA journal_mode=WAL")
+                cur.execute("PRAGMA synchronous=NORMAL")
+                cur.execute("PRAGMA busy_timeout=5000")
+                cur.close()
 
+        elif pooled:
+            self.engine = create_async_engine(
+                target, pool_size=10, max_overflow=10, pool_pre_ping=True
+            )
+        else:  # tests drive the app from several event loops; asyncpg pools are per loop
+            from sqlalchemy.pool import NullPool
+
+            self.engine = create_async_engine(target, poolclass=NullPool)
+        self.dialect = self.engine.dialect.name  # "sqlite" or "postgresql"
         self._sessions = async_sessionmaker(self.engine, expire_on_commit=False)
 
     async def init(self) -> None:
@@ -40,6 +54,20 @@ class Database:
             await conn.execute(
                 text("CREATE INDEX IF NOT EXISTS ix_missions_created_at ON missions (created_at)")
             )
+
+    def insert(self, table: Any) -> Any:
+        """``INSERT`` with ``on_conflict_do_nothing`` for this database's dialect."""
+        if self.dialect == "postgresql":
+            from sqlalchemy.dialects.postgresql import insert as pg_insert
+
+            return pg_insert(table)
+        from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+
+        return sqlite_insert(table)
+
+    async def ping(self) -> None:
+        async with self.engine.connect() as conn:
+            await conn.execute(text("select 1"))
 
     @asynccontextmanager
     async def session(self) -> AsyncIterator[AsyncSession]:

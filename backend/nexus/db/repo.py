@@ -6,7 +6,6 @@ from collections.abc import Sequence
 from typing import Any
 
 from sqlalchemy import func, select, update
-from sqlalchemy.dialects.sqlite import insert
 
 from nexus.core.events import Event
 from nexus.db.engine import Database
@@ -32,7 +31,7 @@ async def save_events(db: Database, events: list[Event]) -> None:
     if not rows:
         return
     async with db.session() as s:
-        await s.execute(insert(EventRow).values(rows).on_conflict_do_nothing())
+        await s.execute(db.insert(EventRow).values(rows).on_conflict_do_nothing())
 
 
 async def events_after(
@@ -131,7 +130,7 @@ async def bump_agent_stats(db: Database, agent_id: str, **deltas: float) -> None
         "llm_calls": 0, "topics": {},
     }  # fmt: skip
     async with db.session() as s:
-        await s.execute(insert(AgentStatRow).values(**defaults).on_conflict_do_nothing())
+        await s.execute(db.insert(AgentStatRow).values(**defaults).on_conflict_do_nothing())
         if deltas:
             await s.execute(
                 update(AgentStatRow)

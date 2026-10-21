@@ -20,7 +20,7 @@ async def approval_history(action_kind: str) -> dict[str, int]:
         res = await s.execute(
             select(ApprovalRow.status, func.count())
             .where(ApprovalRow.kind == "approve_action")
-            .where(func.json_extract(ApprovalRow.payload, "$.action.kind") == action_kind)
+            .where(ApprovalRow.payload[("action", "kind")].as_string() == action_kind)
             .group_by(ApprovalRow.status)
         )
         counts: dict[str, int] = dict(res.all())

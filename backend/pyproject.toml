@@ -33,11 +33,21 @@ dependencies = [
     "uvicorn[standard]>=0.54.0",
 ]
 
+[project.optional-dependencies]
+# PostgreSQL for app data and LangGraph checkpoints (NEXUS_DATABASE_URL)
+postgres = [
+    "asyncpg>=0.30",
+    "langgraph-checkpoint-postgres>=2.0",
+    "psycopg[binary,pool]>=3.2",
+]
+
 [dependency-groups]
 dev = [
     "mypy>=2.4.0",
+    "pip-audit>=2.10.1",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
+    "pytest-cov>=7.1.0",
     "ruff>=0.17.0",
     "types-docker>=7.2.0.20261006",
     "types-psutil>=7.2.2.20260906",

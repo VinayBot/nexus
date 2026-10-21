@@ -146,6 +146,10 @@ class Settings(BaseSettings):
     auto_heal: bool = True
     mission_token_limit: int = 120_000
     pruning_strategy: Literal["sliding_window", "summarise"] = "summarise"
+    #: Optional PostgreSQL for app data and checkpoints, e.g.
+    #: ``postgresql+asyncpg://nexus:secret@localhost:5432/nexus`` (``uv sync --extra postgres``).
+    #: Unset: SQLite files in ``data_dir`` (the default, zero setup).
+    database_url: str | None = None
     #: ReAct worker turn format: provider-native tool calling, or schema-constrained JSON.
     react_mode: Literal["native", "json"] = "native"
     #: Seconds the verifier watches demo-service health after a fix.
@@ -170,6 +174,15 @@ class Settings(BaseSettings):
     @property
     def sqlite_path(self) -> Path:
         return self.data_dir / "nexus.db"
+
+    @property
+    def database_target(self) -> Path | str:
+        """App data store: ``NEXUS_DATABASE_URL`` (PostgreSQL) or the local SQLite file."""
+        return self.database_url or self.sqlite_path
+
+    @property
+    def uses_postgres(self) -> bool:
+        return bool(self.database_url and self.database_url.startswith("postgresql"))
 
     @property
     def checkpoints_path(self) -> Path:

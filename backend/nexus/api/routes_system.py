@@ -44,8 +44,16 @@ async def check_ollama(settings: Settings) -> DependencyCheck:
     return DependencyCheck(name="ollama", status="ok", detail="all configured models pulled")
 
 
-def check_sqlite(settings: Settings) -> DependencyCheck:
-    """The data directory is writable and SQLite opens."""
+async def check_database(settings: Settings) -> DependencyCheck:
+    """SQLite: the data directory is writable and the file opens. PostgreSQL: it answers."""
+    if settings.uses_postgres:
+        from nexus.core.services import services
+
+        try:
+            await services().db.ping()
+        except Exception as exc:  # any driver error means the store is down
+            return DependencyCheck(name="postgresql", status="down", detail=type(exc).__name__)
+        return DependencyCheck(name="postgresql", status="ok", detail="connected")
     try:
         settings.data_dir.mkdir(parents=True, exist_ok=True)
         with sqlite3.connect(settings.sqlite_path) as conn:
@@ -73,8 +81,8 @@ async def ready() -> Readiness:
     settings = get_settings()
     if settings.llm_provider == "simulation":
         sim = DependencyCheck(name="ollama", status="ok", detail="simulation mode: scripted model")
-        return worst([check_sqlite(settings), sim])
-    return worst([check_sqlite(settings), await check_ollama(settings)])
+        return worst([await check_database(settings), sim])
+    return worst([await check_database(settings), await check_ollama(settings)])
 
 
 @router.get("/system/info", response_model=SystemInfo)

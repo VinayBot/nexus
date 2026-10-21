@@ -208,7 +208,7 @@ class AwaitDbStatus:
     async def __aenter__(self) -> str:
         from nexus.db.engine import Database
 
-        self.db = Database(get_settings().sqlite_path)
+        self.db = Database(get_settings().database_target, pooled=False)
         row = await repo.get_mission(self.db, self.mission_id)
         assert row is not None
         return row.status

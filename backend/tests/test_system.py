@@ -17,7 +17,8 @@ def test_ready_reports_ollama_down_but_sqlite_ok() -> None:
     with TestClient(create_app()) as client:
         body = client.get("/api/v1/health/ready").json()
     checks = {c["name"]: c["status"] for c in body["checks"]}
-    assert checks == {"sqlite": "ok", "ollama": "down"}
+    store = "postgresql" if get_settings().uses_postgres else "sqlite"
+    assert checks == {store: "ok", "ollama": "down"}
     assert body["status"] == "down"
 
 

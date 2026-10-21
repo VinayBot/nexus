@@ -3,7 +3,7 @@ SHELL := /bin/bash
 export COREPACK_ENABLE_DOWNLOAD_PROMPT := 0
 COMPOSE := $(shell docker compose version >/dev/null 2>&1 && echo "docker compose" || echo docker-compose)
 
-.PHONY: help setup models dev prod backend frontend test test-backend test-frontend lint typecheck e2e \
+.PHONY: help setup models dev prod backend frontend test test-backend test-postgres audit test-frontend lint typecheck e2e \
         types sandbox-image mail demo reset check
 
 help: ## Show this help
@@ -40,7 +40,22 @@ sandbox-image: ## Build the isolated test-runner image used by sandbox-exec
 test: test-backend test-frontend ## Run all offline tests
 
 test-backend:
-	cd backend && uv run pytest -q
+	cd backend && uv run pytest -q --cov=nexus --cov-report=term:skip-covered --cov-fail-under=80
+
+test-postgres: ## Backend tests against a throwaway PostgreSQL 16 container
+	docker run -d --rm --name nexus-test-pg -e POSTGRES_USER=nexus -e POSTGRES_PASSWORD=nexus \
+		-e POSTGRES_DB=nexus -p 55432:5432 postgres:16-alpine >/dev/null
+	until docker exec nexus-test-pg pg_isready -U nexus >/dev/null 2>&1; do sleep 1; done
+	cd backend && uv sync --extra postgres -q && \
+		NEXUS_TEST_DATABASE_URL=postgresql+asyncpg://nexus:nexus@127.0.0.1:55432/nexus uv run pytest -q; \
+		status=$$?; docker stop nexus-test-pg >/dev/null; exit $$status
+
+audit: ## Known-vulnerability scan of Python and npm dependencies
+	cd backend && uv export --frozen --no-dev --extra postgres --no-hashes --no-emit-project -o /tmp/nexus-req.txt && \
+		uv run pip-audit -r /tmp/nexus-req.txt --no-deps --disable-pip \
+		--ignore-vuln PYSEC-2026-311 --ignore-vuln PYSEC-2026-3813 \
+		--ignore-vuln PYSEC-2026-3814 --ignore-vuln PYSEC-2026-3815
+	cd frontend && pnpm audit --prod
 
 test-frontend:
 	cd frontend && pnpm test

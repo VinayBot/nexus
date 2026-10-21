@@ -7,3 +7,7 @@ minimumReleaseAgeExclude:
   - "@next/*"
   - eslint-config-next
   - next
+# Patched transitive versions (pnpm audit): next bundles an older postcss, monaco an older dompurify.
+overrides:
+  postcss: ">=8.5.23"
+  dompurify: ">=3.4.16"

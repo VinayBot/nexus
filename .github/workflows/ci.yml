@@ -13,8 +13,36 @@ jobs:
       - run: uv sync --frozen
       - run: uv run ruff check . && uv run ruff format --check .
       - run: uv run mypy
-      - run: uv run pytest -q
+      - run: uv run pytest -q --cov=nexus --cov-report=term-missing:skip-covered --cov-fail-under=80
         env: { NEXUS_SANDBOX_BACKEND: local }
+      - name: Audit dependencies (pip-audit)
+        # The chromadb advisories concern Chroma's HTTP server; NEXUS embeds Chroma
+        # (PersistentClient, no server, no remote model loading).
+        run: |
+          uv export --frozen --no-dev --extra postgres --no-hashes --no-emit-project -o /tmp/req.txt
+          uv run pip-audit -r /tmp/req.txt --no-deps --disable-pip \
+            --ignore-vuln PYSEC-2026-311 --ignore-vuln PYSEC-2026-3813 \
+            --ignore-vuln PYSEC-2026-3814 --ignore-vuln PYSEC-2026-3815
+
+  postgres:
+    # The same suite against PostgreSQL 16: app data and LangGraph checkpoints.
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: backend } }
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_USER: nexus, POSTGRES_PASSWORD: nexus, POSTGRES_DB: nexus }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U nexus" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --frozen --extra postgres
+      - run: uv run pytest -q
+        env:
+          NEXUS_SANDBOX_BACKEND: local
+          NEXUS_TEST_DATABASE_URL: postgresql+asyncpg://nexus:nexus@localhost:5432/nexus
 
   frontend:
     runs-on: ubuntu-latest
@@ -27,6 +55,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
         env: { COREPACK_ENABLE_DOWNLOAD_PROMPT: "0" }
       - run: pnpm lint && pnpm typecheck && pnpm test
+      - run: pnpm audit --prod --audit-level=low
 
   e2e:
     needs: [backend, frontend]
