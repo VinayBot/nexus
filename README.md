@@ -49,6 +49,8 @@ from the same screen when you want it.
 make prod                       # optimised frontend build + backend without the reloader
 make check                      # everything CI runs: lint, mypy --strict, tsc, all tests
 make e2e                        # Playwright end-to-end tests (own servers on :8011/:3011)
+make test-postgres              # the backend suite against a throwaway PostgreSQL 16
+make audit                      # known-vulnerability scan (pip-audit, pnpm audit)
 docker compose up --build       # backend + frontend + Mailpit; Ollama stays native on the host
 NEXUS_LLM_PROVIDER=simulation make dev   # no models needed: scripted, clearly labelled
 ```
@@ -66,6 +68,9 @@ The important ones:
 | `NEXUS_BOOTSTRAP_USERS` | – | seed accounts: `alice:password:owner,bob:password:operator` |
 | `NEXUS_SECRET_KEY` | generated | signs sessions and approval links; a weak value is replaced by a random key |
 | `NEXUS_SANDBOX_BACKEND` | `docker` | `docker` (isolated, no network) or `local` (subprocess, dev only) |
+| `NEXUS_DATABASE_URL` | – | PostgreSQL for app data and checkpoints (`postgresql+asyncpg://…`, `uv sync --extra postgres`); unset = SQLite files |
+| `NEXUS_REACT_MODE` | `auto` | worker turns: `native` tool calling, schema-constrained `json`, or `auto` (per model, from the benchmark below) |
+| `NEXUS_MISSIONS_PER_MINUTE` / `NEXUS_DAILY_TOKEN_QUOTA` | `10` / `2000000` | per-user limits (`0` quota = no cap) |
 | `NEXUS_GOOGLE_CLIENT_ID/SECRET` | – | "Sign in with Google" to send result emails (or paste them in Settings) |
 
 ---
@@ -91,14 +96,16 @@ flowchart LR
 1. **Quill** rewrites the prompt; keyword rules or the fast model **route** it to a playbook.
 2. **Sage** writes a typed plan; the **Commander** assigns each step to the best agent by
    reputation and **dispatches** them in parallel with `Send`.
-3. Each worker runs a **ReAct** subgraph with its own MCP tool allowlist.
+3. Each worker runs a **ReAct** subgraph with its own MCP tool allowlist, using the
+   model's **native tool calling** (`tools=[JSON Schema]` → `tool_calls` → `role="tool"`)
+   or schema-constrained JSON turns, whichever measured better for the active model.
 4. For code and hard questions, **Blaze, Volt and Frost** compete: each patch is tested in a
    sandbox, reviews are anonymous, and the judge **Arbiter** weighs test results most.
 5. **Aegis** validates; failures loop back (bounded by guards).
 6. A **rule-based risk score** decides: run, ask a human (`interrupt()`), rehearse first, or block.
 7. Execute → verify (live traffic for the demo service) → roll back if needed → remember → report.
 
-Every step is checkpointed in SQLite, so missions survive restarts and can be rewound
+Every step is checkpointed (SQLite, or PostgreSQL when configured), so missions survive restarts and can be rewound
 (Time Travel). Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and the design
 decisions in [docs/adr/](docs/adr/).
 
@@ -134,6 +141,10 @@ The full map, with the test that proves each item: [docs/TOPIC_COVERAGE.md](docs
   fencing of untrusted text.
 - **Email** goes out only when a prompt asks for it, through Sign in with Google with the
   `gmail.send` scope only (NEXUS never sees the password and cannot read mail).
+- **Limits.** Per user: missions per minute and a daily token quota (HTTP 429 with
+  `Retry-After`); per mission: a token cap.
+- **Traceable.** Every response carries an `X-Request-ID`, which is also on every log line.
+- **Supply chain.** CI runs pip-audit, pnpm audit and CodeQL; Dependabot proposes updates.
 - **Secrets** stay in `.env` and `backend/data/` (both ignored by git and Docker).
 
 ## Reliability and observability
@@ -148,12 +159,15 @@ concurrency, queue, tokens/s, circuit breakers); traces and benchmarks are in **
 
 | Suite | Count | Command |
 |---|---|---|
-| Backend (pytest; scripted model, real SQLite, MCP, sandbox, demo service) | 119 | `make test-backend` |
+| Backend (pytest; scripted model, real SQLite, MCP, sandbox, demo service; coverage gate 80%, now 82%) | 129 | `make test-backend` |
+| Same suite on PostgreSQL 16 | 129 | `make test-postgres` |
 | Frontend unit (vitest) | 13 | `make test-frontend` |
 | End-to-end (Playwright; auth on, Simulation provider) | 25 | `make e2e` |
 | Lint and types | ruff · mypy --strict · eslint · prettier · tsc strict | `make check` |
 
-CI runs all of them on every push ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
+CI runs all of them on every push, plus pip-audit and pnpm audit
+([.github/workflows/ci.yml](.github/workflows/ci.yml)); CodeQL runs separately. `pre-commit
+install` adds the fast checks as git hooks.
 Live-model tests are marked `@pytest.mark.live`.
 
 **Verified live** on a 16 GB Mac (Balanced profile): every mission type end to end, e.g. a
@@ -161,13 +175,38 @@ blog page published in 55 s, a self-heal that fixed a bad tax setting (10/10 tes
 orders, 0 errors), tickets filed and solved, and email results delivered with an approval
 clicked from the email itself.
 
+## Benchmarks
+
+Measured on a 16 GB Mac (M5 Pro), 2026-10-21: the LangGraph ReAct worker, 6 tool tasks with
+known numeric answers × 3 runs, each turn format on each model. Reproduce with
+`cd backend && uv run python -m nexus.evals.react_modes --runs 3`; raw runs are in
+[docs/benchmarks/react_modes.json](docs/benchmarks/react_modes.json).
+
+| Model | Turn format | Correct | Median time | Median tokens | Median LLM calls |
+|---|---|---|---|---|---|
+| qwen2.5:3b | **native tool calling** | **14/18** | 2.2 s | 1,132 | 2 |
+| qwen2.5:3b | JSON turns | 10/18 | 2.7 s | 786 | 2 |
+| llama3.2:3b | native tool calling | 13/18 | 2.3 s | 971 | 2 |
+| llama3.2:3b | **JSON turns** | **16/18** | 2.7 s | 1,228 | 3 |
+
+What the numbers changed:
+
+- The best format depends on the model, so `NEXUS_REACT_MODE=auto` (the default) uses native
+  calls for Qwen and JSON turns for Llama.
+- The first run scored 6–8/12. The failures showed the demo calculator rejecting `2^10`
+  and giving unhelpful errors. Fixing the tool, not the prompt, lifted every row.
+- The remaining misses are mostly the model inventing a fact ("the squad has 10 robots")
+  instead of calling `lookup_fact`, a 3B limit that the council and validation stages exist
+  to catch.
+
 ## Known limitations
 
 - 3B local models sometimes need a second round of work; the guarded fix loops handle it.
 - Build API is scoped to small services (8 files or fewer).
 - Without Docker the sandbox is a plain subprocess (labelled "not isolated" in the UI).
 - Links inside result emails point to the machine running NEXUS.
-- One node: SQLite for state, an in-process rate limiter, no horizontal scaling.
+- PostgreSQL makes the data store shareable, but long-term memory (Chroma) and the rate
+  limiters are still per process, so replicas need sticky sessions or a shared Chroma.
 
 ## Repository layout
 
@@ -183,8 +222,10 @@ backend/            FastAPI + LangGraph (Python 3.12, uv)
   tests/            pytest suites
 frontend/           Next.js 15 + TypeScript (strict), Tailwind v4, Playwright e2e
 demo-service/       the FastAPI shop the self-healing missions repair
-docs/               architecture, ADRs, topic coverage, mission guide, demo scripts
+docs/               architecture, ADRs, topic coverage, mission guide, demo scripts, benchmarks
 ```
 
 More: [mission guide](docs/HOW_IT_WORKS.md) · [code walkthrough](docs/CODE_WALKTHROUGH.md) ·
 [presentation guide](docs/PRESENTATION_GUIDE.md).
+
+Licence: [MIT](LICENSE).

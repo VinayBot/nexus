@@ -102,8 +102,10 @@ tests and healed the live service.
 NEXUS runs on a 3B model by default (`lite` profile). Several deliberate choices make
 that workable:
 
-- **Schema-constrained turns.** Ollama `format=<json schema>` for every structured
-  output and every ReAct turn, instead of native tool calling.
+- **Schema-constrained outputs.** Ollama `format=<json schema>` for every structured
+  output. ReAct workers use native tool calling or JSON turns per model (`auto`, from a
+  measured benchmark), recover calls the model printed as text, and fall back to a
+  schema-constrained JSON turn on an empty reply.
 - **Validation re-prompts** that quote the exact Pydantic error, escalation to the main
   model, then a safe default.
 - **Line-range edits.** The solver returns `start_line`/`end_line`/`replacement` over a

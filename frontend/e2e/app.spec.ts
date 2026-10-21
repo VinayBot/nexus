@@ -86,9 +86,12 @@ test("display settings popover switches theme and performance mode", async ({ pa
 
 test("command palette opens with the keyboard and navigates", async ({ page }) => {
   await page.goto("/missions");
-  await page.keyboard.press("ControlOrMeta+k");
   const input = page.getByPlaceholder("Type a command or ask Nova…");
-  await expect(input).toBeVisible();
+  // the shortcut listener attaches on hydration: press again until the palette opens
+  await expect(async () => {
+    await page.keyboard.press("ControlOrMeta+k");
+    await expect(input).toBeVisible({ timeout: 1000 });
+  }).toPass({ timeout: 30_000 });
   await input.fill("Agents");
   await page.keyboard.press("Enter");
   await page.waitForURL(/\/agents$/);

@@ -9,10 +9,10 @@ concept ran on this machine.
 
 | Concept | Implementation | Tests | UI |
 |---|---|---|---|
-| ReAct (Reason–Act–Observe) | `graph/subgraphs/react_worker.py` — `think` ⇄ `act`, `finalize` on the iteration guard | `test_graph_missions.py::test_react_iteration_guard_forces_final`, `::test_council_qa_runs_end_to_end` | Missions screen → Activity panel (Thought / Action / Observation chips) |
+| ReAct (Reason–Act–Observe) | `graph/subgraphs/react_worker.py` — `think` ⇄ `act`, `finalize` on the iteration guard; turns use native tool calling or schema-constrained JSON (`NEXUS_REACT_MODE`; `auto` picks per model from the benchmark) | `test_graph_missions.py::test_react_iteration_guard_forces_final`, `::test_council_qa_runs_end_to_end` | Missions screen → Activity panel (Thought / Action / Observation chips) |
 | Plan-and-Execute | `graph/nodes/planning.py::plan` (typed `Plan`, replanner revisions), `graph/nodes/work.py::dispatch` (executes ready steps by dependency) | `test_validation_failures_hit_fix_and_replan_guards`, `test_playbooks.py::test_project_builder_builds_tests_and_packages` (dependency waves) | Live Graph (`plan`, `dispatch` ×N); Activity panel "Plan r0/r1" |
 | Raw SDK agent (no framework) | `llm/raw_react_agent.py` (httpx only: loop, retries, step limit) | `test_raw_agent.py` (+ `@live` against Ollama) | Under the Hood; Benchmarks "Raw SDK vs LangGraph" |
-| Native tool calling | `raw_react_agent.py::_run_native` — `tools=[JSON Schema]` → structured `tool_calls` → `{"role": "tool"}` results; a reply without tool calls is the answer (the prompted-JSON loop remains as `mode="json"`) | `test_raw_agent.py::test_native_tool_calling_loop` (asserts the request schema and the tool messages); verified live on qwen2.5:3b and llama3.2:3b | Under the Hood |
+| Native tool calling | **In the LangGraph worker** (`react_worker.py::_native_turn`; `auto` uses it for Qwen-family models) and the raw SDK agent (`raw_react_agent.py::_run_native`): `tools=[JSON Schema]` → structured `tool_calls` → `role="tool"` results; a reply without tool calls is the answer. Calls a 3B model prints as text (JSON or `tool(arg=…)`) are recovered (`llm/text_tool_calls.py`); an empty reply falls back to one JSON turn | `test_react_native.py` (round trip, text recovery, fallback, JSON mode, `@live` on qwen2.5:3b and llama3.2:3b), `test_raw_agent.py::test_native_tool_calling_loop`; measured in `docs/benchmarks/react_modes.json` | Activity panel (Action chips); Under the Hood |
 | Conditional routing | `graph/nodes/understand.py::route/after_route`; `after_validate`, `after_gate`, `after_approval`, `after_verify`, `after_rollback` | `test_router_picks_playbook_and_emits_edge`, `test_hitl.py` (risk routes) | Live Graph — the chosen branch label flashes on the edge |
 
 ## Day 17 — LangGraph core: states & cycles
@@ -31,7 +31,7 @@ concept ran on this machine.
 
 | Concept | Implementation | Tests | UI |
 |---|---|---|---|
-| SQLite persistence | `AsyncSqliteSaver` in `core/runtime.py`; app tables in `db/models.py` | `test_crashed_mission_resumes_from_sqlite_checkpoint` | Time Travel; checkpoint nodes in Missions screen |
+| Persistence (SQLite or PostgreSQL) | `db/checkpoints.py::open_checkpointer` — `AsyncSqliteSaver` by default, `AsyncPostgresSaver` when `NEXUS_DATABASE_URL` is set; app tables in `db/models.py` (dialect-aware upserts in `db/engine.py`) | `test_crashed_mission_resumes_from_sqlite_checkpoint`; the whole suite also runs on PostgreSQL 16 in CI (`make test-postgres`) | Time Travel; checkpoint nodes in Missions screen |
 | Crash resume | `graph/runner.py::recover()` on startup; shutdown keeps missions "running" | same test (planning is not redone after restart); also verified live when a dev reload restarted the backend mid-mission | "Mission resumed from checkpoint" in the Activity panel |
 | Sliding-window pruning | `memory/pruning.py::sliding_window` (system + pinned + recent) | `test_sliding_window_keeps_system_pinned_and_recent` | Memory (vessels, pruning events) |
 | Summarisation pruning | `memory/pruning.py::summarise` (rolling pinned summary, fallback to the window) | `test_summarise_folds_old_turns_into_pinned_summary`, `test_summarise_failure_falls_back_to_sliding_window` | Memory; Benchmarks "pruning" suite |
@@ -74,6 +74,10 @@ concept ran on this machine.
 | Auth and RBAC | see "Who may approve" above | `test_auth.py`, `auth.spec.ts` |
 | Observability | Prometheus `GET /metrics` (`api/routes_metrics.py`): missions, tokens, approvals, emails, RAM, concurrency, queue, tokens/s, circuit breakers; OpenTelemetry traces; Insights | `/metrics` scraped in the live check |
 | Containers | non-root images with health checks, compose `service_healthy` ordering, root `.dockerignore` keeps `backend/data` (DB, tokens, keys) out of images | `docker compose build` |
-| CI | `.github/workflows/ci.yml`: ruff, mypy --strict, pytest, eslint, tsc, vitest, Playwright | every push |
+| CI | `.github/workflows/ci.yml`: ruff, mypy --strict, pytest with an 80% coverage gate (82% now), the suite again on PostgreSQL 16, pip-audit, pnpm audit, eslint, tsc, vitest, Playwright; CodeQL (`codeql.yml`), Dependabot, pre-commit hooks | every push |
+| Scalability | optional PostgreSQL for app data and checkpoints (pooled asyncpg engine), so several backend replicas can share one store | PostgreSQL CI job |
+| Abuse limits | per user: missions per minute (429 + `Retry-After`) and a daily token quota (`auth/quotas.py`); per mission: the token cap; login: 5 per minute | `test_quotas.py` |
+| Traceability | `X-Request-ID` accepted or generated, bound to every log line, echoed on the response (`api/request_id.py`) | `test_quotas.py::test_request_id_is_echoed_or_generated` |
+| API contracts | Pydantic response models for missions, events, state, auth, users, audit, time travel (`api/schemas.py`) | OpenAPI at `/docs` |
 | DB performance | one query per list endpoint (no N+1); index on `missions.created_at` | — |
 | Secrets | weak or placeholder `NEXUS_SECRET_KEY` → random 48-byte key in `data/secret.key` (0600) | `test_weak_secret_is_replaced_by_a_strong_private_key` |

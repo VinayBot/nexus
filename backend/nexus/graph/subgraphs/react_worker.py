@@ -67,6 +67,17 @@ def _turn_schema(tool_names: list[str]) -> type[BaseModel]:
     )
 
 
+def react_mode() -> Literal["native", "json"]:
+    """``NEXUS_REACT_MODE``; "auto" picks per model family from the measured benchmark
+    (docs/benchmarks/react_modes.json): qwen2.5:3b native 14/18 vs JSON 10/18,
+    llama3.2:3b JSON 16/18 vs native 13/18."""
+    svc = services()
+    mode = svc.settings.react_mode
+    if mode != "auto":
+        return mode
+    return "json" if svc.llm.router.models.main.startswith("llama") else "native"
+
+
 def _describe(specs: list[ToolSpec]) -> str:
     if not specs:
         return "(no tools — answer from the task context)"
@@ -84,7 +95,7 @@ def system_prompt(spec: AgentSpec, tools: list[ToolSpec], mode: str = "json") ->
             f"{spec.system_prompt.strip()}\n\n"
             f"You work in ReAct style. Available tools:\n{_describe(tools)}\n\n"
             "Call a tool whenever you need facts instead of guessing; you will get its "
-            "result back. When you know enough, reply with your final answer as plain "
+            "result back. Never do arithmetic or recall facts from memory when a tool can. When you know enough, reply with your final answer as plain "
             "text (no tool call). Keep final answers factual and concise, and say which "
             "sources you used.\n\n" + UNTRUSTED_RULE
         )
@@ -93,7 +104,8 @@ def system_prompt(spec: AgentSpec, tools: list[ToolSpec], mode: str = "json") ->
         f"You work in ReAct style. Available tools:\n{_describe(tools)}\n\n"
         "Each turn, reply with JSON: a short 'thought', then either an 'action' (a tool "
         f"name) with 'action_input', or action '{FINAL}' with your 'final_answer'. "
-        "Use tools to look things up instead of guessing. Keep final answers factual "
+        "Use tools to look things up instead of guessing; never do arithmetic or recall "
+        "facts from memory when a tool can. Keep final answers factual "
         "and concise, and say which sources you used.\n\n" + UNTRUSTED_RULE
     )
 
@@ -116,7 +128,7 @@ async def think(state: WorkerState) -> dict[str, Any]:
         previous_summary=state.get("summary", ""),
     )
     specs = svc.toolbox.specs(state.get("tools", []))
-    if svc.settings.react_mode == "native":
+    if react_mode() == "native":
         turn = await _native_turn(spec, pruned.messages, specs)
     else:
         turn = await _json_turn(spec, pruned.messages, [t.name for t in specs])
@@ -319,7 +331,7 @@ def initial_worker_state(
 ) -> WorkerState:
     specs = services().toolbox.specs(tools)
     messages = [
-        ChatMessage.system(system_prompt(spec, specs, services().settings.react_mode)),
+        ChatMessage.system(system_prompt(spec, specs, react_mode())),
         ChatMessage.user(
             f"Your task:\n{task}" + (f"\n\nContext:\n{context}" if context else ""), pinned=True
         ),

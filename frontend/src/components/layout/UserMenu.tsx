@@ -51,6 +51,9 @@ export function UserMenu() {
           >
             <p className="px-2 pt-1 text-sm font-medium text-text">{me.username}</p>
             <p className="px-2 pb-2 text-xs text-muted">Role: {ROLE_LABEL[me.role]}</p>
+            {Boolean(me.daily_token_quota) && (
+              <QuotaBar used={me.tokens_today ?? 0} quota={me.daily_token_quota ?? 0} />
+            )}
             <button
               type="button"
               onClick={signOut}
@@ -61,6 +64,29 @@ export function UserMenu() {
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+/** Model tokens this account used in the last 24 hours, against its daily quota. */
+function QuotaBar({ used, quota }: { used: number; quota: number }) {
+  const share = Math.min(1, used / quota);
+  return (
+    <div className="px-2 pb-2" aria-label="Tokens used today">
+      <div className="flex justify-between text-[11px] text-faint">
+        <span>Tokens today</span>
+        <span>
+          {used.toLocaleString()} / {quota.toLocaleString()}
+        </span>
+      </div>
+      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/10">
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${share * 100}%` }}
+          transition={{ type: "spring", stiffness: 120, damping: 20 }}
+          className={share > 0.9 ? "h-full bg-danger" : "h-full bg-[var(--accent-strong)]"}
+        />
+      </div>
     </div>
   );
 }

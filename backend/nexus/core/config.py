@@ -153,8 +153,9 @@ class Settings(BaseSettings):
     #: ``postgresql+asyncpg://nexus:secret@localhost:5432/nexus`` (``uv sync --extra postgres``).
     #: Unset: SQLite files in ``data_dir`` (the default, zero setup).
     database_url: str | None = None
-    #: ReAct worker turn format: provider-native tool calling, or schema-constrained JSON.
-    react_mode: Literal["native", "json"] = "native"
+    #: ReAct worker turn format: provider-native tool calling, schema-constrained JSON, or
+    #: "auto" = per model family, from docs/benchmarks/react_modes.json (llama → json).
+    react_mode: Literal["auto", "native", "json"] = "auto"
     #: Seconds the verifier watches demo-service health after a fix.
     verify_window_s: float = 12.0
 

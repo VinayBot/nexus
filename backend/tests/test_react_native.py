@@ -17,6 +17,13 @@ from nexus.llm.types import LLMRequest, LLMResult
 from tests.fakes import council_llm, local_toolbox
 
 
+@pytest.fixture(autouse=True)
+def native(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These tests exercise native mode unless they say otherwise ("auto" picks per model)."""
+    monkeypatch.setenv("NEXUS_REACT_MODE", "native")
+    get_settings.cache_clear()
+
+
 @pytest.fixture
 def events() -> list[Event]:
     captured: list[Event] = []
@@ -154,3 +161,15 @@ def test_text_tool_call_parsing() -> None:
     history = [ChatMessage(role="assistant", content="", tool_calls=[call])]
     assert already_made(call, history, names)
     assert not already_made(call, [ChatMessage.user(prose)], names)
+
+
+async def test_auto_mode_follows_the_benchmark(monkeypatch: pytest.MonkeyPatch) -> None:
+    from nexus.graph.subgraphs.react_worker import react_mode
+
+    monkeypatch.setenv("NEXUS_REACT_MODE", "auto")
+    get_settings.cache_clear()
+    async for svc in start(council_llm()):
+        svc.llm.router.models = svc.llm.router.models.model_copy(update={"main": "llama3.2:3b"})
+        assert react_mode() == "json"
+        svc.llm.router.models = svc.llm.router.models.model_copy(update={"main": "qwen2.5:3b"})
+        assert react_mode() == "native"

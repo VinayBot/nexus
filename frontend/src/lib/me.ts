@@ -8,6 +8,9 @@ export interface Me {
   username: string;
   role: Role;
   auth_enabled: boolean;
+  tokens_today?: number;
+  daily_token_quota?: number; // 0 = no cap
+  missions_per_minute?: number;
 }
 
 const RANK: Record<Role, number> = { viewer: 0, operator: 1, owner: 2 };

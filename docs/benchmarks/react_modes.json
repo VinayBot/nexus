@@ -1,0 +1,693 @@
+{
+  "measured_at": "2026-10-21",
+  "results": {
+    "qwen2.5:3b|native": {
+      "summary": {
+        "accuracy": "14/18",
+        "median_s": 2.2,
+        "median_tokens": 1132,
+        "median_llm_calls": 2.0
+      },
+      "runs": [
+        {
+          "task": "What is 17 * 23 plus the number of letters in the word 'android'?",
+          "ok": true,
+          "seconds": 4.86,
+          "llm_calls": 4,
+          "tokens": 2720,
+          "tool_calls": 3,
+          "answer": "The multiplication 17 * 23 equals 391. Now, adding the number of letters in the word 'android' (which is 7) to 391, we get:\n\n391 + 7 = 398\n\nTherefore, the final result is 398."
+        },
+        {
+          "task": "How many robots are in the default squad, multiplied by 3?",
+          "ok": false,
+          "seconds": 2.06,
+          "llm_calls": 2,
+          "tokens": 1117,
+          "tool_calls": 2,
+          "answer": "The default squad has 10 robots, and when multiplied by 3, it results in 30 robots."
+        },
+        {
+          "task": "What is (144 / 12) to the power of 2, minus 40?",
+          "ok": true,
+          "seconds": 1.45,
+          "llm_calls": 2,
+          "tokens": 1059,
+          "tool_calls": 1,
+          "answer": "The result of (144 / 12) to the power of 2, minus 40 is 104. This was calculated using the calculator tool."
+        },
+        {
+          "task": "How many letters are in the word 'orchestration', times 4?",
+          "ok": true,
+          "seconds": 2.42,
+          "llm_calls": 2,
+          "tokens": 1139,
+          "tool_calls": 2,
+          "answer": "The word 'orchestration' contains 13 letters. Multiplying this by 4 gives us 52. So, the final answer is 52."
+        },
+        {
+          "task": "What is 365 * 24?",
+          "ok": true,
+          "seconds": 0.96,
+          "llm_calls": 2,
+          "tokens": 1000,
+          "tool_calls": 1,
+          "answer": "The result of 365 * 24 is 8760."
+        },
+        {
+          "task": "What is 2 to the power of 10, minus the number of letters in 'langgraph'?",
+          "ok": true,
+          "seconds": 6.81,
+          "llm_calls": 4,
+          "tokens": 3116,
+          "tool_calls": 4,
+          "answer": "The calculation for 2 to the power of 10 is 1024, and the number of letters in the word 'langgraph' is 9. Now, we need to subtract the number of letters from the result of the power calculation: \n\n102"
+        },
+        {
+          "task": "What is 17 * 23 plus the number of letters in the word 'android'?",
+          "ok": true,
+          "seconds": 2.13,
+          "llm_calls": 2,
+          "tokens": 1130,
+          "tool_calls": 2,
+          "answer": "The calculation 17 * 23 equals 391, and the word 'android' contains 7 letters. Now, we need to add these two results together: 391 + 7 = 398. \n\nThe final answer is 398."
+        },
+        {
+          "task": "How many robots are in the default squad, multiplied by 3?",
+          "ok": false,
+          "seconds": 1.49,
+          "llm_calls": 2,
+          "tokens": 1031,
+          "tool_calls": 1,
+          "answer": "The default squad has 10 robots, and when multiplied by 3, it results in 30 robots."
+        },
+        {
+          "task": "What is (144 / 12) to the power of 2, minus 40?",
+          "ok": true,
+          "seconds": 1.46,
+          "llm_calls": 2,
+          "tokens": 1059,
+          "tool_calls": 1,
+          "answer": "The result of (144 / 12) to the power of 2, minus 40 is 104. This was calculated using the calculator tool."
+        },
+        {
+          "task": "How many letters are in the word 'orchestration', times 4?",
+          "ok": false,
+          "seconds": 2.51,
+          "llm_calls": 2,
+          "tokens": 1144,
+          "tool_calls": 2,
+          "answer": "The word 'orchestration' contains 13 letters. Multiplying this by 4 gives us 44. So, the final answer is 44."
+        },
+        {
+          "task": "What is 365 * 24?",
+          "ok": true,
+          "seconds": 0.98,
+          "llm_calls": 2,
+          "tokens": 1000,
+          "tool_calls": 1,
+          "answer": "The result of 365 * 24 is 8760."
+        },
+        {
+          "task": "What is 2 to the power of 10, minus the number of letters in 'langgraph'?",
+          "ok": true,
+          "seconds": 7.85,
+          "llm_calls": 3,
+          "tokens": 2281,
+          "tool_calls": 2,
+          "answer": "It appears there is an issue with the expression I provided for the calculation. Let's break down the task again and ensure we use the correct tools.\n\nWe need to:\n1. Calculate \\(2^{10}\\)\n2. Count the "
+        },
+        {
+          "task": "What is 17 * 23 plus the number of letters in the word 'android'?",
+          "ok": true,
+          "seconds": 2.24,
+          "llm_calls": 2,
+          "tokens": 1135,
+          "tool_calls": 2,
+          "answer": "The calculation using the calculator is 17 * 23, which equals 391. The word 'android' contains 7 letters. Now, we need to add these two results together: 391 + 7 = 398. \n\nThe final answer is 398."
+        },
+        {
+          "task": "How many robots are in the default squad, multiplied by 3?",
+          "ok": false,
+          "seconds": 2.79,
+          "llm_calls": 2,
+          "tokens": 1157,
+          "tool_calls": 2,
+          "answer": "The default squad has 10 robots, and when multiplied by 3, the result is 30. \n\nSource: <tool name=\"demo.calculator\">3 * 10</tool name=\"demo.calculator\">"
+        },
+        {
+          "task": "What is (144 / 12) to the power of 2, minus 40?",
+          "ok": true,
+          "seconds": 1.32,
+          "llm_calls": 2,
+          "tokens": 1051,
+          "tool_calls": 1,
+          "answer": "The result of (144 / 12) to the power of 2, minus 40 is 104."
+        },
+        {
+          "task": "How many letters are in the word 'orchestration', times 4?",
+          "ok": true,
+          "seconds": 2.53,
+          "llm_calls": 2,
+          "tokens": 1144,
+          "tool_calls": 2,
+          "answer": "The word 'orchestration' contains 13 letters. Multiplying this by 4 gives us 52. So, the final answer is 52."
+        },
+        {
+          "task": "What is 365 * 24?",
+          "ok": true,
+          "seconds": 0.98,
+          "llm_calls": 2,
+          "tokens": 1000,
+          "tool_calls": 1,
+          "answer": "The result of 365 * 24 is 8760."
+        },
+        {
+          "task": "What is 2 to the power of 10, minus the number of letters in 'langgraph'?",
+          "ok": true,
+          "seconds": 5.12,
+          "llm_calls": 3,
+          "tokens": 2071,
+          "tool_calls": 3,
+          "answer": "I have the following results:\n- \\(2^{10} = 1024\\)\n- The number of letters in 'langgraph' is 9.\n\nNow, to find the final result, I need to subtract the number of letters in 'langgraph' from \\(2^{10}\\):\n"
+        }
+      ]
+    },
+    "qwen2.5:3b|json": {
+      "summary": {
+        "accuracy": "10/18",
+        "median_s": 2.7,
+        "median_tokens": 786,
+        "median_llm_calls": 2.0
+      },
+      "runs": [
+        {
+          "task": "What is 17 * 23 plus the number of letters in the word 'android'?",
+          "ok": false,
+          "seconds": 3.98,
+          "llm_calls": 3,
+          "tokens": 1345,
+          "tool_calls": 2,
+          "answer": "The number of letters in the word 'android' is 8."
+        },
+        {
+          "task": "How many robots are in the default squad, multiplied by 3?",
+          "ok": false,
+          "seconds": 9.35,
+          "llm_calls": 6,
+          "tokens": 4168,
+          "tool_calls": 4,
+          "answer": "The number of robots in the default squad, when multiplied by 3, is 60. What is still uncertain is the actual number of robots in the default squad, as the lookup_fact tool did not find a fact for thi"
+        },
+        {
+          "task": "What is (144 / 12) to the power of 2, minus 40?",
+          "ok": true,
+          "seconds": 2.66,
+          "llm_calls": 2,
+          "tokens": 784,
+          "tool_calls": 1,
+          "answer": "104"
+        },
+        {
+          "task": "How many letters are in the word 'orchestration', times 4?",
+          "ok": true,
+          "seconds": 3.25,
+          "llm_calls": 3,
+          "tokens": 1237,
+          "tool_calls": 2,
+          "answer": "52"
+        },
+        {
+          "task": "What is 365 * 24?",
+          "ok": true,
+          "seconds": 1.87,
+          "llm_calls": 2,
+          "tokens": 690,
+          "tool_calls": 1,
+          "answer": "8760"
+        },
+        {
+          "task": "What is 2 to the power of 10, minus the number of letters in 'langgraph'?",
+          "ok": false,
+          "seconds": 1.12,
+          "llm_calls": 1,
+          "tokens": 324,
+          "tool_calls": 0,
+          "answer": "I need to calculate 2 to the power of 10 and count the letters in 'langgraph'. I will use the calculator tool for the first part and the count_letters tool for the second part."
+        },
+        {
+          "task": "What is 17 * 23 plus the number of letters in the word 'android'?",
+          "ok": false,
+          "seconds": 5.51,
+          "llm_calls": 4,
+          "tokens": 2022,
+          "tool_calls": 3,
+          "answer": "17 * 23 plus the number of letters in the word 'android' equals 408."
+        },
+        {
+          "task": "How many robots are in the default squad, multiplied by 3?",
+          "ok": false,
+          "seconds": 1.02,
+          "llm_calls": 1,
+          "tokens": 310,
+          "tool_calls": 0,
+          "answer": "To solve this problem, I need to know the number of robots in the default squad. I will use the calculator tool to perform the multiplication once I have the number of robots."
+        },
+        {
+          "task": "What is (144 / 12) to the power of 2, minus 40?",
+          "ok": true,
+          "seconds": 2.74,
+          "llm_calls": 2,
+          "tokens": 789,
+          "tool_calls": 1,
+          "answer": "104"
+        },
+        {
+          "task": "How many letters are in the word 'orchestration', times 4?",
+          "ok": true,
+          "seconds": 3.33,
+          "llm_calls": 3,
+          "tokens": 1237,
+          "tool_calls": 2,
+          "answer": "52"
+        },
+        {
+          "task": "What is 365 * 24?",
+          "ok": true,
+          "seconds": 2.73,
+          "llm_calls": 2,
+          "tokens": 690,
+          "tool_calls": 1,
+          "answer": "8760"
+        },
+        {
+          "task": "What is 2 to the power of 10, minus the number of letters in 'langgraph'?",
+          "ok": false,
+          "seconds": 1.31,
+          "llm_calls": 1,
+          "tokens": 324,
+          "tool_calls": 0,
+          "answer": "I need to calculate 2 to the power of 10 and count the letters in 'langgraph'. I will use the calculator tool for the first part and the count_letters tool for the second part."
+        },
+        {
+          "task": "What is 17 * 23 plus the number of letters in the word 'android'?",
+          "ok": true,
+          "seconds": 6.62,
+          "llm_calls": 5,
+          "tokens": 2749,
+          "tool_calls": 4,
+          "answer": "398"
+        },
+        {
+          "task": "How many robots are in the default squad, multiplied by 3?",
+          "ok": false,
+          "seconds": 1.12,
+          "llm_calls": 1,
+          "tokens": 313,
+          "tool_calls": 0,
+          "answer": "To find the answer, I need to know how many robots are in the default squad. I will use the calculator tool to multiply the number of robots by 3 once I have that number."
+        },
+        {
+          "task": "What is (144 / 12) to the power of 2, minus 40?",
+          "ok": true,
+          "seconds": 2.95,
+          "llm_calls": 2,
+          "tokens": 789,
+          "tool_calls": 1,
+          "answer": "104"
+        },
+        {
+          "task": "How many letters are in the word 'orchestration', times 4?",
+          "ok": true,
+          "seconds": 3.68,
+          "llm_calls": 3,
+          "tokens": 1237,
+          "tool_calls": 2,
+          "answer": "52"
+        },
+        {
+          "task": "What is 365 * 24?",
+          "ok": true,
+          "seconds": 2.04,
+          "llm_calls": 2,
+          "tokens": 690,
+          "tool_calls": 1,
+          "answer": "8760"
+        },
+        {
+          "task": "What is 2 to the power of 10, minus the number of letters in 'langgraph'?",
+          "ok": false,
+          "seconds": 1.21,
+          "llm_calls": 1,
+          "tokens": 324,
+          "tool_calls": 0,
+          "answer": "I need to calculate 2 to the power of 10 and count the letters in 'langgraph'. I will use the calculator tool for the first part and the count_letters tool for the second part."
+        }
+      ]
+    },
+    "llama3.2:3b|native": {
+      "summary": {
+        "accuracy": "13/18",
+        "median_s": 2.3,
+        "median_tokens": 971,
+        "median_llm_calls": 2.0
+      },
+      "runs": [
+        {
+          "task": "What is 17 * 23 plus the number of letters in the word 'android'?",
+          "ok": true,
+          "seconds": 3.63,
+          "llm_calls": 5,
+          "tokens": 2682,
+          "tool_calls": 4,
+          "answer": "The result of 17 * 23 plus the number of letters in the word 'android' is 398. \n\nI used the demo.calculator tool to evaluate the arithmetic expression and the demo.count_letters tool to count the lett"
+        },
+        {
+          "task": "How many robots are in the default squad, multiplied by 3?",
+          "ok": false,
+          "seconds": 1.07,
+          "llm_calls": 2,
+          "tokens": 848,
+          "tool_calls": 1,
+          "answer": "The default squad has 10 robots. Multiplying 10 by 3 gives 30."
+        },
+        {
+          "task": "What is (144 / 12) to the power of 2, minus 40?",
+          "ok": true,
+          "seconds": 1.47,
+          "llm_calls": 2,
+          "tokens": 885,
+          "tool_calls": 1,
+          "answer": "The result of (144 / 12) to the power of 2, minus 40 is 104. This was calculated using the demo.calculator tool."
+        },
+        {
+          "task": "How many letters are in the word 'orchestration', times 4?",
+          "ok": true,
+          "seconds": 3.09,
+          "llm_calls": 4,
+          "tokens": 2190,
+          "tool_calls": 3,
+          "answer": "The word 'orchestration' has 13 letters, and when multiplied by 4, the result is 52."
+        },
+        {
+          "task": "What is 365 * 24?",
+          "ok": true,
+          "seconds": 1.0,
+          "llm_calls": 2,
+          "tokens": 833,
+          "tool_calls": 1,
+          "answer": "The result of 365 * 24 is 8760."
+        },
+        {
+          "task": "What is 2 to the power of 10, minus the number of letters in 'langgraph'?",
+          "ok": true,
+          "seconds": 2.3,
+          "llm_calls": 2,
+          "tokens": 971,
+          "tool_calls": 1,
+          "answer": "To evaluate the expression, I will first calculate 2 to the power of 10, and then subtract the number of letters in 'langgraph'. \n\n2 to the power of 10 is 1024. \n\nThe number of letters in 'langgraph' "
+        },
+        {
+          "task": "What is 17 * 23 plus the number of letters in the word 'android'?",
+          "ok": false,
+          "seconds": 4.53,
+          "llm_calls": 6,
+          "tokens": 3723,
+          "tool_calls": 4,
+          "answer": "17 * 23 + 8 = 401"
+        },
+        {
+          "task": "How many robots are in the default squad, multiplied by 3?",
+          "ok": false,
+          "seconds": 4.94,
+          "llm_calls": 4,
+          "tokens": 2394,
+          "tool_calls": 3,
+          "answer": "I will use the demo.count_letters tool to count the letters in the word \"robot\" and then multiply the result by 3 using the demo.calculator tool.\n\ndemo.count_letters(\"robot\") = 5\n\ndemo.calculator(\"5 *"
+        },
+        {
+          "task": "What is (144 / 12) to the power of 2, minus 40?",
+          "ok": true,
+          "seconds": 1.54,
+          "llm_calls": 2,
+          "tokens": 885,
+          "tool_calls": 1,
+          "answer": "The result of (144 / 12) to the power of 2, minus 40 is 104. This was calculated using the demo.calculator tool."
+        },
+        {
+          "task": "How many letters are in the word 'orchestration', times 4?",
+          "ok": true,
+          "seconds": 2.98,
+          "llm_calls": 4,
+          "tokens": 2163,
+          "tool_calls": 3,
+          "answer": "The word \"orchestration\" has 13 letters. Multiplying this by 4 gives 52."
+        },
+        {
+          "task": "What is 365 * 24?",
+          "ok": true,
+          "seconds": 0.98,
+          "llm_calls": 2,
+          "tokens": 833,
+          "tool_calls": 1,
+          "answer": "The result of 365 * 24 is 8760."
+        },
+        {
+          "task": "What is 2 to the power of 10, minus the number of letters in 'langgraph'?",
+          "ok": true,
+          "seconds": 8.34,
+          "llm_calls": 6,
+          "tokens": 4488,
+          "tool_calls": 4,
+          "answer": "1015"
+        },
+        {
+          "task": "What is 17 * 23 plus the number of letters in the word 'android'?",
+          "ok": false,
+          "seconds": 4.18,
+          "llm_calls": 6,
+          "tokens": 3542,
+          "tool_calls": 4,
+          "answer": "17 * 23 + 7 = 400"
+        },
+        {
+          "task": "How many robots are in the default squad, multiplied by 3?",
+          "ok": false,
+          "seconds": 1.07,
+          "llm_calls": 2,
+          "tokens": 848,
+          "tool_calls": 1,
+          "answer": "The default squad has 10 robots. Multiplying 10 by 3 gives 30."
+        },
+        {
+          "task": "What is (144 / 12) to the power of 2, minus 40?",
+          "ok": true,
+          "seconds": 1.68,
+          "llm_calls": 2,
+          "tokens": 885,
+          "tool_calls": 1,
+          "answer": "The result of (144 / 12) to the power of 2, minus 40 is 104. This was calculated using the demo.calculator tool."
+        },
+        {
+          "task": "How many letters are in the word 'orchestration', times 4?",
+          "ok": true,
+          "seconds": 4.71,
+          "llm_calls": 4,
+          "tokens": 2407,
+          "tool_calls": 3,
+          "answer": "Now that I have the correct count of letters in the word \"orchestration\", I can multiply it by 4.\n\n13 * 4 = 52\n\nThe final answer is 52. I used the demo.count_letters tool to count the letters in the w"
+        },
+        {
+          "task": "What is 365 * 24?",
+          "ok": true,
+          "seconds": 0.95,
+          "llm_calls": 2,
+          "tokens": 833,
+          "tool_calls": 1,
+          "answer": "The result of 365 * 24 is 8760."
+        },
+        {
+          "task": "What is 2 to the power of 10, minus the number of letters in 'langgraph'?",
+          "ok": true,
+          "seconds": 2.26,
+          "llm_calls": 2,
+          "tokens": 971,
+          "tool_calls": 1,
+          "answer": "To evaluate the expression, I will first calculate 2 to the power of 10, and then subtract the number of letters in 'langgraph'. \n\n2 to the power of 10 is 1024. \n\nThe number of letters in 'langgraph' "
+        }
+      ]
+    },
+    "llama3.2:3b|json": {
+      "summary": {
+        "accuracy": "16/18",
+        "median_s": 2.7,
+        "median_tokens": 1228,
+        "median_llm_calls": 3.0
+      },
+      "runs": [
+        {
+          "task": "What is 17 * 23 plus the number of letters in the word 'android'?",
+          "ok": true,
+          "seconds": 3.25,
+          "llm_calls": 4,
+          "tokens": 1681,
+          "tool_calls": 3,
+          "answer": "398"
+        },
+        {
+          "task": "How many robots are in the default squad, multiplied by 3?",
+          "ok": true,
+          "seconds": 2.84,
+          "llm_calls": 4,
+          "tokens": 1738,
+          "tool_calls": 3,
+          "answer": "Result of multiplying 14 by 3 is 42."
+        },
+        {
+          "task": "What is (144 / 12) to the power of 2, minus 40?",
+          "ok": true,
+          "seconds": 2.58,
+          "llm_calls": 3,
+          "tokens": 1200,
+          "tool_calls": 2,
+          "answer": "Result from demo.calculator is correct, 104"
+        },
+        {
+          "task": "How many letters are in the word 'orchestration', times 4?",
+          "ok": true,
+          "seconds": 2.46,
+          "llm_calls": 3,
+          "tokens": 1144,
+          "tool_calls": 2,
+          "answer": "Final answer is 52"
+        },
+        {
+          "task": "What is 365 * 24?",
+          "ok": true,
+          "seconds": 1.4,
+          "llm_calls": 2,
+          "tokens": 669,
+          "tool_calls": 1,
+          "answer": "Calculated result is 8760"
+        },
+        {
+          "task": "What is 2 to the power of 10, minus the number of letters in 'langgraph'?",
+          "ok": true,
+          "seconds": 2.95,
+          "llm_calls": 3,
+          "tokens": 1256,
+          "tool_calls": 2,
+          "answer": "1024 - 9 = 1015"
+        },
+        {
+          "task": "What is 17 * 23 plus the number of letters in the word 'android'?",
+          "ok": true,
+          "seconds": 3.3,
+          "llm_calls": 4,
+          "tokens": 1929,
+          "tool_calls": 3,
+          "answer": "The final answer is 398."
+        },
+        {
+          "task": "How many robots are in the default squad, multiplied by 3?",
+          "ok": true,
+          "seconds": 2.06,
+          "llm_calls": 3,
+          "tokens": 1132,
+          "tool_calls": 2,
+          "answer": "The default squad has 14 robots, and 14 multiplied by 3 is 42."
+        },
+        {
+          "task": "What is (144 / 12) to the power of 2, minus 40?",
+          "ok": true,
+          "seconds": 1.73,
+          "llm_calls": 2,
+          "tokens": 722,
+          "tool_calls": 1,
+          "answer": "Result from demo.calculator is 104"
+        },
+        {
+          "task": "How many letters are in the word 'orchestration', times 4?",
+          "ok": false,
+          "seconds": 2.05,
+          "llm_calls": 3,
+          "tokens": 1142,
+          "tool_calls": 2,
+          "answer": "Final calculation"
+        },
+        {
+          "task": "What is 365 * 24?",
+          "ok": true,
+          "seconds": 1.38,
+          "llm_calls": 2,
+          "tokens": 666,
+          "tool_calls": 1,
+          "answer": "8760"
+        },
+        {
+          "task": "What is 2 to the power of 10, minus the number of letters in 'langgraph'?",
+          "ok": true,
+          "seconds": 3.74,
+          "llm_calls": 4,
+          "tokens": 1857,
+          "tool_calls": 3,
+          "answer": "Final calculation result is 1015."
+        },
+        {
+          "task": "What is 17 * 23 plus the number of letters in the word 'android'?",
+          "ok": true,
+          "seconds": 2.9,
+          "llm_calls": 4,
+          "tokens": 1704,
+          "tool_calls": 3,
+          "answer": "Final calculation: 398"
+        },
+        {
+          "task": "How many robots are in the default squad, multiplied by 3?",
+          "ok": false,
+          "seconds": 3.21,
+          "llm_calls": 4,
+          "tokens": 1883,
+          "tool_calls": 3,
+          "answer": "Final answer is 15, source: demo.calculator"
+        },
+        {
+          "task": "What is (144 / 12) to the power of 2, minus 40?",
+          "ok": true,
+          "seconds": 3.39,
+          "llm_calls": 4,
+          "tokens": 1761,
+          "tool_calls": 3,
+          "answer": "Result from demo.calculator is 104"
+        },
+        {
+          "task": "How many letters are in the word 'orchestration', times 4?",
+          "ok": true,
+          "seconds": 2.14,
+          "llm_calls": 3,
+          "tokens": 1144,
+          "tool_calls": 2,
+          "answer": "Final answer: 52"
+        },
+        {
+          "task": "What is 365 * 24?",
+          "ok": true,
+          "seconds": 1.78,
+          "llm_calls": 2,
+          "tokens": 694,
+          "tool_calls": 1,
+          "answer": "The result of 365 * 24 is 8760, as confirmed by demo.calculator."
+        },
+        {
+          "task": "What is 2 to the power of 10, minus the number of letters in 'langgraph'?",
+          "ok": true,
+          "seconds": 3.93,
+          "llm_calls": 4,
+          "tokens": 1869,
+          "tool_calls": 3,
+          "answer": "The result of subtracting 9 from 1024 is 1015."
+        }
+      ]
+    }
+  }
+}

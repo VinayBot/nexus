@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import operator
+import re
 from typing import Any
 
 from nexus.llm.raw_react_agent import RawTool
@@ -37,7 +38,16 @@ def calculator(expression: str) -> str:
             return float(_OPS[type(node.op)](ev(node.operand)))
         raise ValueError(f"unsupported expression: {ast.dump(node)[:60]}")
 
-    value = ev(ast.parse(str(expression), mode="eval").body)
+    # small models write 2^10, 3 x 4 and 1,000: accept the usual notations
+    text = str(expression).replace("^", "**").replace("×", "*").replace(",", "")
+    text = re.sub(r"(?<=\d)\s*[xX]\s*(?=\d)", "*", text)
+    try:
+        value = ev(ast.parse(text, mode="eval").body)
+    except (SyntaxError, ValueError) as exc:
+        raise ValueError(
+            f"{exc}. Pass only numbers and + - * / ** ( ), e.g. '(144 / 12) ** 2 - 40'; "
+            "use the other tools for words and facts first."
+        ) from exc
     return str(int(value)) if value == int(value) else f"{value:.6g}"
 
 
