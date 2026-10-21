@@ -70,7 +70,7 @@ def instrument(
                 node=name,
             )
             raise
-        except Exception as exc:
+        except Exception as exc:  # record the failure for retries and dead letters, then re-raise
             attempt = _attempts[key] = _attempts.get(key, 0) + 1
             last_failure[mission_id] = (name, f"{type(exc).__name__}: {exc}")
             emit(

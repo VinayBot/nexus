@@ -22,20 +22,17 @@ from __future__ import annotations
 
 import asyncio
 import random
-import re
 from typing import Annotated, Any, Literal, TypedDict
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Send
-from pydantic import BaseModel, Field
 
 from nexus.core.event_types import (
     CouncilMasked,
     CouncilProposal,
     CouncilReview,
     CouncilRound,
-    CouncilVerdict,
     SandboxTestResult,
 )
 from nexus.core.events import agent_context, emit
@@ -43,9 +40,18 @@ from nexus.core.services import services
 from nexus.graph.instrument import instrument
 from nexus.graph.reducers import merge_dict, merge_scores
 from nexus.graph.schemas import Proposal, Review
-from nexus.graph.subgraphs.scoring import divergence, judge
+from nexus.graph.subgraphs.scoring import divergence
+from nexus.graph.subgraphs.tournament_judge import judge_node
+from nexus.graph.subgraphs.tournament_prompts import render, solver_prompt
+from nexus.graph.subgraphs.tournament_schemas import (
+    AnswerOut,
+    CodeOut,
+    ReviewBatch,
+    ReviewItem,
+    Revision,
+    line_patch,
+)
 from nexus.llm.types import ChatMessage
-from nexus.safety.guardrails import UNTRUSTED_RULE
 
 LABELS = "ABCDEFG"
 
@@ -75,127 +81,6 @@ class TournamentState(TypedDict, total=False):
     breakdown: dict[str, Any]
 
 
-# --- LLM output schemas -------------------------------------------------------------
-class AnswerOut(BaseModel):
-    answer: str = Field(description="Your complete answer.")
-    rationale: str = Field(default="", description="Why this answer is right, briefly.")
-
-
-class CodeOut(BaseModel):
-    """Line-range edit: small models rewrite lines far more reliably than they copy them."""
-
-    rationale: str = Field(description="Root cause and why this edit fixes it.")
-    file: str = Field(description="Which of the shown files to edit.")
-    start_line: int = Field(ge=1, description="First line number to replace.")
-    end_line: int = Field(
-        ge=1, description="Last line number to replace (same as start for one line)."
-    )
-    replacement: str = Field(
-        description="The new full lines that replace that range, with indentation."
-    )
-
-
-class ReviewItem(BaseModel):
-    label: str
-    correctness: float = Field(ge=0, le=10)
-    risk: float = Field(ge=0, le=10, description="10 = very risky")
-    simplicity: float = Field(ge=0, le=10)
-    completeness: float = Field(ge=0, le=10)
-    reason: str = Field(description="One or two sentences.")
-
-
-class ReviewBatch(BaseModel):
-    reviews: list[ReviewItem]
-
-
-class Revision(BaseModel):
-    decision: Literal["defend", "revise"]
-    rationale: str
-    answer: str | None = None
-    file: str | None = None
-    start_line: int | None = None
-    end_line: int | None = None
-    replacement: str | None = None
-
-
-_NUMBERED = re.compile(r"^\s*\d+\s*\|\s?")
-
-
-def line_patch(
-    files: dict[str, str], file: str, start: int, end: int, replacement: str
-) -> dict[str, Any]:
-    """Turn a line-range edit into the exact search/replace patch the grounder applies."""
-    if file not in files:
-        file = next(iter(files), file)
-    lines = files.get(file, "").splitlines()
-    start, end = min(start, end), max(start, end)
-    if not lines or start > len(lines):
-        return {"file": file, "search": "", "replace": replacement, "lines": [start, end]}
-    end = min(end, len(lines))
-    # models sometimes echo the " 12| " prefixes we show them
-    cleaned = "\n".join(_NUMBERED.sub("", ln) for ln in replacement.strip("\n").splitlines())
-    return {
-        "file": file,
-        "search": "\n".join(lines[start - 1 : end]),
-        "replace": cleaned,
-        "lines": [start, end],
-    }
-
-
-def numbered(content: str) -> str:
-    return "\n".join(f"{i:3d}| {line}" for i, line in enumerate(content.splitlines(), 1))
-
-
-# --- helpers ------------------------------------------------------------------------
-def _solver_prompt(sid: str, state: dict[str, Any]) -> list[ChatMessage]:
-    spec = services().registry.get(sid)
-    sys = f"{spec.system_prompt.strip()}\n\n{UNTRUSTED_RULE}"
-    parts = [f"Problem:\n{state['question']}"]
-    if state.get("context"):
-        parts.append(f"What the team found:\n{state['context']}")
-    if state.get("mode") == "answer":
-        parts.append(
-            "Answer the problem directly. If the team's findings are thin or irrelevant, "
-            "answer from your own knowledge and say which parts are not from the findings."
-        )
-    if state.get("mode") == "code" and state.get("code_context"):
-        cc = state["code_context"]
-        for path, content in cc["files"].items():
-            parts.append(f"File {path} (line numbers on the left):\n```\n{numbered(content)}\n```")
-        focus = cc.get("focus")
-        if focus:
-            parts.append(
-                f"The exception is raised in {focus['file']} at line {focus['line']}:\n    {focus['code']}"
-            )
-        for d in cc.get("named") or []:
-            parts.append(
-                f"The error message names {d['name']}, defined in {d['file']} at line "
-                f"{d['line']}:\n    {d['code']}\nThe raising line may only be the symptom: check "
-                "whether this definition is the real cause."
-            )
-        parts.append(
-            "Fix it with ONE edit: give the file, start_line and end_line of the lines to replace, "
-            "and 'replacement' = the corrected full lines (keep the indentation, no line numbers). "
-            "Change as little as your strategy requires."
-        )
-    if state.get("feedback"):
-        parts.append(f"A previous attempt failed validation:\n{state['feedback']}")
-    return [ChatMessage.system(sys), ChatMessage.user("\n\n".join(parts))]
-
-
-def _render(prop: dict[str, Any], mode: str) -> str:
-    if mode == "code" and prop.get("patch"):
-        p = prop["patch"]
-        tests = prop.get("tests") or {}
-        t = (
-            f"\nSandbox tests: {tests.get('passed', 0)} passed, {tests.get('failed', 0)} failed"
-            if tests
-            else ""
-        )
-        return f"Rationale: {prop.get('rationale', '')}\n--- search\n{p['search']}\n+++ replace\n{p['replace']}{t}"
-    return f"{prop['content']}\n(Rationale: {prop.get('rationale', '')})"
-
-
 # --- nodes --------------------------------------------------------------------------
 def fan_out_proposals(state: TournamentState) -> list[Send]:
     return [Send("propose", {**state, "solver": sid}) for sid in state["solvers"]]
@@ -206,7 +91,7 @@ async def propose(payload: dict[str, Any]) -> dict[str, Any]:
     spec = services().registry.get(sid)
     token = agent_context.set(sid)
     try:
-        msgs = _solver_prompt(sid, payload)
+        msgs = solver_prompt(sid, payload)
         if payload["mode"] == "code":
             code = await services().llm.structured(
                 msgs,
@@ -305,7 +190,7 @@ async def review(payload: dict[str, Any]) -> dict[str, Any]:
     if not targets:
         return {}
     shown = "\n\n".join(
-        f"### Proposal {lab}\n{_render(payload['proposals'][sid], payload['mode'])}"
+        f"### Proposal {lab}\n{render(payload['proposals'][sid], payload['mode'])}"
         for lab, sid in targets.items()
     )
     msgs = [
@@ -396,8 +281,8 @@ async def revise(payload: dict[str, Any]) -> dict[str, Any]:
         return {}
     critiques = [r["reason"] for r in payload.get("scores", {}).get(sid, {}).get("reviews", [])]
     msgs = [
-        *_solver_prompt(sid, payload),
-        ChatMessage.assistant(_render(mine, payload["mode"])),
+        *solver_prompt(sid, payload),
+        ChatMessage.assistant(render(mine, payload["mode"])),
         ChatMessage.user(
             "Reviewers critiqued your proposal:\n- "
             + "\n- ".join(critiques or ["(none)"])
@@ -441,58 +326,6 @@ async def revise(payload: dict[str, Any]) -> dict[str, Any]:
         agent_id=sid,
     )
     return {"proposals": {sid: new}}
-
-
-class JudgeNote(BaseModel):
-    reasoning: str = Field(description="2-3 sentences explaining the decision.")
-
-
-async def judge_node(state: TournamentState) -> dict[str, Any]:
-    verdict, breakdown = judge(
-        mode=state["mode"],
-        proposals=state.get("proposals", {}),
-        scores=state.get("scores", {}),
-        labels=state.get("labels", {}),
-        critic_id=state.get("critic"),
-        reputation=state.get("reputation", {}),
-        rounds=state.get("round", 0) + 1,
-        divergence_threshold=state.get("threshold", 1.5),
-    )
-    judge_id = state.get("judge_id", "arbiter")
-    winner = state["proposals"][verdict.winner]
-    token = agent_context.set(judge_id)
-    try:
-        note = await services().llm.structured(
-            [
-                ChatMessage.system(services().registry.get(judge_id).system_prompt),
-                ChatMessage.user(
-                    f"Problem: {state['question']}\n\nWinning proposal ({verdict.winner_label}):\n"
-                    f"{_render(winner, state['mode'])}\n\nScore breakdown: {breakdown}\n"
-                    f"Main dissent: {verdict.dissent}\n\nExplain the decision briefly."
-                ),
-            ],
-            JudgeNote,
-            purpose="judge",
-            agent_id=judge_id,
-            default=JudgeNote(reasoning="Highest evidence-weighted score."),
-        )
-    finally:
-        agent_context.reset(token)
-    verdict = verdict.model_copy(update={"reasoning": note.reasoning})
-    emit(
-        "council.verdict",
-        CouncilVerdict(
-            winner=verdict.winner,
-            winner_label=verdict.winner_label,
-            runner_up=verdict.runner_up,
-            confidence=verdict.confidence,
-            dissent=verdict.dissent,
-            final_scores=verdict.final_scores,
-            escalate=verdict.escalate,
-        ),
-        agent_id=judge_id,
-    )
-    return {"verdict": verdict.model_dump(mode="json"), "breakdown": breakdown}
 
 
 def build_tournament() -> CompiledStateGraph[Any, Any, Any, Any]:

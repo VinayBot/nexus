@@ -277,7 +277,7 @@ async def start(suite: str) -> str:
         try:
             summary, cases = await SUITES[suite][1]()
             status = "completed"
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - a failed suite is recorded as a failed run
             log.error("eval.failed", suite=suite, error=str(exc))
             summary, cases, status = {"error": str(exc)}, [], "failed"
         async with db.session() as s:

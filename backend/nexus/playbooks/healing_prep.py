@@ -171,7 +171,7 @@ async def recall_fix(
         return None
     try:
         hits = await memory.search(f"{signal}\n{digest[:600]}", ["fix_library"], k=3)
-    except Exception:
+    except Exception:  # noqa: BLE001 - the fix library is optional context
         return None
     for hit in hits:
         meta = hit.get("metadata") or {}

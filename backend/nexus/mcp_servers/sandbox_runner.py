@@ -102,15 +102,15 @@ class SandboxRunner:
         if self.prefer != "docker":
             self.reason = "configured for local execution"
             return
-        try:
-            import docker
+        import docker
 
+        try:
             client = docker.from_env(timeout=3)
             client.ping()
             client.images.get(self.image)
             self._docker = client
             self.backend = "docker"
-        except Exception as exc:
+        except (docker.errors.DockerException, OSError) as exc:
             self.reason = f"docker unavailable ({type(exc).__name__}: {str(exc)[:120]}); run `make sandbox-image`"
             log.warning("sandbox.local_fallback", reason=self.reason)
 
@@ -166,6 +166,9 @@ class SandboxRunner:
         return await self.run(workspace, cmd, files=files, timeout_s=timeout_s)
 
     def _run_docker(self, work: Path, command: list[str], timeout_s: float) -> SandboxResult:
+        import docker
+        import requests
+
         started = time.perf_counter()
         container = self._docker.containers.run(
             self.image,
@@ -182,7 +185,7 @@ class SandboxRunner:
         try:
             status = container.wait(timeout=timeout_s)
             code = int(status.get("StatusCode", 1))
-        except Exception:
+        except (requests.exceptions.RequestException, docker.errors.APIError):  # wait() timed out
             timed_out = True
             code = 124
             container.kill()

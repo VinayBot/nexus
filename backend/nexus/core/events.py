@@ -19,7 +19,7 @@ from typing import Any, get_args
 
 from pydantic import BaseModel, Field
 
-from nexus.core.event_types import EPHEMERAL, MISSION_ONLY, PAYLOADS, EventType
+from nexus.core.event_registry import EPHEMERAL, MISSION_ONLY, PAYLOADS, EventType
 from nexus.core.logging import get_logger
 
 log = get_logger(__name__)
@@ -107,7 +107,7 @@ class EventBus:
         try:
             data = payload.model_dump() if isinstance(payload, BaseModel) else (payload or {})
             data = model.model_validate(data).model_dump(mode="json")
-        except Exception as exc:  # an emit must never break the caller
+        except Exception as exc:  # noqa: BLE001 - an emit must never break the caller
             log.error("event.invalid_payload", type=type_, error=str(exc))
             return None
 
@@ -137,7 +137,7 @@ class EventBus:
         for fn in self._listeners:
             try:
                 fn(event)
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 - one broken listener must not starve the others
                 log.warning("event.listener_failed", error=str(exc))
         for sub in list(self._subs):
             if sub.mission_id is None:
@@ -167,7 +167,7 @@ class EventBus:
         batch, self._pending = self._pending, []
         try:
             await self._sink(batch)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - losing a persisted batch must not stop live delivery
             log.error("event.persist_failed", count=len(batch), error=str(exc))
 
     # -- subscribe ----------------------------------------------------------------

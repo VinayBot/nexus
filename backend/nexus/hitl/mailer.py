@@ -141,7 +141,7 @@ class Mailer:
                     password=self.password,
                     start_tls=self.starttls or None,
                 )
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - any SMTP failure parks the email in the outbox
             status = "outbox"
             self.last_error = (
                 explain_smtp_error(exc, self.host)

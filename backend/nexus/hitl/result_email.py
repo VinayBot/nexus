@@ -106,7 +106,7 @@ class ResultNotifier:
         try:
             await smtp.connect()
             await smtp.login(username, password)
-        except Exception as exc:
+        except Exception as exc:  # any SMTP error → a plain-English ValueError
             raise ValueError(explain_smtp_error(exc, host)) from exc
         finally:
             with contextlib.suppress(Exception):
@@ -207,7 +207,7 @@ class ResultNotifier:
                 },
             )
             return status
-        except Exception as exc:  # a notification must never break anything
+        except Exception as exc:  # noqa: BLE001 - a notification must never break anything
             log.warning("result_email.failed", mission_id=mission_id, error=str(exc))
             return None
 

@@ -197,7 +197,7 @@ async def answer(
     if memory is not None:
         try:
             hits = await memory.search(question, ["docs"], k=4, emit_event=False)
-        except Exception:
+        except Exception:  # noqa: BLE001 - docs search is optional context for the guide
             hits = []
     docs = "\n\n".join(f"[{h['title']}]\n{h['text'][:700]}" for h in hits) or "(no matching docs)"
     state = await live_snapshot(mission_id)
@@ -250,7 +250,7 @@ async def answer(
                 stream=True,
                 on_token=on_token,
             )
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - any model failure becomes a message in the chat stream
             await queue.put(f"\n\n(I could not reach the local model: {exc})")
         finally:
             await queue.put(None)

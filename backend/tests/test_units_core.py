@@ -270,7 +270,8 @@ def test_python_patch_never_hides_a_real_syntax_error() -> None:
 
 
 def test_project_builder_plan_fits_its_file_limit() -> None:
-    from nexus.playbooks.builder import MAX_FILES, FileSpec, ProjectBuilder, ProjectSpec
+    from nexus.playbooks.builder import ProjectBuilder
+    from nexus.playbooks.builder_spec import MAX_FILES, FileSpec, ProjectSpec
 
     files = [FileSpec(path=f"app/m{i}.py", purpose="x") for i in range(MAX_FILES - 1)]
     files.append(FileSpec(path="tests/test_all.py", purpose="tests"))

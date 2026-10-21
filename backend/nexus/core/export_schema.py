@@ -11,7 +11,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, create_model
 
-from nexus.core.event_types import PAYLOADS
+from nexus.core.event_registry import PAYLOADS
 
 
 def schema() -> dict[str, Any]:

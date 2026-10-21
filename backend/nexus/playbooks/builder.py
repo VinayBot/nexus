@@ -18,9 +18,7 @@ from __future__ import annotations
 import re
 import zipfile
 from pathlib import Path
-from typing import Any, Literal
-
-from pydantic import BaseModel, Field
+from typing import Any
 
 from nexus.core.event_types import MemoryRecalled
 from nexus.core.events import emit
@@ -38,72 +36,19 @@ from nexus.graph.schemas import (
 from nexus.llm.types import ChatMessage
 from nexus.playbooks.base import Playbook
 from nexus.playbooks.builder_contract import broken_contract, import_culprit, required_names
+from nexus.playbooks.builder_spec import (
+    MAX_FILES,
+    FileOut,
+    FileSpec,
+    ProjectSpec,
+    Repair,
+    slug,
+    template_files,
+    template_layout,
+)
 from nexus.playbooks.patching import compiles
 from nexus.playbooks.scaffold import crud_file, normalise_fields, project_summary
 from nexus.safety.guardrails import fence
-
-TEMPLATES = Path(__file__).parent / "templates"
-MAX_FILES = 8
-
-
-class FileSpec(BaseModel):
-    path: str = Field(pattern=r"^(app|tests)/[\w/]+\.py$")
-    purpose: str
-    depends_on: list[str] = Field(default_factory=list)
-
-
-class ProjectSpec(BaseModel):
-    kind: Literal["fastapi_crud", "cli_tool"]
-    name: str = Field(description="Short project name")
-    entity: str = Field(description="Main resource or concept, singular, e.g. Book")
-    fields: list[str] = Field(default_factory=list, description="e.g. ['title: str', 'year: int']")
-    constraints: list[str] = Field(default_factory=list)
-    files: list[FileSpec] = Field(min_length=2, max_length=MAX_FILES)
-
-
-class FileOut(BaseModel):
-    content: str = Field(description="The complete file content.")
-
-
-class Repair(BaseModel):
-    path: str
-    content: str = Field(description="The complete corrected file content.")
-
-
-def _template(kind: str) -> dict[str, str]:
-    root = TEMPLATES / kind
-    return {
-        str(p.relative_to(root)): p.read_text()
-        for p in sorted(root.rglob("*.py"))
-        if p.name != "__init__.py"
-    }
-
-
-def _layout(kind: str) -> list[FileSpec]:
-    """The template's own file layout, with dependencies read from its imports.
-
-    Live runs showed 3B models inventing layouts (e.g. ``Book`` defined in two modules
-    that import each other); the single-file repair loop cannot fix an import cycle.
-    The model still decides *what* is built (entity, fields, constraints); the
-    proven template decides *where* it goes.
-    """
-    files = _template(kind)
-    out = []
-    for path, code in files.items():
-        deps = [
-            f"app/{m}.py"
-            for m in re.findall(r"^from app\.(\w+) import", code, re.M)
-            if f"app/{m}.py" in files and f"app/{m}.py" != path
-        ]
-        purpose = (
-            "tests" if path.startswith("tests/") else f"adapt {Path(path).name} from the template"
-        )
-        out.append(FileSpec(path=path, purpose=purpose, depends_on=deps))
-    return out
-
-
-def _slug(path: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "-", path.lower()).strip("-")[:40]
 
 
 class ProjectBuilder(Playbook):
@@ -149,15 +94,20 @@ class ProjectBuilder(Playbook):
                 entity="Item",
                 fields=["name: str", "price: float"],
                 files=[
-                    FileSpec(path=p, purpose="from template") for p in _template("fastapi_crud")
+                    FileSpec(path=p, purpose="from template")
+                    for p in template_files("fastapi_crud")
                 ],
             ),
         )
         fields, constraints = normalise_fields(spec.fields, spec.constraints, state["task"])
         spec = spec.model_copy(
-            update={"files": _layout(spec.kind), "fields": fields, "constraints": constraints}
+            update={
+                "files": template_layout(spec.kind),
+                "fields": fields,
+                "constraints": constraints,
+            }
         )
-        template = _template(spec.kind)
+        template = template_files(spec.kind)
         emit(
             "memory.recalled",
             MemoryRecalled(
@@ -187,11 +137,11 @@ class ProjectBuilder(Playbook):
         paths = {f.path for f in spec.files}
         steps = [
             PlanStep(
-                id=_slug(f.path),
+                id=slug(f.path),
                 title=f"Write {f.path}",
                 description=f"{f.path}: {f.purpose}",
                 role="tester" if f.path.startswith("tests/") else "coder",
-                depends_on=[_slug(d) for d in f.depends_on if d in paths and d != f.path],
+                depends_on=[slug(d) for d in f.depends_on if d in paths and d != f.path],
                 success_criteria="File written and importable.",
             )
             for f in spec.files

@@ -116,7 +116,7 @@ class ApprovalService:
         )
         try:
             await self.runner.resume(mission_id, decision.model_dump())
-        except Exception as exc:
+        except Exception as exc:  # undo the decision whatever made the resume fail
             # never leave an approval "decided" for a mission that did not resume
             async with self.db.session() as s:
                 fresh = await s.get(ApprovalRow, approval_id)

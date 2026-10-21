@@ -93,7 +93,7 @@ class OllamaProvider:
                         await res
         except ProviderError:
             raise
-        except Exception as exc:
+        except Exception as exc:  # client errors → ProviderError (retryable or not)
             raise _classify(exc) from exc
 
         return LLMResult(
@@ -108,7 +108,7 @@ class OllamaProvider:
     async def embed(self, model: str, texts: list[str]) -> list[list[float]]:
         try:
             resp = await self._client.embed(model=model, input=texts, keep_alive=self._keep_alive)
-        except Exception as exc:
+        except Exception as exc:  # client errors → ProviderError (retryable or not)
             raise _classify(exc) from exc
         return [list(v) for v in resp.embeddings]
 
@@ -118,21 +118,21 @@ class OllamaProvider:
             async for part in await self._client.pull(model, stream=True):
                 if progress is not None:
                     progress(part.status or "", part.completed or 0, part.total or 0)
-        except Exception as exc:
+        except Exception as exc:  # client errors → ProviderError (retryable or not)
             raise _classify(exc) from exc
 
     async def unload(self, model: str) -> None:
         """Free a model's memory now instead of waiting for keep_alive to expire."""
         try:
             await self._client.generate(model=model, prompt="", keep_alive=0)
-        except Exception as exc:
+        except Exception as exc:  # client errors → ProviderError (retryable or not)
             raise _classify(exc) from exc
 
     async def loaded_models(self) -> list[dict[str, Any]]:
         try:
             resp = await self._client.ps()
-        except Exception:
-            return []
+        except (ollama.ResponseError, httpx.HTTPError, OSError):
+            return []  # Ollama down: nothing is loaded
         return [
             {
                 "name": m.model or m.name,
@@ -146,6 +146,6 @@ class OllamaProvider:
     async def available_models(self) -> list[str]:
         try:
             resp = await self._client.list()
-        except Exception as exc:
+        except Exception as exc:  # client errors → ProviderError (retryable or not)
             raise _classify(exc) from exc
         return [m.model for m in resp.models if m.model]

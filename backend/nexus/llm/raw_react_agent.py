@@ -213,7 +213,7 @@ class RawReActAgent:
             if asyncio.iscoroutine(out):
                 out = await out
             return str(out)
-        except Exception as exc:  # tool errors are observations, not crashes
+        except Exception as exc:  # noqa: BLE001 - tool errors are observations, not crashes
             return f"ERROR: {type(exc).__name__}: {exc}"
 
     async def run(self, task: str) -> RawAgentResult:

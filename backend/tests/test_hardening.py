@@ -126,3 +126,36 @@ async def test_errors_carry_the_request_id() -> None:
         assert bad.status_code == 422
         assert isinstance(bad.json()["detail"], list)
         assert bad.json()["request_id"] == bad.headers["X-Request-ID"]
+
+
+# --- CodeQL findings ------------------------------------------------------------------------
+def test_email_parsing_stays_fast_on_hostile_input() -> None:
+    """py/polynomial-redos: the address pattern is bounded and anchored, so it is linear."""
+    import time
+
+    from nexus.hitl.email_intent import email_request
+
+    for hostile in ("a." * 4000, "a@" + "a-" * 4000, "x" * 8000 + "@", "+" * 8000):
+        started = time.perf_counter()
+        email_request(hostile)
+        assert time.perf_counter() - started < 0.05
+    ok = email_request("Summarise this and send the output to lead+ai@mail.co.uk")
+    assert ok.to == ["lead+ai@mail.co.uk"]
+
+
+async def test_google_callback_redirects_only_with_fixed_words() -> None:
+    """py/url-redirection: nothing from the request is echoed into the redirect URL."""
+    async with api() as (svc, client):
+        ui = svc.settings.ui_url.rstrip("/")
+        res = await client.get(
+            "/api/v1/notify/google/callback",
+            params={"error": "https://evil.example/<script>"},
+            follow_redirects=False,
+        )
+        assert res.headers["location"] == f"{ui}/settings?google_error=cancelled"
+        res = await client.get(
+            "/api/v1/notify/google/callback",
+            params={"code": "c", "state": "never-issued"},
+            follow_redirects=False,
+        )
+        assert res.headers["location"] == f"{ui}/settings?google_error=expired"

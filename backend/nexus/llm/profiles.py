@@ -14,6 +14,7 @@ from typing import Any
 
 from nexus.core.config import PROFILE_INFO, PROFILES, ModelProfile, ModelSet, fallback_for
 from nexus.core.logging import get_logger
+from nexus.llm.provider import ProviderError
 
 log = get_logger(__name__)
 FILE = "model_profile.json"
@@ -34,8 +35,8 @@ def saved_profile(data_dir: Any) -> ModelProfile | None:
 async def installed_models(svc: Any) -> list[str]:
     try:
         return list(await svc.provider.available_models())
-    except Exception:
-        return []
+    except (ProviderError, OSError):
+        return []  # Ollama down: report nothing installed
 
 
 def _installed(model: str, installed: list[str]) -> bool:
@@ -80,7 +81,7 @@ async def apply(svc: Any, profile: ModelProfile, *, persist: bool = True) -> Non
         for model in old - chat_models(models):
             try:
                 await unload(model)
-            except Exception as exc:  # unloading is best effort
+            except Exception as exc:  # noqa: BLE001 - unloading is best effort
                 log.warning("models.unload_failed", model=model, error=str(exc))
 
 
@@ -115,7 +116,7 @@ def start_install(svc: Any, profile: ModelProfile, missing: list[str]) -> dict[s
                 await pull(model, progress)
             await apply(svc, profile)
             state["state"] = "done"
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - background install: report any failure in its status
             state.update(state="failed", error=str(exc)[:300])
             log.warning("models.install_failed", profile=profile.value, error=str(exc))
 

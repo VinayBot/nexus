@@ -156,7 +156,7 @@ class LLMGateway:
                 )
                 s.set_attribute("nexus.prompt_tokens", result.prompt_tokens)
                 s.set_attribute("nexus.completion_tokens", result.completion_tokens)
-        except Exception:
+        except Exception:  # count the failure for the breaker, then re-raise
             breaker.on_failure()
             raise
         finally:

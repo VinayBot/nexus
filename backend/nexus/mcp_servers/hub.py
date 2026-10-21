@@ -229,7 +229,7 @@ class McpHub:
                         duration_ms=outcome.duration_ms,
                     )
                 )
-        except Exception as exc:  # logging must never fail a tool call
+        except Exception as exc:  # noqa: BLE001 - logging must never fail a tool call
             log.warning("mcp.log_failed", error=str(exc))
 
     # -- Tools -----------------------------------------------------------------------------
@@ -241,7 +241,7 @@ class McpHub:
                 async with asyncio.timeout(3):
                     await client.list_tools()
                 status = "ok"
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 - health probe: any error means the server is down
                 status = f"down: {exc!r}"[:120]
             st = self.stats.get(name, ServerStats())
             out[name] = {
