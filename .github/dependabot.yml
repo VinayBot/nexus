@@ -1,20 +1,50 @@
-# Weekly dependency updates, grouped so they arrive as a few reviewable PRs.
+# Weekly dependency updates. Minor and patch versions arrive grouped (one reviewable PR per
+# ecosystem); framework majors (Next, React, TypeScript, ESLint, Node) are planned upgrades,
+# not weekly bumps, so they are ignored here and done in their own branch when scheduled.
 version: 2
 updates:
   - package-ecosystem: uv
     directory: /backend
     schedule: { interval: weekly }
-    groups: { python: { patterns: ["*"] } }
+    groups:
+      python:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
   - package-ecosystem: npm
     directory: /frontend
     schedule: { interval: weekly }
-    groups: { frontend: { patterns: ["*"] } }
+    groups:
+      frontend:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: next
+        update-types: [version-update:semver-major]
+      - dependency-name: eslint-config-next
+        update-types: [version-update:semver-major]
+      - dependency-name: react
+        update-types: [version-update:semver-major]
+      - dependency-name: react-dom
+        update-types: [version-update:semver-major]
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
+      - dependency-name: eslint
+        update-types: [version-update:semver-major]
+      - dependency-name: "@types/node" # follows the Node LTS that CI and Docker use (22)
+        update-types: [version-update:semver-major]
+
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly }
+
   - package-ecosystem: docker
     directory: /backend
     schedule: { interval: monthly }
+
   - package-ecosystem: docker
     directory: /frontend
     schedule: { interval: monthly }
+    ignore:
+      - dependency-name: node # stay on the LTS line CI tests with
+        update-types: [version-update:semver-major]
