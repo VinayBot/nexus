@@ -10,7 +10,7 @@ function watchErrors(page: Page): string[] {
   return errors;
 }
 
-test("composer: every mission type shows its hint and fills its example", async ({ page }) => {
+test("composer: every mission type shows its hint", async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto("/missions");
   const box = page.getByLabel("What should the agents do?");
@@ -30,9 +30,8 @@ test("composer: every mission type shows its hint and fills its example", async 
   }
   await page.getByRole("radio", { name: "Solve ticket" }).click();
   await expect(page.getByLabel("Ticket", { exact: true })).toBeVisible();
-  await page.getByRole("radio", { name: "Question" }).click();
-  await page.getByRole("button", { name: /Use example/ }).click();
-  await expect(box).toHaveValue(/ReAct and Plan-and-Execute/);
+  await expect(page.getByRole("button", { name: /Use example/ })).toHaveCount(0); // removed on request
+  await expect(box).toHaveValue("");
   expect(errors).toEqual([]);
 });
 

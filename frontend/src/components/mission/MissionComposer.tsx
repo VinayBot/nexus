@@ -72,7 +72,7 @@ export function MissionComposer({ onCreated }: { onCreated: (m: Mission) => void
           value={task}
           onChange={(e) => setTask(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) create.mutate();
+            if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && task.trim()) create.mutate();
           }}
           rows={4}
           className="w-full resize-none rounded-lg border border-border bg-black/25 px-3 py-2.5 text-sm text-text placeholder:text-faint"
@@ -114,15 +114,6 @@ export function MissionComposer({ onCreated }: { onCreated: (m: Mission) => void
           })}
         </div>
         <p className="mt-2 text-xs leading-snug text-muted">{chosen.hint}</p>
-        {!task && (
-          <button
-            type="button"
-            onClick={() => setTask(chosen.example)}
-            className="mt-1 text-left text-xs text-accent hover:underline"
-          >
-            Use example: “{chosen.example}”
-          </button>
-        )}
       </div>
       {playbook === "ticket_solver" && (
         <select
@@ -167,7 +158,7 @@ export function MissionComposer({ onCreated }: { onCreated: (m: Mission) => void
       )}
       <button
         type="submit"
-        disabled={create.isPending}
+        disabled={create.isPending || (!task.trim() && playbook !== "ticket_solver")}
         className={cn("btn btn-primary w-full", create.isPending && "animate-pulse")}
       >
         <Send className="size-4" /> {create.isPending ? "Starting…" : "Start mission"}
