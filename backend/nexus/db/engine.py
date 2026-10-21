@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import event
+from sqlalchemy import event, text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -36,6 +36,10 @@ class Database:
     async def init(self) -> None:
         async with self.engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+            # create_all never adds indexes to tables that already exist: add new ones here
+            await conn.execute(
+                text("CREATE INDEX IF NOT EXISTS ix_missions_created_at ON missions (created_at)")
+            )
 
     @asynccontextmanager
     async def session(self) -> AsyncIterator[AsyncSession]:

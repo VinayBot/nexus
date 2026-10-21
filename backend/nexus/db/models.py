@@ -36,7 +36,7 @@ class MissionRow(Base):
     error: Mapped[str | None] = mapped_column(Text)
     tokens: Mapped[int] = mapped_column(Integer, default=0)
     forked_from: Mapped[str | None] = mapped_column(String(32))
-    created_at: Mapped[float] = mapped_column(Float, default=now)
+    created_at: Mapped[float] = mapped_column(Float, default=now, index=True)  # newest-first lists
     updated_at: Mapped[float] = mapped_column(Float, default=now, onupdate=now)
 
 
@@ -211,3 +211,13 @@ class TraceSpanRow(Base):
     end: Mapped[float] = mapped_column(Float)
     status: Mapped[str] = mapped_column(String(10))
     attributes: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+
+
+class UserRow(Base):
+    """A NEXUS account. ``role`` is owner, operator or viewer (see ``auth/policy.py``)."""
+
+    __tablename__ = "users"
+    username: Mapped[str] = mapped_column(String(64), primary_key=True)
+    password_hash: Mapped[str] = mapped_column(String(255))
+    role: Mapped[str] = mapped_column(String(16), default="viewer")
+    created_at: Mapped[float] = mapped_column(Float, default=now)

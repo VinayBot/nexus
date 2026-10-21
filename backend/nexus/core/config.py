@@ -114,6 +114,13 @@ class Settings(BaseSettings):
     governor_elevated_below_gb: float = 2.0
     governor_critical_below_gb: float = 1.0
 
+    #: Accounts + roles. Off only for tests and throwaway demos (NEXUS_AUTH_ENABLED=false).
+    auth_enabled: bool = True
+    #: Session length for a login token.
+    token_ttl_hours: int = Field(default=12, ge=1, le=24 * 30)
+    #: Seed accounts on an empty database: "name:password:role,name2:password2:role2".
+    bootstrap_users: str | None = None
+
     public_url: str = "http://127.0.0.1:8000"
     ui_url: str = "http://localhost:3000"
     secret_key: str = "dev-only-change-me"

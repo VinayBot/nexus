@@ -37,6 +37,7 @@ def ollama_replies(*contents: str, fail_first: int = 0) -> httpx.MockTransport:
 
 
 def agent(transport: httpx.MockTransport, **kw: Any) -> RawReActAgent:
+    kw.setdefault("mode", "json")  # these tests script the prompted-JSON format
     return RawReActAgent(
         base_url="http://ollama", model="m", tools=RAW_TOOLS, transport=transport, **kw
     )
@@ -103,3 +104,44 @@ async def test_raw_agent_against_real_ollama() -> None:
         base_url="http://127.0.0.1:11434", model=settings.models.main, tools=RAW_TOOLS
     ).run("What is 17 * 23 plus the number of letters in the word 'android'?")
     assert result.answer is not None and "398" in result.answer
+
+
+async def test_native_tool_calling_loop() -> None:
+    """tools=[...] JSON Schema out, structured tool_calls in, role "tool" results back."""
+    seen: list[dict[str, Any]] = []
+    replies: list[dict[str, Any]] = [
+        {
+            "content": "",
+            "tool_calls": [
+                {"function": {"name": "calculator", "arguments": {"expression": "17*23"}}}
+            ],
+        },
+        {
+            "content": "",
+            "tool_calls": [
+                {"function": {"name": "count_letters", "arguments": '{"word": "warrior"}'}}
+            ],
+        },
+        {"content": "17*23 + 7 = 398"},
+    ]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(json.loads(request.content))
+        return httpx.Response(200, json={"message": {"role": "assistant", **replies.pop(0)}})
+
+    a = RawReActAgent(
+        base_url="http://ollama", model="m", tools=RAW_TOOLS, transport=httpx.MockTransport(handler)
+    )
+    assert a.mode == "native"  # native function calling is the default
+    result = await a.run("What is 17*23 plus the letters in 'warrior'?")
+    assert result.answer == "17*23 + 7 = 398" and result.stopped_reason == "final_answer"
+    assert [(s.action, s.observation) for s in result.steps[:2]] == [
+        ("calculator", "391"),
+        ("count_letters", "7"),
+    ]
+    first = seen[0]
+    assert "format" not in first and first["tools"][0]["type"] == "function"
+    params = first["tools"][0]["function"]["parameters"]
+    assert params["type"] == "object" and params["required"]
+    tool_msgs = [m for m in seen[-1]["messages"] if m["role"] == "tool"]
+    assert [m["content"] for m in tool_msgs] == ["391", "7"]

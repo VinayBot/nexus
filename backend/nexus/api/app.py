@@ -7,7 +7,7 @@ import contextlib
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -15,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from nexus import __version__
 from nexus.api import (
     routes_approvals,
+    routes_auth,
     routes_chaos,
     routes_governor,
     routes_graph,
@@ -23,11 +24,13 @@ from nexus.api import (
     routes_insight,
     routes_mcp,
     routes_memory,
+    routes_metrics,
     routes_missions,
     routes_system,
     routes_work,
     ws,
 )
+from nexus.auth.guard import guard
 from nexus.core.config import get_settings
 from nexus.core.logging import configure_logging, get_logger
 from nexus.core.runtime import runtime
@@ -95,6 +98,9 @@ def create_app() -> FastAPI:
     )
     # event logs and summaries run to 100+ KB of JSON; SSE streams are excluded by Starlette
     app.add_middleware(GZipMiddleware, minimum_size=2048, compresslevel=5)
+    # every API route passes the RBAC guard (auth/policy.py decides public / viewer / ...)
+    protected = [Depends(guard)]
+    app.include_router(routes_auth.router, prefix="/api/v1", dependencies=protected)
     for module in (
         routes_system,
         routes_governor,
@@ -109,8 +115,9 @@ def create_app() -> FastAPI:
         routes_memory,
         routes_work,
     ):
-        app.include_router(module.router, prefix="/api/v1")
+        app.include_router(module.router, prefix="/api/v1", dependencies=protected)
     app.include_router(ws.router)
+    app.include_router(routes_metrics.router)  # Prometheus scrape target: GET /metrics
     # pages published by the Web Page Builder (static, no scripts) — /sites/<mission>/
     sites = settings.data_dir / "sites"
     sites.mkdir(parents=True, exist_ok=True)

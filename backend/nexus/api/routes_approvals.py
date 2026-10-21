@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from nexus.core.services import services
@@ -50,9 +50,14 @@ async def get_approval(approval_id: str) -> ApprovalOut:
 
 
 @router.post("/{approval_id}/decide", response_model=ApprovalOut)
-async def decide(approval_id: str, body: ApprovalDecision) -> ApprovalOut:
+async def decide(approval_id: str, body: ApprovalDecision, request: Request) -> ApprovalOut:
+    user = request.state.user
     decision = body.model_copy(
-        update={"channel": "ui" if body.channel == "email" else body.channel}
+        update={
+            "channel": "ui" if body.channel == "email" else body.channel,
+            # the audit log records who really decided, never a client-supplied name
+            "by": user.username if user is not None else body.by,
+        }
     )
     try:
         row = await services().approvals.decide(approval_id, decision)

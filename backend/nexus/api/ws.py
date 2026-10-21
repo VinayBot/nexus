@@ -12,6 +12,7 @@ import contextlib
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
+from nexus.auth.guard import user_for_token
 from nexus.core.events import bus
 from nexus.core.services import services
 from nexus.db import repo
@@ -40,6 +41,11 @@ async def _pump(ws: WebSocket, mission_id: str | None, after_seq: int) -> None:
 
 
 async def _serve(ws: WebSocket, mission_id: str | None) -> None:
+    # browsers cannot set headers on a WebSocket: the session token comes as ?token=
+    user = await user_for_token(ws.query_params.get("token"))
+    if user is None:
+        await ws.close(code=4401, reason="sign in required")
+        return
     await ws.accept()
     after = int(ws.query_params.get("after_seq", "0") or 0)
     pump = asyncio.create_task(_pump(ws, mission_id, after))

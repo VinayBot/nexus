@@ -1,9 +1,16 @@
 """A complete ReAct agent with NO framework — only ``httpx`` against Ollama's /api/chat.
 
-Everything LangChain/LangGraph would normally do is written out by hand here:
-the prompt that teaches the Thought → Action → Observation format, parsing the
-model's JSON, dispatching tools, the loop with a step limit, and retries for both
-transport errors and unparsable output. It exists so the "Under the Hood" page can
+Two ways to call tools, both written out by hand:
+
+* ``mode="native"`` (default): the tools are sent as JSON-Schema ``tools=[...]``; the
+  model answers with structured ``tool_calls``; each result goes back as a
+  ``{"role": "tool", ...}`` message; a reply without tool calls is the final answer.
+  This is the provider-native function-calling loop from the course (Day 16).
+* ``mode="json"``: the prompt teaches a Thought → Action → Observation JSON format and
+  the reply is parsed — the fallback for models without native tool support.
+
+Plus the loop with a step limit, and retries for transport errors and unparsable
+output. It exists so the "Under the Hood" page can
 run the same task through this agent and through the LangGraph worker side by side.
 
 Deliberately self-contained: it does not import NEXUS's gateway, router or
@@ -18,7 +25,7 @@ import re
 import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Literal
 
 import httpx
 
@@ -114,7 +121,9 @@ class RawReActAgent:
         max_parse_retries: int = 2,
         on_event: EventFn | None = None,
         transport: httpx.AsyncBaseTransport | None = None,
+        mode: Literal["native", "json"] = "native",
     ) -> None:
+        self.mode = mode
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.tools = {t.name: t for t in tools}
@@ -128,17 +137,40 @@ class RawReActAgent:
         self.on_event = on_event or (lambda kind, data: None)
         self._transport = transport
 
+    def tool_schemas(self) -> list[dict[str, Any]]:
+        """The tools in the native function-calling format (JSON Schema parameters)."""
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": t.name,
+                    "description": t.description,
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            p: {"type": "string", "description": d} for p, d in t.params.items()
+                        },
+                        "required": list(t.params),
+                    },
+                },
+            }
+            for t in self.tools.values()
+        ]
+
     async def _post_chat(
-        self, client: httpx.AsyncClient, messages: list[dict[str, str]]
+        self, client: httpx.AsyncClient, messages: list[dict[str, Any]], *, native: bool = False
     ) -> dict[str, Any]:
         """POST /api/chat with manual exponential backoff on transport/5xx errors."""
-        body = {
+        body: dict[str, Any] = {
             "model": self.model,
             "messages": messages,
             "stream": False,
-            "format": "json",
             "options": {"temperature": self.temperature, "num_ctx": self.num_ctx},
         }
+        if native:
+            body["tools"] = self.tool_schemas()
+        else:
+            body["format"] = "json"
         delay = 0.5
         for attempt in range(1, self.max_http_retries + 1):
             try:
@@ -185,6 +217,77 @@ class RawReActAgent:
             return f"ERROR: {type(exc).__name__}: {exc}"
 
     async def run(self, task: str) -> RawAgentResult:
+        if self.mode == "native":
+            return await self._run_native(task)
+        return await self._run_json(task)
+
+    async def _run_native(self, task: str) -> RawAgentResult:
+        """Provider-native function calling: tools=[...] → tool_calls → role "tool"."""
+        self.retries = 0
+        started = time.perf_counter()
+        messages: list[dict[str, Any]] = [
+            {
+                "role": "system",
+                "content": f"You are {self.name}, a careful problem solver. Use the tools "
+                "whenever a calculation or lookup is needed, then give the final answer.",
+            },
+            {"role": "user", "content": task},
+        ]
+        steps: list[RawStep] = []
+        calls = prompt_tokens = completion_tokens = 0
+        answer: str | None = None
+        reason = "max_steps"
+        async with httpx.AsyncClient(timeout=self.timeout_s, transport=self._transport) as client:
+            for iteration in range(1, self.max_steps + 1):
+                data = await self._post_chat(client, messages, native=True)
+                calls += 1
+                prompt_tokens += int(data.get("prompt_eval_count") or 0)
+                completion_tokens += int(data.get("eval_count") or 0)
+                message = data.get("message") or {}
+                content = str(message.get("content") or "")
+                tool_calls = message.get("tool_calls") or []
+                if content:
+                    self.on_event("thought", {"iteration": iteration, "text": content})
+                messages.append({"role": "assistant", "content": content, "tool_calls": tool_calls})
+                if not tool_calls:  # no tool call: the model produced its final answer
+                    step = RawStep(thought=content, final_answer=content)
+                    steps.append(step)
+                    answer, reason = content, "final_answer"
+                    self.on_event("final", {"answer": answer})
+                    break
+                for call in tool_calls:
+                    fn = call.get("function") or {}
+                    name = str(fn.get("name") or "")
+                    args = fn.get("arguments") or {}
+                    if isinstance(args, str):  # some servers send a JSON string
+                        try:
+                            args = json.loads(args)
+                        except json.JSONDecodeError:
+                            args = {"input": args}
+                    step = RawStep(thought=content, action=name, action_input=dict(args))
+                    self.on_event("action", {"iteration": iteration, "tool": name, "args": args})
+                    step.observation = await self._run_tool(name, dict(args))
+                    self.on_event(
+                        "observation",
+                        {"iteration": iteration, "tool": name, "text": step.observation},
+                    )
+                    steps.append(step)
+                    messages.append(
+                        {"role": "tool", "content": step.observation, "tool_name": name}
+                    )
+        return RawAgentResult(
+            answer=answer,
+            steps=steps,
+            llm_calls=calls,
+            retries=self.retries,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            latency_ms=round((time.perf_counter() - started) * 1000, 1),
+            stopped_reason=reason,
+        )
+
+    async def _run_json(self, task: str) -> RawAgentResult:
+        """Prompted JSON ReAct for models without native tool support."""
         self.retries = 0
         started = time.perf_counter()
         messages = [

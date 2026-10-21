@@ -46,6 +46,7 @@ async def runtime(
 ) -> AsyncIterator[Services]:
     settings = settings or get_settings()
     settings.data_dir.mkdir(parents=True, exist_ok=True)
+    _ensure_strong_secret(settings)  # before anything signs with it
     async with AsyncExitStack() as stack:
         svc = build_services(settings, provider)
         set_services(svc)
@@ -102,8 +103,8 @@ async def runtime(
         runner.finished_hooks.append(notifier.on_finished)
         svc.extras["email_approvals"].owner_address = notifier.owner_address
         svc.register("notifier", notifier)
-        if settings.secret_key == "dev-only-change-me":
-            log.warning("security.default_secret", hint="set NEXUS_SECRET_KEY in .env")
+
+        await _bootstrap_users(db, settings)
 
         from nexus.playbooks.demo_service import DemoService
 
@@ -126,3 +127,41 @@ async def runtime(
         finally:
             set_services(None)
             bus.set_sink(None)
+
+
+async def _bootstrap_users(db: Any, settings: Settings) -> None:
+    """Seed accounts from NEXUS_BOOTSTRAP_USERS ("name:password:role,...") on an empty DB."""
+    if not settings.bootstrap_users:
+        return
+    from sqlalchemy import func, select
+
+    from nexus.auth.security import hash_password
+    from nexus.db.models import UserRow
+
+    async with db.session() as s:
+        if int(await s.scalar(select(func.count()).select_from(UserRow)) or 0) > 0:
+            return
+        for entry in settings.bootstrap_users.split(","):
+            name, password, role = (part.strip() for part in entry.split(":", 2))
+            s.add(UserRow(username=name, password_hash=hash_password(password), role=role))
+
+
+WEAK_SECRETS = {"change-me", "dev-only-change-me", "secret", "changeme", ""}
+
+
+def _ensure_strong_secret(settings: Settings) -> None:
+    """Login tokens and approval links are signed with this key: never run on a weak one.
+
+    A placeholder or short ``NEXUS_SECRET_KEY`` is replaced by a random 48-byte key,
+    generated once and kept in ``<data_dir>/secret.key`` (0600, gitignored folder).
+    """
+    if len(settings.secret_key) >= 32 and settings.secret_key not in WEAK_SECRETS:
+        return
+    import secrets
+
+    path = settings.data_dir / "secret.key"
+    if not path.exists():
+        settings.data_dir.mkdir(parents=True, exist_ok=True)
+        path.write_text(secrets.token_urlsafe(48))
+        path.chmod(0o600)
+    settings.secret_key = path.read_text().strip()
