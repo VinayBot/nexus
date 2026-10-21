@@ -2,7 +2,7 @@ import { createHmac } from "node:crypto";
 import { defineConfig } from "@playwright/test";
 
 const API = "http://127.0.0.1:8011";
-const UI = "http://localhost:3011";
+const UI = "http://127.0.0.1:3011"; // same host as the API: the session cookie is SameSite
 
 /** e2e runs with auth ON. A fixed secret lets us sign the owner's session token here. */
 const SECRET = "e2e-only-secret-key-0123456789abcdef0123456789";
@@ -30,11 +30,22 @@ export default defineConfig({
     baseURL: UI,
     trace: "retain-on-failure",
     viewport: { width: 1500, height: 950 },
-    // signed in as the seeded owner: API calls from tests and the app's own session
-    extraHTTPHeaders: { Authorization: `Bearer ${OWNER_TOKEN}` },
+    // signed in as the seeded owner through the HttpOnly session cookie, exactly like a
+    // browser after sign-in; the tests' own API calls share it
     storageState: {
-      cookies: [],
-      origins: [{ origin: UI, localStorage: [{ name: "nexus-token", value: OWNER_TOKEN }] }],
+      cookies: [
+        {
+          name: "nexus_session",
+          value: OWNER_TOKEN,
+          domain: "127.0.0.1",
+          path: "/",
+          expires: Math.floor(Date.now() / 1000) + 86_400,
+          httpOnly: true,
+          secure: false,
+          sameSite: "Lax",
+        },
+      ],
+      origins: [],
     },
   },
   webServer: [
@@ -59,7 +70,7 @@ export default defineConfig({
     },
     {
       command: "pnpm exec next dev --turbopack -p 3011",
-      url: "http://localhost:3011/missions",
+      url: `${UI}/missions`,
       reuseExistingServer: false,
       timeout: 180_000,
       env: { NEXT_PUBLIC_API_URL: API, NEXT_DIST_DIR: ".next-e2e" },

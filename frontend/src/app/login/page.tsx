@@ -8,7 +8,7 @@ import { Suspense, useEffect, useState } from "react";
 import { LogoMark, Wordmark } from "@/components/brand/Logo";
 import { StudioBackdrop } from "@/components/layout/StudioBackdrop";
 import { get, post } from "@/lib/api";
-import { getToken, setToken } from "@/lib/auth";
+import { useMe } from "@/lib/me";
 
 interface Session {
   token: string;
@@ -30,20 +30,20 @@ function LoginForm() {
     retry: 1,
   });
   const setup = Boolean(status.data?.setup_required);
+  const me = useMe(); // already signed in? (the session cookie is not readable here)
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
 
   useEffect(() => {
     if (status.data && !status.data.auth_enabled) router.replace(next); // auth is off
-    if (status.data && getToken() && !setup) router.replace(next); // already signed in
-  }, [status.data, setup, next, router]);
+    if (status.data?.auth_enabled && me.data && !setup) router.replace(next); // already signed in
+  }, [status.data, me.data, setup, next, router]);
 
   const submit = useMutation({
     mutationFn: () => post<Session>(setup ? "/auth/setup" : "/auth/login", { username, password }),
-    onSuccess: (s) => {
-      setToken(s.token);
-      qc.clear();
+    onSuccess: () => {
+      qc.clear(); // the server set the session cookie
       router.replace(next);
     },
   });

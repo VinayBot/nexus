@@ -191,3 +191,59 @@ async def test_delete_waits_for_events_still_being_written() -> None:
         async with svc.db.session() as s:
             left = await s.scalar(select(func.count()).where(EventRow.mission_id == row.id))
         assert left == 0
+
+
+# --- browser sessions: HttpOnly cookie, CSRF, CORS --------------------------------------------
+async def test_browser_session_is_an_httponly_cookie(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("NEXUS_AUTH_ENABLED", "true")
+    get_settings.cache_clear()
+    async with api() as (_, client):
+        creds = {"username": "olga", "password": "s3cret-pass"}
+        res = await client.post("/api/v1/auth/setup", json=creds)
+        cookie = res.headers["set-cookie"].lower()
+        assert "nexus_session=" in cookie and "httponly" in cookie and "samesite=lax" in cookie
+        # the cookie alone is a session (what the browser sends; no script ever sees it)
+        assert (await client.get("/api/v1/auth/me")).json()["username"] == "olga"
+        task = {"task": "What is ReAct?", "playbook": "council_qa"}
+        # CSRF: a page on another site cannot use the cookie for a write
+        foreign = await client.post(
+            "/api/v1/missions", json=task, headers={"origin": "https://evil.example"}
+        )
+        assert foreign.status_code == 403
+        own = await client.post(
+            "/api/v1/missions", json=task, headers={"origin": "http://localhost:3000"}
+        )
+        assert own.status_code == 201
+        # sign-out clears the cookie and revokes the session
+        out = await client.post("/api/v1/auth/logout")
+        assert out.status_code == 204 and "nexus_session=" in out.headers["set-cookie"]
+        assert (await client.get("/api/v1/auth/me")).status_code == 401
+
+
+async def test_cors_allows_only_listed_origins_methods_and_headers() -> None:
+    async with api() as (_, client):
+        pre = {"access-control-request-method": "POST"}
+        ok = await client.options(
+            "/api/v1/missions",
+            headers={
+                **pre,
+                "origin": "http://localhost:3000",
+                "access-control-request-headers": "content-type",
+            },
+        )
+        assert ok.status_code == 200
+        assert ok.headers["access-control-allow-credentials"] == "true"
+        assert ok.headers["access-control-allow-origin"] == "http://localhost:3000"
+        evil = await client.options(
+            "/api/v1/missions", headers={**pre, "origin": "https://evil.example"}
+        )
+        assert "access-control-allow-origin" not in evil.headers
+        odd = await client.options(
+            "/api/v1/missions",
+            headers={
+                **pre,
+                "origin": "http://localhost:3000",
+                "access-control-request-headers": "x-anything",
+            },
+        )
+        assert odd.status_code == 400  # headers are listed, not "*"

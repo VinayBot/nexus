@@ -1,6 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError, api, errorMessage } from "../api";
-import { authHeaders, clearToken, getToken, setToken, withToken } from "../auth";
+import { forgetLegacyToken } from "../auth";
+import { apiBase } from "../config";
 
 function reply(status: number, body: unknown, headers: Record<string, string> = {}) {
   return vi.fn().mockResolvedValue(
@@ -11,37 +12,33 @@ function reply(status: number, body: unknown, headers: Record<string, string> = 
   );
 }
 
-describe("session helpers", () => {
-  beforeEach(() => localStorage.clear());
-
-  it("stores the token and sends it as a bearer header", () => {
-    expect(authHeaders()).toEqual({});
-    setToken("abc");
-    expect(getToken()).toBe("abc");
-    expect(authHeaders()).toEqual({ Authorization: "Bearer abc" });
-    clearToken();
-    expect(getToken()).toBeNull();
+describe("session plumbing", () => {
+  it("puts the API on the page's own site, so the SameSite cookie is sent", () => {
+    expect(apiBase("http://127.0.0.1:8000", "localhost")).toBe("http://localhost:8000");
+    expect(apiBase("http://localhost:8000", "127.0.0.1")).toBe("http://127.0.0.1:8000");
+    expect(apiBase(undefined, null)).toBe("http://127.0.0.1:8000");
+    // a real host is left alone
+    expect(apiBase("https://api.example.com", "localhost")).toBe("https://api.example.com");
   });
 
-  it("adds the token to links and sockets, which cannot send headers", () => {
-    expect(withToken("/x")).toBe("/x");
-    setToken("a b");
-    expect(withToken("/x")).toBe("/x?token=a%20b");
-    expect(withToken("/x?y=1")).toBe("/x?y=1&token=a%20b");
+  it("removes a token left in localStorage by earlier versions", () => {
+    localStorage.setItem("nexus-token", "old");
+    forgetLegacyToken();
+    expect(localStorage.getItem("nexus-token")).toBeNull();
   });
 });
 
 describe("api client", () => {
-  beforeEach(() => localStorage.clear());
   afterEach(() => vi.unstubAllGlobals());
 
-  it("sends JSON with the session and parses the reply", async () => {
-    setToken("t1");
+  it("sends JSON with the session cookie and parses the reply", async () => {
     const fetchMock = reply(200, { ok: true });
     vi.stubGlobal("fetch", fetchMock);
     await expect(api("/things", { method: "POST", json: { a: 1 } })).resolves.toEqual({ ok: true });
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(init.headers).toMatchObject({ Authorization: "Bearer t1", "content-type": "application/json" });
+    expect(init.credentials).toBe("include");
+    expect(init.headers).toMatchObject({ "content-type": "application/json" });
+    expect(init.headers).not.toHaveProperty("Authorization"); // no token in page scripts
     expect(init.body).toBe('{"a":1}');
   });
 
@@ -55,12 +52,10 @@ describe("api client", () => {
   });
 
   it("signs out on 401 outside the auth routes", async () => {
-    setToken("expired");
     const seen = vi.fn();
     window.addEventListener("nexus:unauthorized", seen);
     vi.stubGlobal("fetch", reply(401, { detail: "Sign in" }));
     await api("/missions").catch(() => undefined);
-    expect(getToken()).toBeNull();
     expect(seen).toHaveBeenCalledOnce();
     window.removeEventListener("nexus:unauthorized", seen);
   });

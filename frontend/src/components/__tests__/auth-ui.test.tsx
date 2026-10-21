@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RoleGate } from "@/components/layout/RoleGate";
 import { UserMenu } from "@/components/layout/UserMenu";
-import { getToken, setToken } from "@/lib/auth";
 
 const replace = vi.fn();
 vi.mock("next/navigation", () => ({
@@ -81,15 +80,13 @@ describe("UserMenu", () => {
     expect(screen.getByLabelText("Tokens used today")).toHaveTextContent("1,900,000 / 2,000,000");
   });
 
-  it("revokes the session on the server before forgetting the token", async () => {
-    setToken("t-1");
+  it("signs out on the server, which revokes the session and clears the cookie", async () => {
     const calls = backend(owner);
     wrap(<UserMenu />);
     await userEvent.click(await screen.findByRole("button", { name: "Account: olga" }));
     await userEvent.click(screen.getByRole("button", { name: /Sign out/ }));
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/login"));
     expect(calls).toContain("POST /api/v1/auth/logout");
-    expect(getToken()).toBeNull();
   });
 
   it("is hidden when accounts are switched off", async () => {

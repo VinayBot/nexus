@@ -10,6 +10,12 @@ All notable changes, newest first. Versions follow [Semantic Versioning](https:/
 - Coverage gate raised from 80% to 85% (now 87%): HTTP contract tests for every route group,
   the Ollama provider against an in-memory transport, and React component tests.
 
+### Security
+- The browser session moved from `localStorage` to an HttpOnly, SameSite=Lax cookie that
+  page scripts cannot read; tokens are no longer accepted in URLs. Unsafe requests and
+  WebSocket handshakes with the cookie must come from a listed origin (CSRF and
+  cross-site WebSocket hijacking). CORS lists exact methods and headers.
+
 ### Fixed
 - CodeQL `py/polynomial-redos` (high): the email-address pattern is bounded and anchored.
 - CodeQL `py/url-redirection` (medium): the Google sign-in redirect carries fixed words only.

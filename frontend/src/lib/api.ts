@@ -1,4 +1,4 @@
-import { authHeaders, onUnauthorized } from "./auth";
+import { onUnauthorized } from "./auth";
 import { API_URL } from "./config";
 
 export class ApiError extends Error {
@@ -38,9 +38,9 @@ export async function api<T>(path: string, init: RequestInit & { json?: Json } =
   const { json, headers, ...rest } = init;
   const res = await fetch(`${API_URL}/api/v1${path}`, {
     ...rest,
+    credentials: "include", // the HttpOnly session cookie
     headers: {
       ...(json !== undefined ? { "content-type": "application/json" } : {}),
-      ...authHeaders(),
       ...headers,
     },
     body: json !== undefined ? JSON.stringify(json) : rest.body,

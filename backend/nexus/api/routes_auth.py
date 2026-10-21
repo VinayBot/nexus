@@ -7,11 +7,12 @@ operators and viewers; the last owner can never be removed or demoted.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 
 from nexus.api.schemas import AuthStatus, Me, UserOut
+from nexus.auth.guard import SESSION_COOKIE, token_from
 from nexus.auth.ratelimit import RateLimiter
 from nexus.auth.security import (
     create_token,
@@ -49,9 +50,21 @@ class Session(BaseModel):
     role: str
 
 
-def _session(username: str, role: str) -> Session:
+def _session(username: str, role: str, request: Request, response: Response) -> Session:
+    """Sign in: the browser gets an HttpOnly cookie (scripts cannot read it); API clients
+    use the token in the body as ``Authorization: Bearer``."""
     st = services().settings
-    token = create_token(username, role, st.secret_key, st.token_ttl_hours * 3600)
+    ttl = st.token_ttl_hours * 3600
+    token = create_token(username, role, st.secret_key, ttl)
+    response.set_cookie(
+        SESSION_COOKIE,
+        token,
+        max_age=ttl,
+        httponly=True,
+        samesite="lax",
+        secure=request.url.scheme == "https",
+        path="/",
+    )
     return Session(token=token, username=username, role=role)
 
 
@@ -70,7 +83,7 @@ async def status() -> AuthStatus:
 
 
 @router.post("/setup", response_model=Session, status_code=201)
-async def setup(body: Credentials) -> Session:
+async def setup(body: Credentials, request: Request, response: Response) -> Session:
     """Create the first owner. Refused once any account exists."""
     if await _count() > 0:
         raise HTTPException(409, "NEXUS is already set up; sign in instead.")
@@ -83,11 +96,11 @@ async def setup(body: Credentials) -> Session:
     await repo.audit(
         services().db, actor=body.username, channel="ui", action="auth.setup", detail={}
     )
-    return _session(body.username, "owner")
+    return _session(body.username, "owner", request, response)
 
 
 @router.post("/login", response_model=Session)
-async def login(body: Credentials, request: Request) -> Session:
+async def login(body: Credentials, request: Request, response: Response) -> Session:
     client = request.client.host if request.client else "?"
     key = f"{body.username.lower()}|{client}"
     db = services().db
@@ -104,21 +117,21 @@ async def login(body: Credentials, request: Request) -> Session:
             row.password_hash = hash_password(body.password)  # upgrade old parameters
     if not ok or row is None:
         raise HTTPException(401, "Wrong username or password.")
-    return _session(row.username, row.role)
+    return _session(row.username, row.role, request, response)
 
 
 @router.post("/logout", status_code=204)
-async def logout(request: Request) -> None:
+async def logout(request: Request, response: Response) -> None:
     """Revoke this session server-side; the token stops working at once, not at expiry."""
     import time
 
     import jwt
     from sqlalchemy import delete
 
-    from nexus.auth.guard import token_from
     from nexus.db.models import RevokedTokenRow
 
-    token = token_from(dict(request.headers), dict(request.query_params))
+    response.delete_cookie(SESSION_COOKIE, path="/")
+    token = token_from(request.headers)
     settings = services().settings
     if not settings.auth_enabled or not token:
         return
