@@ -9,7 +9,7 @@ jobs:
     defaults: { run: { working-directory: backend } }
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v7
       - run: uv sync --frozen --extra postgres # so mypy also checks the PostgreSQL path
       - run: uv run ruff check . && uv run ruff format --check .
       - run: ../scripts/check_file_size.sh
@@ -38,7 +38,7 @@ jobs:
           --health-cmd "pg_isready -U nexus" --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v7
       - run: uv sync --frozen --extra postgres
       - run: uv run pytest -q
         env:
@@ -63,7 +63,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v7
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - run: corepack enable pnpm
