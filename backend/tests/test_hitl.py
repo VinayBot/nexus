@@ -157,8 +157,12 @@ async def test_tampered_and_expired_tokens_are_rejected() -> None:
         ts = TokenService("secret", svc.db)
         good = ts.issue("a1", "approve")
         assert ts.verify(good).approval_id == "a1"
+        # flip a character well inside the signature: the last base64 character carries only
+        # a few significant bits, so changing it can leave the signature valid (a flaky test)
+        i = len(good) - 8
+        tampered = good[:i] + ("A" if good[i] != "A" else "B") + good[i + 1 :]
         with pytest.raises(TokenError, match="invalid"):
-            ts.verify(good[:-2] + ("aa" if not good.endswith("aa") else "bb"))
+            ts.verify(tampered)
         with pytest.raises(TokenError, match="invalid"):
             TokenService("other-secret", svc.db).verify(good)
         expired = TokenService("secret", svc.db, max_age_s=-1)

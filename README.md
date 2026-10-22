@@ -53,7 +53,7 @@ make test-postgres              # the backend suite against a throwaway PostgreS
 make audit                      # known-vulnerability scan (pip-audit, pnpm audit)
 docker compose up --build       # backend + frontend + Mailpit; Ollama stays native on the host
 docker compose -f docker-compose.yml -f docker-compose.postgres.yml up --build   # … on PostgreSQL
-NEXUS_LLM_PROVIDER=simulation make dev   # no models needed: scripted, clearly labelled
+NEXUS_LLM_PROVIDER=simulation make dev   # no models needed: scripted model, real tools, tests and approvals
 ```
 </details>
 
@@ -167,8 +167,8 @@ concurrency, queue, tokens/s, circuit breakers); traces and benchmarks are in **
 
 | Suite | Count | Command |
 |---|---|---|
-| Backend (pytest; scripted model, real SQLite, MCP, sandbox, demo service, every API route group; 87% line coverage, gate 85%) | 160 | `make test-backend` |
-| Same suite on PostgreSQL 16 | 160 | `make test-postgres` |
+| Backend (pytest; scripted model, real SQLite, MCP, sandbox, demo service, every API route group; 87% line coverage, gate 85%) | 164 | `make test-backend` |
+| Same suite on PostgreSQL 16 | 164 | `make test-postgres` |
 | Frontend unit and component (vitest, Testing Library) | 28 | `make test-frontend` |
 | End-to-end (Playwright; auth on, Simulation provider) | 25 | `make e2e` |
 | Lint and types | ruff (incl. blind-except) · mypy --strict · eslint · prettier · tsc strict · 400-line file limit | `make check` |

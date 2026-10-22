@@ -145,7 +145,9 @@ async def ring_and_detect(svc: Services, watcher: Watcher) -> str:
     async def degraded() -> bool:
         return (await svc.demo.health())["status"] != "healthy"
 
-    await until(degraded)
+    # the service restarts and needs live traffic to look degraded: slow CI runners take
+    # longer (until() returns as soon as it holds, so this costs nothing when fast)
+    await until(degraded, seconds=90)
     await watcher.tick()
     await watcher.tick()
     incident = await watcher.open_incident()

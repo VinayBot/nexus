@@ -1,10 +1,11 @@
-"""The live demo-service: a git repo under ``data/demo-live`` served by uvicorn --reload.
+"""The live demo-service: a git repo under ``data/demo-live`` served by uvicorn.
 
 * Chaos switches inject *real* bugs by editing the live source (each ring starts
   from the ``baseline`` tag, then applies every enabled switch).
 * The Self-Healing executor applies a fix on a ``nexus/fix-<mission>`` branch and
-  checks it out (uvicorn reloads); rollback checks the previous ref out again;
-  a verified fix is fast-forwarded into ``main``.
+  checks it out; rollback checks the previous ref out again; a verified fix is
+  fast-forwarded into ``main``. After every code change the service is restarted
+  explicitly, so it always runs exactly what is checked out.
 """
 
 from __future__ import annotations
@@ -127,7 +128,7 @@ class DemoService:
         logf = (self.settings.data_dir / "demo-service.log").open("ab")
         self._proc = await asyncio.create_subprocess_exec(
             sys.executable, "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1",
-            "--port", str(self.port), "--reload", "--reload-dir", "app", "--log-level", "warning",
+            "--port", str(self.port), "--log-level", "warning",
             cwd=self.live, stdout=logf, stderr=logf,
         )  # fmt: skip
         log.info("demo_service.started", port=self.port, pid=self._proc.pid)
@@ -139,6 +140,27 @@ class DemoService:
                 await asyncio.wait_for(self._proc.wait(), 5)
             if self._proc.returncode is None:
                 self._proc.kill()
+
+    async def _restart_if_running(self) -> None:
+        """Load the code that is now checked out. An explicit restart, not ``--reload``:
+        a file watcher can miss or half-apply a burst of git writes on a busy machine, and
+        then the service would keep running the old code."""
+        if self._proc and self._proc.returncode is None:
+            await self.stop()
+            self._proc = None
+            await self.start()
+            await self.wait_until_serving()
+
+    async def wait_until_serving(self, timeout_s: float = 15.0) -> bool:
+        """Until the process answers /health, so nobody mistakes a restart for an outage."""
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + timeout_s
+        while loop.time() < deadline:
+            if (await self.health())["status"] != "down":
+                return True
+            await asyncio.sleep(0.1)
+        log.warning("demo_service.slow_start", timeout_s=timeout_s)
+        return False
 
     async def health(self) -> dict[str, Any]:
         try:
@@ -204,6 +226,7 @@ class DemoService:
         if enabled:
             await self.git("commit", "-q", "-am", f"chaos: {', '.join(enabled)}")
         self.state_file.write_text(json.dumps(enabled))
+        await self._restart_if_running()
         log.info("chaos.rebuilt", enabled=enabled)
 
     # -- fixes ---------------------------------------------------------------------------
@@ -223,12 +246,14 @@ class DemoService:
             target.write_text(content)
             await self.git("commit", "-q", "-am", message)
             sha = await self.git("rev-parse", "--short", "HEAD")
+            await self._restart_if_running()
         return {"branch": branch, "previous": previous, "commit": sha}
 
     async def rollback(self, previous: str, branch: str) -> None:
         async with self._lock:
             await self.git("checkout", "-q", "-f", previous)
             await self.git("branch", "-q", "-D", branch, check=False)
+            await self._restart_if_running()
 
     async def promote(self, branch: str) -> None:
         async with self._lock:
