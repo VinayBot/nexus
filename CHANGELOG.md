@@ -2,7 +2,7 @@
 
 All notable changes, newest first. Versions follow [Semantic Versioning](https://semver.org).
 
-## [Unreleased]
+## [1.1.0] - 2026-10-22
 
 ### Added
 - Simulation mode (no Ollama) completes the code missions: Fix service for every Chaos Lab
@@ -17,6 +17,7 @@ All notable changes, newest first. Versions follow [Semantic Versioning](https:/
   the Ollama provider against an in-memory transport, and React component tests.
 
 ### Security
+- pypdf 6.21.2 fixes CVE-2026-113786 (published 2026-10-22, caught by the pip-audit CI step).
 - The browser session moved from `localStorage` to an HttpOnly, SameSite=Lax cookie that
   page scripts cannot read; tokens are no longer accepted in URLs. Unsafe requests and
   WebSocket handshakes with the cookie must come from a listed origin (CSRF and
